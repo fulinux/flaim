@@ -367,15 +367,15 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbCreate(
 			ulong					pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string				pszDbFileName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 				pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 				pszRflDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 				pszDictFileName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 				pszDictBuf,
 			XFLM_CREATE_OPTS	pCreateOpts,
 			out ulong			ppDb);
@@ -428,13 +428,13 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbOpen(
 			ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDbFileName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 		pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 		pszRflDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 		pszPassword,
 			int			bAllowLimited,
 			out ulong	ppDb);
@@ -477,11 +477,11 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbRemove(
 			ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDbFileName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 		pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 		pszRflDir,
 			int			bRemoveRflFiles);
 
@@ -563,15 +563,15 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbRestore(
 			ulong							pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string						pszDbFileName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszRflDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszBackupPath,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszPassword,
 			RestoreClientCallback	fnRestoreClient,
 			RestoreStatusCallback	fnRestoreStatus);
@@ -861,13 +861,13 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbCheck(
 			ulong							pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string						pszDbName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszRflDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszPassword,
 			DbCheckFlags				eFlags,
 			DbCheckStatusCallback	fnDbCheckStatus,
@@ -976,17 +976,17 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbCopy(
 			ulong						pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string					pszSrcDbName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 					pszSrcDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 					pszSrcRflDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 					pszDestDbName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 					pszDestDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 					pszDestRflDir,
 			DbCopyStatusCallback	fnDbCopyStatus);
 
@@ -1087,13 +1087,13 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbRename(
 			ulong							pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string						pszSrcDbName,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszSrcDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszSrcRflDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszDestDbName,
 			int							bOverwriteDestOk,
 			DbRenameStatusCallback	fnDbRenameStatus);
@@ -1201,19 +1201,19 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbRebuild(
 			ulong							pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string						pszSourceDbPath,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszSourceDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszDestDbPath,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszDestDataDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszDestRflDir,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszDictPath,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string 						pszPassword,
 			XFLM_CREATE_OPTS			pCreateOpts,
 			DbRebuildStatusCallback	fnDbRebuildStatus);
@@ -1289,7 +1289,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openBufferIStream(
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszBuffer,
 			out ulong	ppIStream);
 
@@ -1323,7 +1323,7 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openFileIStream(
 			ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszFileName,
 			out ulong	ppIStream);
 
@@ -1364,9 +1364,9 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openMultiFileIStream(
 			ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDirectory,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszBaseName,
 			out ulong	ppIStream);
 
@@ -1564,7 +1564,7 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openFileOStream(
 			ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszFileName,
 			int			bTruncateIfExists,
 			out ulong	ppOStream);
@@ -1616,9 +1616,9 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openMultiFileOStream(
 			ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDirectory,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		sBaseName,
 			uint			uiMaxFileSize,
 			int			bOkToOverwrite,
@@ -1655,9 +1655,9 @@ namespace xflaim
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_removeMultiFileStream(
 			ulong			pDbSystem,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDirectory,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string		sBaseName);
 
 		//-----------------------------------------------------------------------------
@@ -1813,5 +1813,38 @@ namespace xflaim
 		private static extern void xflaim_DbSystem_freeUnmanagedMem(
 			ulong		pDbSystem,
 			IntPtr	pMem);
+
+//-----------------------------------------------------------------------------
+// updateIniFile
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set a parameter in the .INI file for XFLAIM.
+		/// </summary>
+		/// <param name="sParamName">
+		/// Name of parameter whose value is to be set.
+		/// </param>
+		/// <param name="sValue">
+		/// Value the parameter is to be set to.
+		/// </param>
+		public void updateIniFile(
+			string	sParamName,
+			string	sValue)
+		{
+			RCODE	rc;
+
+			if ((rc = xflaim_DbSystem_updateIniFile( m_pDbSystem, sParamName, sValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_updateIniFile(
+			ulong		pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr), In]
+			string	sParamName,
+			[MarshalAs(UnmanagedType.LPStr), In]
+			string	sValue);
 	}
 }

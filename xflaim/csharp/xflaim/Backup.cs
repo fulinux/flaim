@@ -199,9 +199,9 @@ namespace xflaim
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Backup_backup(
 			ulong						pBackup,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string					sBackupPath,
-			[MarshalAs(UnmanagedType.LPStr)]
+			[MarshalAs(UnmanagedType.LPStr), In]
 			string					sPassword,
 			out uint					uiSeqNum,
 			BackupClientCallback	fnBackupClient,

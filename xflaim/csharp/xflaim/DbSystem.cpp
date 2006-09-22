@@ -1467,3 +1467,16 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_freeUnmanagedMem(
 	
 	pDbSystem->freeMem( &pvMem);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_updateIniFile(
+	FLMUINT64		ui64This,
+	const char *	pszParamName,
+	const char *	pszValue)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	
+	return( pDbSystem->updateIniFile( pszParamName, pszValue));
+}
