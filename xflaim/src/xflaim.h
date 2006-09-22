@@ -557,15 +557,6 @@
 
 	typedef struct
 	{
-		FLMUINT64			ui64TotalExtendedMemory;
-		FLMUINT64			ui64RemainingExtendedMemory;
-		FLMUINT64			ui64TotalBytesAllocated;
-		FLMUINT64			ui64CacheHits;
-		FLMUINT64			ui64CacheFaults;
-	} XFLM_ECACHE_USAGE;
-
-	typedef struct
-	{
 		FLMUINT				uiMaxBytes;
 		FLMUINT				uiTotalBytesAllocated;
 		FLMBOOL				bDynamicCacheAdjust;
@@ -583,11 +574,69 @@
 		FLMUINT				uiFreeBytes;
 		FLMUINT				uiReplaceableCount;
 		FLMUINT				uiReplaceableBytes;
-		FLMBOOL				bPreallocatedCache;
 		XFLM_CACHE_USAGE	BlockCache;
 		XFLM_CACHE_USAGE	NodeCache;
-		XFLM_ECACHE_USAGE	ECache;
+		FLMBOOL				bPreallocatedCache;
 	} XFLM_CACHE_INFO;
+
+	// IMPORTANT NOTE: This structure needs to be kept in sync with the
+	// corresponding structures and classes in java and C#.
+	// This structure should be like the XFLM_CACHE_USAGE structure,
+	// except that it always keeps 64 bit values for some of the
+	// members so that we can hold the value if we are on a 64
+	// bit platforms where we can address more than 4 GB of memory.
+	// We didn't want to modify the XFLM_CACHE_USAGE structure because
+	// we didn't want the overhead of 64 bit arithmetic when keeping
+	// track of cache statistics.  Hence, we made this "C#" structure
+	// instead to copy data into when passing the information out
+	// to C#.
+	typedef struct
+	{
+		FLMUINT64			ui64ByteCount;
+		FLMUINT64			ui64Count;
+		FLMUINT64			ui64OldVerCount;
+		FLMUINT64			ui64OldVerBytes;
+		FLMUINT32			ui32CacheHits;
+		FLMUINT32			ui32CacheHitLooks;
+		FLMUINT32			ui32CacheFaults;
+		FLMUINT32			ui32CacheFaultLooks;
+		FLM_SLAB_USAGE		slabUsage;
+	} CS_XFLM_CACHE_USAGE;
+
+	// IMPORTANT NOTE: This structure needs to be kept in sync with the
+	// corresponding structures and classes in java and C#.
+	// This structure should be like the XFLM_CACHE_INFO structure,
+	// except that it always keeps 64 bit values for some of the
+	// members so that we can hold the value if we are on a 64
+	// bit platforms where we can address more than 4 GB of memory.
+	// We didn't want to modify the XFLM_CACHE_INFO structure because
+	// we didn't want the overhead of 64 bit arithmetic when keeping
+	// track of cache statistics.  Hence, we made this "C#" structure
+	// instead to copy data into when passing the information out
+	// to C#.
+	typedef struct
+	{
+		FLMUINT64				ui64MaxBytes;
+		FLMUINT64				ui64TotalBytesAllocated;
+		FLMBOOL					bDynamicCacheAdjust;
+		FLMUINT32				ui32CacheAdjustPercent;
+		FLMUINT64				ui64CacheAdjustMin;
+		FLMUINT64				ui64CacheAdjustMax;
+		FLMUINT64				ui64CacheAdjustMinToLeave;
+		FLMUINT64				ui64DirtyCount;
+		FLMUINT64				ui64DirtyBytes;
+		FLMUINT64				ui64NewCount;
+		FLMUINT64				ui64NewBytes;
+		FLMUINT64				ui64LogCount;
+		FLMUINT64				ui64LogBytes;
+		FLMUINT64				ui64FreeCount;
+		FLMUINT64				ui64FreeBytes;
+		FLMUINT64				ui64ReplaceableCount;
+		FLMUINT64				ui64ReplaceableBytes;
+		CS_XFLM_CACHE_USAGE	BlockCache;
+		CS_XFLM_CACHE_USAGE	NodeCache;
+		FLMBOOL					bPreallocatedCache;
+	} CS_XFLM_CACHE_INFO;
 
 	typedef struct
 	{

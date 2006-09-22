@@ -920,7 +920,9 @@
 
 	#define F_PUSHCOLOR			F_PUSH_FORECOLOR F_PUSH_BACKCOLOR
 	#define F_POPCOLOR			F_POP_FORECOLOR F_POP_BACKCOLOR
-	
+
+	// IMPORTANT NOTE: This structure needs to be kept in sync with corresponding
+	// structures and classes in java and C#.
 	/****************************************************************************
 	/// Structure for reporting slab usage information in cache.
 	****************************************************************************/

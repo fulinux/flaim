@@ -1846,5 +1846,204 @@ namespace xflaim
 			string	sParamName,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string	sValue);
+
+//-----------------------------------------------------------------------------
+// dbDup
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Duplicate a <see cref="Db"/> object.  This method is a quicker way to open
+		/// a database than calling the <see cref="dbOpen"/> method.  If the application has
+		/// already opened a database, it may pass the Db object it obtained
+		/// into this method to get another Db object.
+		/// </summary>
+		/// <param name="dbToDup">
+		/// Db object to duplicate.
+		/// </param>
+		/// <returns>Returns a new <see cref="Db"/> object.</returns>
+		public Db dbDup(
+			Db			dbToDup)
+		{
+			RCODE	rc;
+			ulong	pDupDb;
+
+			if ((rc = xflaim_DbSystem_dbDup( m_pDbSystem, dbToDup.getDb(), out pDupDb)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new Db( pDupDb, this));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_dbDup(
+			ulong			pDbSystem,
+			ulong			pDbToDup,
+			out ulong	ppDupDb);
+
+//-----------------------------------------------------------------------------
+// setDynamicMemoryLimit
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set a cache limit that is dynamically adjusted.
+		/// </summary>
+		/// <param name="uiCacheAdjustPercent">
+		/// Percent of available memory that the cache limit is to be set to. A
+		/// new cache limit is periodically recalculated based on this percentage.
+		/// </param>
+		/// <param name="ulCacheAdjustMin">
+		/// Minimum value that the cache limit is to be set to whenever a new
+		/// cache limit is calculated.
+		/// </param>
+		/// <param name="ulCacheAdjustMax">
+		/// Maximum value that the cache limit is to be set to whenever a new cache
+		/// limit is calculated.
+		/// </param>
+		/// <param name="ulCacheAdjustMinToLeave">
+		/// This is an alternative way to specify a maximum cache limit.  If zero, 
+		/// this parameter is ignored and ulCacheAdjustMax is used.  If non-zero,
+		/// the maximum cache limit is calculated to be the amount of available
+		/// memory minus this number - the idea being to leave a certain amount of
+		/// memory for other processes to use.
+		/// </param>
+		public void setDynamicMemoryLimit(
+			uint	uiCacheAdjustPercent,
+			ulong	ulCacheAdjustMin,
+			ulong	ulCacheAdjustMax,
+			ulong	ulCacheAdjustMinToLeave)
+		{
+			RCODE	rc;
+
+			if ((rc = xflaim_DbSystem_setDynamicMemoryLimit( m_pDbSystem, uiCacheAdjustPercent,
+								ulCacheAdjustMin, ulCacheAdjustMax, ulCacheAdjustMinToLeave)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_setDynamicMemoryLimit(
+			ulong			pDbSystem,
+			uint			uiCacheAdjustPercent,
+			ulong			ulCacheAdjustMin,
+			ulong			ulCacheAdjustMax,
+			ulong			ulCacheAdjustMinToLeave);
+
+//-----------------------------------------------------------------------------
+// setHardMemoryLimit
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set a cache limit that is permanent until the next explicit call to either
+		/// setHardMemoryLimit or setDynamicMemoryLimit.
+		/// </summary>
+		/// <param name="uiPercent">
+		/// If non-zero, the new cache limit will be calculated as a
+		/// percentage of either the available memory or as a percentage of the
+		/// total memory on the system.  ulMin, ulMax, and ulMinToLeave are used to
+		/// determine a minimum and maximum range for the new cache limit.
+		/// </param>
+		/// <param name="bPercentOfAvail">
+		/// Only used if uiPercent is non-zero.  If true, it
+		/// specifies that the percent is to be percent of available memory.  If false,
+		/// the percent is the percent of total memory on the system.
+		/// </param>
+		/// <param name="ulMin">
+		/// Only used if uiPercent is non-zero.  Specifies the minimum
+		/// value that the cache limit is to be allowed to be set to.
+		/// </param>
+		/// <param name="ulMax">
+		/// If uiPercent is non-zero, this specifies the maxmimum value
+		/// that the cache limit is to be set to.  If uiPercent is zero, this specifies
+		/// the new cache limit (in bytes).
+		/// </param>
+		/// <param name="ulMinToLeave">
+		/// Only used if uiPercent is non-zero.  In that case, and this value is non-zero,
+		/// this is an alternative way to specify a maximum cache limit.  If zero, this
+		/// parameter is ignored and ulMax is used.  If non-zero, the maximum cache limit
+		/// is calculated to be the amount of available memory (or total memory if bPercentOfAvail
+		/// is false) minus this number - the idea being to leave a certain amount of memory for
+		/// other processes to use.
+		/// </param>
+		/// <param name="bPreallocate">
+		/// Flag indicating whether cache should be pre-allocated.  If true, the amount of memory
+		/// specified in the new limit will be allocated immediately.  Otherwise, the memory is
+		/// allocated as needed.
+		/// </param>
+		public void setHardMemoryLimit(
+			uint		uiPercent,
+			bool		bPercentOfAvail,
+			ulong		ulMin,
+			ulong		ulMax,
+			ulong		ulMinToLeave,
+			bool		bPreallocate)
+		{
+			RCODE	rc;
+
+			if ((rc = xflaim_DbSystem_setHardMemoryLimit( m_pDbSystem, uiPercent,
+				(int)(bPercentOfAvail ? 1 : 0), ulMin, ulMax, ulMinToLeave,
+				(int)(bPreallocate ? 1 : 0))) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_setHardMemoryLimit(
+			ulong			pDbSystem,
+			uint			uiPercent,
+			int			bPercentOfAvail,
+			ulong			ulMin,
+			ulong			ulMax,
+			ulong			ulMinToLeave,
+			int			bPreallocate);
+
+//-----------------------------------------------------------------------------
+// getDynamicCacheSupported
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Determine if dynamic cache limits are supported on this platform.
+		/// </summary>
+		/// <returns>
+		/// Flag indicating whether or not dynamic cache limits are
+		/// supported on this platform.
+		/// </returns>
+		public bool getDynamicCacheSupported()
+		{
+			return( xflaim_DbSystem_getDynamicCacheSupported( m_pDbSystem) != 0
+						? true
+						: false);
+		}
+
+		[DllImport("xflaim")]
+		private static extern int xflaim_DbSystem_getDynamicCacheSupported(
+			ulong			pDbSystem);
+
+//-----------------------------------------------------------------------------
+// getCacheInfo
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Determine if dynamic cache limits are supported on this platform.
+		/// </summary>
+		/// <returns>
+		/// Flag indicating whether or not dynamic cache limits are
+		/// supported on this platform.
+		/// </returns>
+		public CS_XFLM_CACHE_INFO getCacheInfo()
+		{
+			CS_XFLM_CACHE_INFO	cacheInfo = new CS_XFLM_CACHE_INFO();
+
+			xflaim_DbSystem_getCacheInfo( m_pDbSystem, cacheInfo);
+			return( cacheInfo);
+		}
+
+		[DllImport("xflaim")]
+		private static extern int xflaim_DbSystem_getCacheInfo(
+			ulong					pDbSystem,
+			[Out]
+			CS_XFLM_CACHE_INFO	cacheInfo);
+
 	}
 }

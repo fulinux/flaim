@@ -25,6 +25,10 @@
 
 #include "xflaim.h"
 
+FSTATIC void copyCacheUsage(
+	CS_XFLM_CACHE_USAGE *	pDest,
+	XFLM_CACHE_USAGE *		pSrc);
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -1479,4 +1483,120 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_updateIniFile(
 	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
 	
 	return( pDbSystem->updateIniFile( pszParamName, pszValue));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbDup(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64DbToDup,
+	FLMUINT64 *		pui64DupDb)
+{
+	RCODE				rc;
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_Db *			pDbToDup = ((IF_Db *)(FLMUINT)ui64DbToDup);
+	IF_Db *			pDupDb = NULL;
+	
+	rc = pDbSystem->dbDup( pDbToDup, &pDupDb);
+	*pui64DupDb = (FLMUINT64)((FLMUINT)pDupDb);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setDynamicMemoryLimit(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32CacheAdjustPercent,
+	FLMUINT64		ui64CacheAdjustMin,
+	FLMUINT64		ui64CacheAdjustMax,
+	FLMUINT64		ui64CacheAdjustMinToLeave)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( pDbSystem->setDynamicMemoryLimit( (FLMUINT)ui32CacheAdjustPercent,
+			(FLMUINT)ui64CacheAdjustMin, (FLMUINT)ui64CacheAdjustMax,
+			(FLMUINT)ui64CacheAdjustMinToLeave));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setHardMemoryLimit(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32Percent,
+	FLMBOOL			bPercentOfAvail,
+	FLMUINT64		ui64Min,
+	FLMUINT64		ui64Max,
+	FLMUINT64		ui64MinToLeave,
+	FLMBOOL			bPreallocate)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( pDbSystem->setHardMemoryLimit( (FLMUINT)ui32Percent, bPercentOfAvail,
+			(FLMUINT)ui64Min, (FLMUINT)ui64Max, (FLMUINT)ui64MinToLeave, bPreallocate));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_getDynamicCacheSupported(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( pDbSystem->getDynamicCacheSupported());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FSTATIC void copyCacheUsage(
+	CS_XFLM_CACHE_USAGE *	pDest,
+	XFLM_CACHE_USAGE *		pSrc)
+{
+	pDest->ui64ByteCount = (FLMUINT64)pSrc->uiByteCount;
+	pDest->ui64Count = (FLMUINT64)pSrc->uiCount;
+	pDest->ui64OldVerCount = (FLMUINT64)pSrc->uiOldVerCount;
+	pDest->ui64OldVerBytes = (FLMUINT64)pSrc->uiOldVerBytes;
+	pDest->ui32CacheHits = (FLMUINT32)pSrc->uiCacheHits;
+	pDest->ui32CacheHitLooks = (FLMUINT32)pSrc->uiCacheHitLooks;
+	pDest->ui32CacheFaults = (FLMUINT32)pSrc->uiCacheFaults;
+	pDest->ui32CacheFaultLooks = (FLMUINT32)pSrc->uiCacheFaultLooks;
+	f_memcpy( &pDest->slabUsage, &pSrc->slabUsage, sizeof( FLM_SLAB_USAGE));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getCacheInfo(
+	FLMUINT64				ui64This,
+	CS_XFLM_CACHE_INFO *	pCacheInfo)
+{
+	IF_DbSystem *		pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	XFLM_CACHE_INFO	cacheInfo;
+
+	pDbSystem->getCacheInfo( &cacheInfo);
+
+	pCacheInfo->ui64MaxBytes = (FLMUINT64)cacheInfo.uiMaxBytes;
+	pCacheInfo->ui64TotalBytesAllocated = (FLMUINT64)cacheInfo.uiTotalBytesAllocated;
+	pCacheInfo->bDynamicCacheAdjust = cacheInfo.bDynamicCacheAdjust;
+	pCacheInfo->ui32CacheAdjustPercent = (FLMUINT32)cacheInfo.uiCacheAdjustPercent;
+	pCacheInfo->ui64CacheAdjustMin = (FLMUINT64)cacheInfo.uiCacheAdjustMin;
+	pCacheInfo->ui64CacheAdjustMax = (FLMUINT64)cacheInfo.uiCacheAdjustMax;
+	pCacheInfo->ui64CacheAdjustMinToLeave = (FLMUINT64)cacheInfo.uiCacheAdjustMinToLeave;
+	pCacheInfo->ui64DirtyCount = (FLMUINT64)cacheInfo.uiDirtyCount;
+	pCacheInfo->ui64DirtyBytes = (FLMUINT64)cacheInfo.uiDirtyBytes;
+	pCacheInfo->ui64NewCount = (FLMUINT64)cacheInfo.uiNewCount;
+	pCacheInfo->ui64NewBytes = (FLMUINT64)cacheInfo.uiNewBytes;
+	pCacheInfo->ui64LogCount = (FLMUINT64)cacheInfo.uiLogCount;
+	pCacheInfo->ui64LogBytes = (FLMUINT64)cacheInfo.uiLogBytes;
+	pCacheInfo->ui64FreeCount = (FLMUINT64)cacheInfo.uiFreeCount;
+	pCacheInfo->ui64FreeBytes = (FLMUINT64)cacheInfo.uiFreeBytes;
+	pCacheInfo->ui64ReplaceableCount = (FLMUINT64)cacheInfo.uiReplaceableCount;
+	pCacheInfo->ui64ReplaceableBytes = (FLMUINT64)cacheInfo.uiReplaceableBytes;
+	copyCacheUsage( &pCacheInfo->BlockCache, &cacheInfo.BlockCache);
+	copyCacheUsage( &pCacheInfo->NodeCache, &cacheInfo.NodeCache);
+	pCacheInfo->bPreallocatedCache = cacheInfo.bPreallocatedCache;
 }
