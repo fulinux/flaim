@@ -838,17 +838,17 @@ namespace xflaim
 			uint		uiElementNumber)
 		{
 			RCODE		rc;
-			byte []	pvValue = null;
+			byte []	ucValue = null;
 			uint		uiLen = xflaim_DataVector_getDataLength( m_pDataVector, uiElementNumber);
 
-			pvValue = new byte [uiLen];
+			ucValue = new byte [uiLen];
 
 			if ((rc = xflaim_DataVector_getBinary( m_pDataVector, uiElementNumber,
-								uiLen, pvValue)) != 0)
+								uiLen, ucValue)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
-			return( pvValue);
+			return( ucValue);
 		}
 
 		[DllImport("xflaim")]
@@ -858,6 +858,205 @@ namespace xflaim
 			uint				uiLen,
 			[MarshalAs(UnmanagedType.LPArray), Out] 
 			byte []			pvValue);
+
+//-----------------------------------------------------------------------------
+// outputKey
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Return a buffer that is an index key for the elements in the vector.  The
+		/// key is generated using the definition of the index from the specified
+		/// database.
+		/// </summary>
+		/// <param name="db">
+		/// Database containing the index definition for which we want to
+		/// generate a key.
+		/// </param>
+		/// <param name="uiIndexNum">Index number for which we want to generate a key.</param>
+		/// <param name="bOutputIds">
+		/// Flag that specifies whether or not node ids and
+		/// document ids in the data vector are to be included in the generated key.
+		/// </param>
+		/// <returns>
+		/// Returns the generated index key.
+		/// </returns>
+		public byte[] outputKey(
+			Db				db,
+			uint			uiIndexNum,
+			bool			bOutputIds)
+		{
+			RCODE		rc;
+			byte []	ucKey = new byte [DbSystem.XFLM_MAX_KEY_SIZE];
+			int		iLen;
+			byte []	ucReturnKey;
+
+			if ((rc = xflaim_DataVector_outputKey( m_pDataVector, db.getDb(), uiIndexNum,
+				(int)(bOutputIds ? 1 : 0), ucKey, out iLen)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			ucReturnKey = new byte [iLen];
+			Array.Copy( ucKey, ucReturnKey, iLen);
+			return( ucReturnKey);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DataVector_outputKey(
+			ulong				pDataVector,
+			ulong				pDb,
+			uint				uiIndexNum,
+			int				bOutputIds,
+			[MarshalAs(UnmanagedType.LPArray), Out] 
+			byte []			pucKey,
+			out int			piLen);
+
+//-----------------------------------------------------------------------------
+// outputData
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Return a buffer that contains the data components for an index key
+		/// for the elements in the vector.  The data is generated using the
+		/// definition of the index from the specified database.
+		/// </summary>
+		/// <param name="db">
+		/// Database containing the index definition for which we want to
+		/// generate a key.
+		/// </param>
+		/// <param name="uiIndexNum">Index number for which we want to generate a key.</param>
+		/// <returns>
+		/// Returns the data components of the index key.
+		/// </returns>
+		public byte[] outputData(
+			Db				db,
+			uint			uiIndexNum)
+		{
+			RCODE		rc;
+			int		iBufSize = 512;
+			byte []	ucData = new byte [iBufSize];
+			int		iLen;
+			byte []	ucReturnData;
+
+			// Try until we have a large enough buffer.
+
+			for (;;)
+			{
+				if ((rc = xflaim_DataVector_outputData( m_pDataVector, db.getDb(), uiIndexNum,
+					ucData, iBufSize, out iLen)) != 0)
+				{
+					if (rc != RCODE.NE_XFLM_CONV_DEST_OVERFLOW)
+					{
+						throw new XFlaimException( rc);
+					}
+					else
+					{
+						iBufSize += 2048;
+						ucData = new byte [iBufSize];
+					}
+				}
+				else
+				{
+					break;
+				}
+			}
+			ucReturnData = new byte [iLen];
+			Array.Copy( ucData, ucReturnData, iLen);
+			return( ucReturnData);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DataVector_outputData(
+			ulong				pDataVector,
+			ulong				pDb,
+			uint				uiIndexNum,
+			[MarshalAs(UnmanagedType.LPArray), Out] 
+			byte []			pucData,
+			int				iBufSize,
+			out int			piLen);
+
+//-----------------------------------------------------------------------------
+// inputKey
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Populate the data vector's key components using a buffer that contains
+		/// an index key's key components.
+		/// </summary>
+		/// <param name="db">
+		/// Database containing the index definition that is to be used to
+		/// parse through the key buffer to determine the key components.
+		/// </param>
+		/// <param name="uiIndexNum">
+		/// Index number to be used to parse through the key buffer
+		/// to determine the key components.
+		/// </param>
+		/// <param name="ucKey">
+		/// Buffer containing the index key to be parsed.
+		/// </param>
+		public void inputKey(
+			Db				db,
+			uint			uiIndexNum,
+			byte[]		ucKey)
+		{
+			RCODE		rc;
+
+			if ((rc = xflaim_DataVector_inputKey( m_pDataVector, db.getDb(), uiIndexNum,
+					ucKey, ucKey.Length)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DataVector_inputKey(
+			ulong				pDataVector,
+			ulong				pDb,
+			uint				uiIndexNum,
+			[MarshalAs(UnmanagedType.LPArray), In] 
+			byte []			pucKey,
+			int				iKeyLen);
+
+//-----------------------------------------------------------------------------
+// inputData
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Populate the data vector's data components using a buffer that contains
+		/// an index key's data components.
+		/// </summary>
+		/// <param name="db">
+		/// Database containing the index definition that is to be used to
+		/// parse through the key buffer to determine the data components.
+		/// </param>
+		/// <param name="uiIndexNum">
+		/// Index number to be used to parse through the data buffer
+		/// to determine the data components.
+		/// </param>
+		/// <param name="ucData">
+		/// Buffer containing the data to be parsed.
+		/// </param>
+		public void inputData(
+			Db				db,
+			uint			uiIndexNum,
+			byte[]		ucData)
+		{
+			RCODE		rc;
+
+			if ((rc = xflaim_DataVector_inputData( m_pDataVector, db.getDb(), uiIndexNum,
+				ucData, ucData.Length)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DataVector_inputData(
+			ulong				pDataVector,
+			ulong				pDb,
+			uint				uiIndexNum,
+			[MarshalAs(UnmanagedType.LPArray), In] 
+			byte []			pucData,
+			int				iDataLen);
 
 	}
 }

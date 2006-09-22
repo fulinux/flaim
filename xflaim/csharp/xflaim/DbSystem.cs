@@ -255,6 +255,11 @@ namespace xflaim
 		private ulong	m_pDbSystem;	// Pointer to IF_DbSystem object in unmanaged space
 
 		/// <summary>
+		/// Maximum key size - keep in sync with definition in xflaim.h
+		/// </summary>
+		public const uint XFLM_MAX_KEY_SIZE = 1024;
+
+		/// <summary>
 		/// DbSystem constructor.
 		/// </summary>
 		public DbSystem()

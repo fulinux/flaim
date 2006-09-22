@@ -423,3 +423,94 @@ Exit:
 
 	return( rc);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_outputKey(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64Db,
+	FLMUINT32		ui32IndexNum,
+	FLMBOOL			bOutputIds,
+	FLMBYTE *		pucKey,
+	FLMINT32 *		pi32Len)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DataVector *	pDataVector = ((IF_DataVector *)(FLMUINT)ui64This);
+	IF_Db *				pDb = (IF_Db *)((FLMUINT)ui64Db);
+	FLMUINT				uiLength;
+
+	if (RC_BAD( rc = pDataVector->outputKey( pDb, (FLMUINT)ui32IndexNum,
+			bOutputIds, pucKey, XFLM_MAX_KEY_SIZE, &uiLength)))
+	{
+		goto Exit;
+	}
+	*pi32Len = (FLMINT32)uiLength;
+	
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_outputData(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64Db,
+	FLMUINT32		ui32IndexNum,
+	FLMBYTE *		pucData,
+	FLMINT32			i32BufSize,
+	FLMINT32 *		pi32Len)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_DataVector *	pDataVector = ((IF_DataVector *)(FLMUINT)ui64This);
+	IF_Db *				pDb = (IF_Db *)((FLMUINT)ui64Db);
+	FLMUINT				uiLength;
+
+	if (RC_BAD( rc = pDataVector->outputData( pDb, (FLMUINT)ui32IndexNum,
+			pucData, (FLMUINT)i32BufSize, &uiLength)))
+	{
+		goto Exit;
+	}
+	*pi32Len = (FLMINT32)uiLength;
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_inputKey(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64Db,
+	FLMUINT32		ui32IndexNum,
+	FLMBYTE *		pucKey,
+	FLMINT32			i32KeyLen)
+{
+	IF_DataVector *	pDataVector = ((IF_DataVector *)(FLMUINT)ui64This);
+	IF_Db *				pDb = (IF_Db *)((FLMUINT)ui64Db);
+
+	return( pDataVector->inputKey( pDb, (FLMUINT)ui32IndexNum,
+			pucKey, (FLMUINT)i32KeyLen));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_inputData(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64Db,
+	FLMUINT32		ui32IndexNum,
+	FLMBYTE *		pucData,
+	FLMINT32			i32DataLen)
+{
+	IF_DataVector *	pDataVector = ((IF_DataVector *)(FLMUINT)ui64This);
+	IF_Db *				pDb = (IF_Db *)((FLMUINT)ui64Db);
+
+	return( pDataVector->inputData( pDb, (FLMUINT)ui32IndexNum,
+			pucData, (FLMUINT)i32DataLen));
+}
