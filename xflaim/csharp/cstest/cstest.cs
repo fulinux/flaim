@@ -828,6 +828,136 @@ namespace cstest
 			return( true);
 		}
 
+		static void printCacheUsage(
+			CS_XFLM_CACHE_USAGE	cacheUsage,
+			string					sWhat)
+		{
+			System.Console.WriteLine( "{0}", sWhat);
+			System.Console.WriteLine( "  Object Count..................... {0}", cacheUsage.ulCount);
+			System.Console.WriteLine( "  Byte Count....................... {0}", cacheUsage.ulByteCount);
+			System.Console.WriteLine( "  Old Version Object Count......... {0}", cacheUsage.ulOldVerCount);
+			System.Console.WriteLine( "  Old Version Byte Count........... {0}", cacheUsage.ulOldVerBytes);
+			System.Console.WriteLine( "  Cache Hits....................... {0}", cacheUsage.uiCacheHits);
+			System.Console.WriteLine( "  Cache Hit Looks.................. {0}", cacheUsage.uiCacheHitLooks);
+			System.Console.WriteLine( "  Cache Faults..................... {0}", cacheUsage.uiCacheFaults);
+			System.Console.WriteLine( "  Cache Fault Looks................ {0}", cacheUsage.uiCacheFaultLooks);
+			System.Console.WriteLine( "  Slab Count....................... {0}", cacheUsage.slabUsage.ulSlabs);
+			System.Console.WriteLine( "  Slab Bytes Count................. {0}", cacheUsage.slabUsage.ulSlabBytes);
+			System.Console.WriteLine( "  Slab Allocated Cells............. {0}", cacheUsage.slabUsage.ulAllocatedCells);
+			System.Console.WriteLine( "  Slab Free Cells.................. {0}", cacheUsage.slabUsage.ulFreeCells);
+		}
+
+		//--------------------------------------------------------------------------
+		// Cache tests
+		//--------------------------------------------------------------------------
+		static bool cacheTests(
+			DbSystem	dbSystem)
+		{
+			uint						uiCacheAdjustPercent = 66;
+			ulong						ulCacheAdjustMin = 20000000;
+			ulong						ulCacheAdjustMax = 1000000000;
+			ulong						ulCacheAdjustMinToLeave = 0;
+			CS_XFLM_CACHE_INFO	cacheInfo;
+
+			beginTest( "Set dynamic cache limit test");
+			try
+			{
+				dbSystem.setDynamicMemoryLimit( uiCacheAdjustPercent,
+										ulCacheAdjustMin, ulCacheAdjustMax,
+										ulCacheAdjustMinToLeave);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling setDynamicMemoryLimit");
+				return( false);
+			}
+			endTest( false, true);
+
+			beginTest( "Get cache info for dynamic cache limit test");
+			try
+			{
+				cacheInfo = dbSystem.getCacheInfo();
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling getCacheInfo");
+				return( false);
+			}
+			endTest( false, true);
+
+			beginTest( "See if cache limits were set");
+			if (cacheInfo.bDynamicCacheAdjust == 0 ||
+				 cacheInfo.uiCacheAdjustPercent != uiCacheAdjustPercent ||
+				 cacheInfo.ulCacheAdjustMin != ulCacheAdjustMin ||
+				 cacheInfo.ulCacheAdjustMax != ulCacheAdjustMax ||
+				 cacheInfo.ulCacheAdjustMinToLeave != ulCacheAdjustMinToLeave)
+			{
+				endTest( false, false);
+				System.Console.WriteLine( "Dynamic cache adjust parameter mismatch");
+				System.Console.WriteLine( "Dynamic Adjust Flag..... Set: true Get: {0}",
+					cacheInfo.bDynamicCacheAdjust != 0 ? "true" : "false");
+				System.Console.WriteLine( "Adjust Percent.......... Set: {0} Get: {1}",
+					uiCacheAdjustPercent, cacheInfo.uiCacheAdjustPercent);
+				System.Console.WriteLine( "Adjust Min.............. Set: {0} Get: {1}",
+					ulCacheAdjustMin, cacheInfo.ulCacheAdjustMin);
+				System.Console.WriteLine( "Adjust Max.............. Set: {0} Get: {1}",
+					ulCacheAdjustMax, cacheInfo.ulCacheAdjustMax);
+				System.Console.WriteLine( "Adjust Min To Leave..... Set: {0} Get: {1}",
+					ulCacheAdjustMinToLeave, cacheInfo.ulCacheAdjustMinToLeave);
+				return( false);
+			}
+			endTest( false, true);
+
+			// SET AND TEST A HARD LIMIT
+
+			beginTest( "Set hard cache limit test");
+			try
+			{
+				dbSystem.setHardMemoryLimit( 0, false, 0, ulCacheAdjustMax,
+					0, false);
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling setHardMemoryLimit");
+				return( false);
+			}
+			endTest( false, true);
+
+			beginTest( "Get cache info for hard cache limit test");
+			try
+			{
+				cacheInfo = dbSystem.getCacheInfo();
+			}
+			catch (XFlaimException ex)
+			{
+				endTest( false, ex, "calling getCacheInfo");
+				return( false);
+			}
+			endTest( false, true);
+
+			beginTest( "See if cache limits were set");
+			if (cacheInfo.bDynamicCacheAdjust != 0 ||
+				cacheInfo.ulCacheAdjustMax != ulCacheAdjustMax ||
+				cacheInfo.ulMaxBytes != ulCacheAdjustMax)
+			{
+				endTest( false, false);
+				System.Console.WriteLine( "Hard cache adjust parameter mismatch");
+				System.Console.WriteLine( "Dynamic Adjust Flag..... Set: false Get: {0}",
+					cacheInfo.bDynamicCacheAdjust != 0 ? "true" : "false");
+				System.Console.WriteLine( "Max..................... Set: {0} Get: {1}",
+					ulCacheAdjustMax, cacheInfo.ulCacheAdjustMax);
+				System.Console.WriteLine( "Max Bytes............... Set: {0} Get: {1}",
+					ulCacheAdjustMax, cacheInfo.ulMaxBytes);
+				return( false);
+			}
+			endTest( false, true);
+
+			printCacheUsage( cacheInfo.blockCache, "BLOCK CACHE USAGE");
+			printCacheUsage( cacheInfo.nodeCache, "NODE CACHE USAGE");
+
+			return( true);
+		}
+
 		//--------------------------------------------------------------------------
 		// Main for tester program
 		//--------------------------------------------------------------------------
@@ -944,6 +1074,13 @@ namespace cstest
 			// Data vector tests
 
 			if (!vectorTests( dbSystem))
+			{
+				return;
+			}
+
+			// Cache tests
+
+			if (!cacheTests( dbSystem))
 			{
 				return;
 			}
