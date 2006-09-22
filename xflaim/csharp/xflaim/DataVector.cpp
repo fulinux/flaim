@@ -514,3 +514,13 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_inputData(
 	return( pDataVector->inputData( pDb, (FLMUINT)ui32IndexNum,
 			pucData, (FLMUINT)i32DataLen));
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_reset(
+	FLMUINT64		ui64This)
+{
+	IF_DataVector *	pDataVector = ((IF_DataVector *)(FLMUINT)ui64This);
+	pDataVector->reset();
+}

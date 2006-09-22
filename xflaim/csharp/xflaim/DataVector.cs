@@ -1058,5 +1058,21 @@ namespace xflaim
 			byte []			pucData,
 			int				iDataLen);
 
+//-----------------------------------------------------------------------------
+// reset
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Reset the contents of a data vector.
+		/// </summary>
+		public void reset()
+		{
+			xflaim_DataVector_reset( m_pDataVector);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DataVector_reset(
+			ulong				pDataVector);
+
 	}
 }
