@@ -706,7 +706,7 @@ JNIEXPORT void JNICALL Java_xflaim_DataVector__1inputData(
 	
 	bMustRelease = true;
 	
-	if (RC_BAD( rc = THIS_VECTOR()->inputKey( pDb, (FLMUINT)iIndexNum,
+	if (RC_BAD( rc = THIS_VECTOR()->inputData( pDb, (FLMUINT)iIndexNum,
 		(FLMBYTE *)pvData, uiDataLen)))
 	{
 		ThrowError( rc, pEnv);
