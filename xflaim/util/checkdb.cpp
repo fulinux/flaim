@@ -36,26 +36,25 @@
 #define DATA_DIR_ROW					3
 #define RFL_DIR_ROW					4
 #define CACHE_USED_ROW				5
-#define ECACHE_USED_ROW				6
-#define DOING_ROW						7
-#define FILE_SIZE_ROW				8
-#define AMOUNT_DONE_ROW				9
+#define DOING_ROW						6
+#define FILE_SIZE_ROW				7
+#define AMOUNT_DONE_ROW				8
 
-#define TOTAL_DOM_NODES_ROW		10
-#define DOM_LINKS_VERIFIED_ROW	11
-#define TOTAL_BROKEN_LINKS_ROW	12
+#define TOTAL_DOM_NODES_ROW		9
+#define DOM_LINKS_VERIFIED_ROW	10
+#define TOTAL_BROKEN_LINKS_ROW	11
 
-#define TOTAL_KEYS_ROW				13
-#define TOTAL_DUPS_ROW				14
-#define TOTAL_KEYS_EXAM_ROW		15
-#define BAD_IXREF_ROW				16
-#define MISSING_IXREF_ROW			17
-#define CONFLICT_ROW					18
-#define CORRUPT_ROW					19
-#define TOTAL_CORRUPT_ROW			20
-#define REPAIR_ROW					21
-#define OLD_VIEW_ROW					22
-#define MISMATCH_ROW					23
+#define TOTAL_KEYS_ROW				12
+#define TOTAL_DUPS_ROW				13
+#define TOTAL_KEYS_EXAM_ROW		14
+#define BAD_IXREF_ROW				15
+#define MISSING_IXREF_ROW			16
+#define CONFLICT_ROW					17
+#define CORRUPT_ROW					18
+#define TOTAL_CORRUPT_ROW			19
+#define REPAIR_ROW					20
+#define OLD_VIEW_ROW					21
+#define MISMATCH_ROW					22
 
 #define MAX_LOG_BUFF					2048
 
@@ -413,13 +412,6 @@ FSTATIC FLMBOOL CheckDatabase( void)
 	OutLabel( LABEL_COLUMN,
 				 CACHE_USED_ROW,
 				 "Cache Bytes Used",
-				 NULL,
-				 0,
-				 FALSE);
-				 
-	OutLabel( LABEL_COLUMN,
-				 ECACHE_USED_ROW,
-				 "Ext. Cache Bytes Used",
 				 NULL,
 				 0,
 				 FALSE);
@@ -1566,7 +1558,6 @@ RCODE F_LocalCheckStatus::reportProgress(
 
 	gv_pDbSystem->getCacheInfo( &cacheInfo);
 	DisplayNumValue( CACHE_USED_ROW, cacheInfo.BlockCache.uiByteCount);
-	DisplayNumValue( ECACHE_USED_ROW, cacheInfo.ECache.ui64TotalBytesAllocated);
 
 	if( gv_bShutdown)
 	{
@@ -1684,7 +1675,6 @@ RCODE F_LocalCheckStatus::reportCheckErr(
 
 	gv_pDbSystem->getCacheInfo( &cacheInfo);
 	DisplayNumValue( CACHE_USED_ROW, cacheInfo.BlockCache.uiByteCount);
-	DisplayNumValue( ECACHE_USED_ROW, cacheInfo.ECache.ui64TotalBytesAllocated);
 	
 	if( (gv_bLoggingEnabled) &&
 		 ((gv_bShowStats) ||
