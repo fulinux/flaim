@@ -1467,7 +1467,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_freeUnmanagedMem(
 	FLMUINT64		ui64This,
 	void *			pvMem)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	
 	pDbSystem->freeMem( &pvMem);
 }
@@ -1480,7 +1480,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_updateIniFile(
 	const char *	pszParamName,
 	const char *	pszValue)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	
 	return( pDbSystem->updateIniFile( pszParamName, pszValue));
 }
@@ -1494,7 +1494,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbDup(
 	FLMUINT64 *		pui64DupDb)
 {
 	RCODE				rc;
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	IF_Db *			pDbToDup = ((IF_Db *)(FLMUINT)ui64DbToDup);
 	IF_Db *			pDupDb = NULL;
 	
@@ -1513,7 +1513,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setDynamicMemoryLimit(
 	FLMUINT64		ui64CacheAdjustMax,
 	FLMUINT64		ui64CacheAdjustMinToLeave)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( pDbSystem->setDynamicMemoryLimit( (FLMUINT)ui32CacheAdjustPercent,
 			(FLMUINT)ui64CacheAdjustMin, (FLMUINT)ui64CacheAdjustMax,
@@ -1532,7 +1532,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setHardMemoryLimit(
 	FLMUINT64		ui64MinToLeave,
 	FLMBOOL			bPreallocate)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( pDbSystem->setHardMemoryLimit( (FLMUINT)ui32Percent, bPercentOfAvail,
 			(FLMUINT)ui64Min, (FLMUINT)ui64Max, (FLMUINT)ui64MinToLeave, bPreallocate));
@@ -1544,7 +1544,7 @@ Desc:
 FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_getDynamicCacheSupported(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( pDbSystem->getDynamicCacheSupported());
 }
@@ -1574,7 +1574,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getCacheInfo(
 	FLMUINT64				ui64This,
 	CS_XFLM_CACHE_INFO *	pCacheInfo)
 {
-	IF_DbSystem *		pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *		pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	XFLM_CACHE_INFO	cacheInfo;
 
 	pDbSystem->getCacheInfo( &cacheInfo);
@@ -1608,7 +1608,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_closeUnusedFiles(
 	FLMUINT64		ui64This,
 	FLMUINT32		ui32Seconds)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( pDbSystem->closeUnusedFiles( (FLMUINT)ui32Seconds));
 }
@@ -1619,7 +1619,7 @@ Desc:
 FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_startStats(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->startStats();
 }
@@ -1630,7 +1630,7 @@ Desc:
 FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_stopStats(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->stopStats();
 }
@@ -1641,7 +1641,7 @@ Desc:
 FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_resetStats(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->resetStats();
 }
@@ -1654,7 +1654,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_getStats(
 	FLMUINT64 *		pui64Stats)
 {
 	RCODE				rc = NE_XFLM_OK;
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	XFLM_STATS *	pStats = NULL;
 
 	if (RC_BAD( rc = f_calloc( sizeof( XFLM_STATS), &pStats)))
@@ -1681,7 +1681,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setTempDir(
 	FLMUINT64		ui64This,
 	const char *	pszTempDir)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( pDbSystem->setTempDir( pszTempDir));
 }
@@ -1694,7 +1694,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_getTempDir(
 	char **			ppszTempDir)
 {
 	RCODE				rc = NE_XFLM_OK;
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	char				szPath [F_PATH_MAX_SIZE];
 	FLMUINT			uiLen;
 	
@@ -1720,7 +1720,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCheckpointInterval(
 	FLMUINT64		ui64This,
 	FLMUINT32		ui32Seconds)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->setCheckpointInterval( (FLMUINT)ui32Seconds);
 }
@@ -1731,7 +1731,7 @@ Desc:
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCheckpointInterval(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( (FLMUINT32)pDbSystem->getCheckpointInterval());
 }
@@ -1743,7 +1743,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCacheAdjustInterval(
 	FLMUINT64		ui64This,
 	FLMUINT32		ui32Seconds)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->setCacheAdjustInterval( (FLMUINT)ui32Seconds);
 }
@@ -1754,7 +1754,7 @@ Desc:
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCacheAdjustInterval(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( (FLMUINT32)pDbSystem->getCacheAdjustInterval());
 }
@@ -1766,7 +1766,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCacheCleanupInterval(
 	FLMUINT64		ui64This,
 	FLMUINT32		ui32Seconds)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->setCacheCleanupInterval( (FLMUINT)ui32Seconds);
 }
@@ -1777,7 +1777,7 @@ Desc:
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCacheCleanupInterval(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( (FLMUINT32)pDbSystem->getCacheCleanupInterval());
 }
@@ -1789,7 +1789,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setUnusedCleanupInterval(
 	FLMUINT64		ui64This,
 	FLMUINT32		ui32Seconds)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->setUnusedCleanupInterval( (FLMUINT)ui32Seconds);
 }
@@ -1800,7 +1800,7 @@ Desc:
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getUnusedCleanupInterval(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( (FLMUINT32)pDbSystem->getUnusedCleanupInterval());
 }
@@ -1812,7 +1812,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setMaxUnusedTime(
 	FLMUINT64		ui64This,
 	FLMUINT32		ui32Seconds)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->setMaxUnusedTime( (FLMUINT)ui32Seconds);
 }
@@ -1823,7 +1823,7 @@ Desc:
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getMaxUnusedTime(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( (FLMUINT32)pDbSystem->getMaxUnusedTime());
 }
@@ -1836,7 +1836,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_deactivateOpenDb(
 	const char *	pszDbFileName,
 	const char *	pszDataDir)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->deactivateOpenDb( pszDbFileName, pszDataDir);
 }
@@ -1848,7 +1848,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setQuerySaveMax(
 	FLMUINT64		ui64This,
 	FLMUINT32		ui32MaxToSave)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->setQuerySaveMax( (FLMUINT)ui32MaxToSave);
 }
@@ -1859,7 +1859,7 @@ Desc:
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getQuerySaveMax(
 	FLMUINT64		ui64This)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	return( (FLMUINT32)pDbSystem->getQuerySaveMax());
 }
@@ -1872,7 +1872,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setDirtyCacheLimits(
 	FLMUINT64		ui64MaxDirty,
 	FLMUINT64		ui64LowDirty)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 
 	pDbSystem->setDirtyCacheLimits( (FLMUINT)ui64MaxDirty, (FLMUINT)ui64LowDirty);
 }
@@ -1885,7 +1885,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getDirtyCacheLimits(
 	FLMUINT64 *		pui64MaxDirty,
 	FLMUINT64 *		pui64LowDirty)
 {
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	FLMUINT			uiMaxDirty;
 	FLMUINT			uiLowDirty;
 
@@ -1908,7 +1908,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_compareStrings(
 	FLMINT32 *				pi32Result)
 {
 	RCODE				rc = NE_XFLM_OK;
-	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
 	FLMINT			iResult;
 
 	if (RC_BAD( rc = pDbSystem->compareUnicodeStrings(
@@ -1923,4 +1923,82 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_compareStrings(
 
 Exit:
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsUpper(
+	FLMUINT64		ui64This,
+	FLMUNICODE		uzChar)
+{
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	return( pDbSystem->uniIsUpper( uzChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsLower(
+	FLMUINT64		ui64This,
+	FLMUNICODE		uzChar)
+{
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	return( pDbSystem->uniIsLower( uzChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsAlpha(
+	FLMUINT64		ui64This,
+	FLMUNICODE		uzChar)
+{
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	return( pDbSystem->uniIsAlpha( uzChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsDecimalDigit(
+	FLMUINT64		ui64This,
+	FLMUNICODE		uzChar)
+{
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	return( pDbSystem->uniIsDecimalDigit( uzChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMUNICODE FLMAPI xflaim_DbSystem_uniToLower(
+	FLMUINT64		ui64This,
+	FLMUNICODE		uzChar)
+{
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	return( pDbSystem->uniToLower( uzChar));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_waitToClose(
+	FLMUINT64		ui64This,
+	const char *	pszDbFileName)
+{
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	return( pDbSystem->waitToClose( pszDbFileName));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_clearCache(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64Db)
+{
+	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64This);
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)ui64Db);
+	return( pDbSystem->clearCache( pDb));
 }

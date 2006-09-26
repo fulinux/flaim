@@ -2642,5 +2642,190 @@ namespace xflaim
 			Languages		eLanguage,
 			out int			piResult);
 
+//-----------------------------------------------------------------------------
+// uniIsUpper
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Determine if a character is upper case.
+		/// </summary>
+		/// <param name="uzChar">
+		/// Character to be tested.
+		/// </param>
+		/// <returns>
+		/// Returns a flag indicating if the character is upper case.
+		/// </returns>
+		public bool uniIsUpper(
+			char	uzChar)
+		{
+			return( xflaim_DbSystem_uniIsUpper( m_pDbSystem,
+				uzChar) != 0 ? true : false);
+		}
+
+		[DllImport("xflaim")]
+		private static extern int xflaim_DbSystem_uniIsUpper(
+			ulong				pDbSystem,
+			char				uzChar);
+
+//-----------------------------------------------------------------------------
+// uniIsLower
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Determine if a character is lower case.
+		/// </summary>
+		/// <param name="uzChar">
+		/// Character to be tested.
+		/// </param>
+		/// <returns>
+		/// Returns a flag indicating if the character is lower case.
+		/// </returns>
+		public bool uniIsLower(
+			char	uzChar)
+		{
+			return( xflaim_DbSystem_uniIsLower( m_pDbSystem,
+				uzChar) != 0 ? true : false);
+		}
+
+		[DllImport("xflaim")]
+		private static extern int xflaim_DbSystem_uniIsLower(
+			ulong				pDbSystem,
+			char				uzChar);
+
+//-----------------------------------------------------------------------------
+// uniIsAlpha
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Determine if a character is an alphabetic character.
+		/// </summary>
+		/// <param name="uzChar">
+		/// Character to be tested.
+		/// </param>
+		/// <returns>
+		/// Returns a flag indicating if the character is alphabetic
+		/// </returns>
+		public bool uniIsAlpha(
+			char	uzChar)
+		{
+			return( xflaim_DbSystem_uniIsAlpha( m_pDbSystem,
+				uzChar) != 0 ? true : false);
+		}
+
+		[DllImport("xflaim")]
+		private static extern int xflaim_DbSystem_uniIsAlpha(
+			ulong				pDbSystem,
+			char				uzChar);
+
+//-----------------------------------------------------------------------------
+// uniIsDecimalDigit
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Determine if a character is a decimal digit (0..9)
+		/// </summary>
+		/// <param name="uzChar">
+		/// Character to be tested.
+		/// </param>
+		/// <returns>
+		/// Returns a flag indicating if the character is a decimal digit
+		/// </returns>
+		public bool uniIsDecimalDigit(
+			char	uzChar)
+		{
+			return( xflaim_DbSystem_uniIsDecimalDigit( m_pDbSystem,
+				uzChar) != 0 ? true : false);
+		}
+
+		[DllImport("xflaim")]
+		private static extern int xflaim_DbSystem_uniIsDecimalDigit(
+			ulong				pDbSystem,
+			char				uzChar);
+
+//-----------------------------------------------------------------------------
+// uniToLower
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Convert a character to lower case
+		/// </summary>
+		/// <param name="uzChar">
+		/// Character to be converted.
+		/// </param>
+		/// <returns>
+		/// Returns the converted character
+		/// </returns>
+		public char uniToLower(
+			char	uzChar)
+		{
+			return( xflaim_DbSystem_uniToLower( m_pDbSystem, uzChar));
+		}
+
+		[DllImport("xflaim")]
+		private static extern char xflaim_DbSystem_uniToLower(
+			ulong				pDbSystem,
+			char				uzChar);
+
+//-----------------------------------------------------------------------------
+// waitToClose
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Wait for a database to close.  This method will not return until the
+		/// database specified has been closed by all Db ojects that currently have
+		/// it open.
+		/// </summary>
+		/// <param name="sDbFileName">
+		/// The name of the control file of the database to wait
+		/// to close.  For more explanation see documentation for
+		/// <see cref="dbCreate"/>.
+		/// </param>
+		public void waitToClose(
+			string	sDbFileName)
+		{
+			RCODE	rc;
+
+			if ((rc = xflaim_DbSystem_waitToClose( m_pDbSystem, sDbFileName)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_waitToClose(
+			ulong				pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr), In]
+			string			sDbFileName);
+
+//-----------------------------------------------------------------------------
+// clearCache
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Free as much cache as possible. NOTE: This method will not be able to
+		/// remove cached blocks and nodes that are currently in use.
+		/// </summary>
+		/// <param name="dbWithUpdateTrans">
+		/// This is a <see cref="Db"/> object that may be used to
+		/// write out dirty cache blocks.  It may be null.  If non-null, it must be
+		/// the <see cref="Db"/> object that is currently running an update
+		/// transaction.
+		/// </param>
+		public void clearCache(
+			Db			dbWithUpdateTrans)
+		{
+			RCODE	rc;
+
+			if ((rc = xflaim_DbSystem_clearCache( m_pDbSystem, dbWithUpdateTrans.getDb())) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_clearCache(
+			ulong				pDbSystem,
+			ulong				pDbWithUpdateTrans);
+
 	}
 }
