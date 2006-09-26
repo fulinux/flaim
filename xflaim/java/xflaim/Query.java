@@ -524,7 +524,6 @@ public class Query
 	 * @return Returns a value that can be passed back into subsequent calls
 	 * to addSortKey when this component needs to be used as a context for
 	 * subsequent components.
-	 * one index.  If zero or one index is being used, will return false.
 	 * @throws XFlaimException
 	 */
 	public long addSortKey(
