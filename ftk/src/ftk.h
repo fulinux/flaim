@@ -645,6 +645,8 @@
 	
 	/****************************************************************************
 	Desc:	Language constants
+	IMPORTANT NOTE: If langes are added or changed, the corresponding definitions
+	in java and C# must also be updated.
 	****************************************************************************/
 	
 	/// \addtogroup flm_languages
@@ -838,6 +840,8 @@
 	
 	/****************************************************************************
 	Desc:	Comparison flags for strings
+	IMPORTANT NOTE: If changes are made to these, corresponding changes need to
+	be made in the java and C# code where they are defined.
 	****************************************************************************/
 	/// \addtogroup compare_rules
 	/// @{
