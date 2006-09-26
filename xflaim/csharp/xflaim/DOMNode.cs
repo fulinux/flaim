@@ -34,7 +34,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: These should be kept in sync with data types defined
 	/// in xflaim.h
 	/// </summary>
-	public enum FlmDataType : int
+	public enum FlmDataType : uint
 	{
 		/// <summary>No data may be stored with a node of this type</summary>
 		XFLM_NODATA_TYPE			= 0,
@@ -48,8 +48,10 @@ namespace xflaim
 
 	/// <summary>
 	/// DOM Node types
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// definitions in xflaim.h
 	/// </summary>
-	public enum eDomNodeType : int
+	public enum eDomNodeType : uint
 	{
 		/// <summary>Invalid Node</summary>
 		INVALID_NODE =							0x00,
@@ -75,8 +77,10 @@ namespace xflaim
 
 	/// <summary>
 	/// Node insert locations - relative to another node.
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// definitions in xflaim.h
 	/// </summary>
-	public enum eNodeInsertLoc : int
+	public enum eNodeInsertLoc : uint
 	{
 		/// <summary>Insert node as root node of document</summary>
 		XFLM_ROOT = 0,
@@ -90,5 +94,110 @@ namespace xflaim
 		XFLM_NEXT_SIB,
 		/// <summary>Insert node as attribute of reference node</summary>
 		XFLM_ATTRIBUTE
+	}
+
+	/// <remarks>
+	/// The DOMNode class provides a number of methods that allow C#
+	/// applications to access DOM nodes in XML documents.
+	/// </remarks>
+	public class DOMNode
+	{
+		private ulong 		m_pNode;			// Pointer to IF_DOMNode object in unmanaged space
+		private Db			m_db;
+
+		/// <summary>
+		/// DOMNode constructor.
+		/// </summary>
+		/// <param name="pNode">
+		/// Reference to an IF_DOMNode object.
+		/// </param>
+		/// <param name="db">
+		/// Db object that this DOMNode object is associated with.
+		/// </param>
+		internal DOMNode(
+			ulong		pNode,
+			Db			db)
+		{
+			if (pNode == 0)
+			{
+				throw new XFlaimException( "Invalid IF_DOMNode reference");
+			}
+			
+			m_pNode = pNode;
+
+			if (db == null)
+			{
+				throw new XFlaimException( "Invalid Db reference");
+			}
+			
+			m_db = db;
+			
+			// Must call something inside of Db.  Otherwise, the
+			// m_db object gets a compiler warning on linux because
+			// it is not used anywhere.  Other than that, there is really
+			// no need to make the following call.
+			if (m_db.getDb() == 0)
+			{
+				throw new XFlaimException( "Invalid Db.IF_Db object");
+			}
+		}
+
+		/// <summary>
+		/// Set the IF_DOMNode pointer inside this object.
+		/// </summary>
+		/// <param name="pNode">
+		/// Reference to an IF_DOMNode object.
+		/// </param>
+		/// <param name="db">
+		/// Db object that this DOMNode object is associated with.
+		/// </param>
+		internal void setNodePtr(
+			ulong		pNode,
+			Db			db)
+		{
+			close();
+			m_pNode = pNode;
+			m_db = db;
+		}
+
+		/// <summary>
+		/// Destructor.
+		/// </summary>
+		~DOMNode()
+		{
+			close();
+		}
+
+		/// <summary>
+		/// Return the pointer to the IF_DOMNode object.
+		/// </summary>
+		/// <returns>Returns a pointer to the IF_DOMNode object.</returns>
+		internal ulong getNode()
+		{
+			return( m_pNode);
+		}
+
+		/// <summary>
+		/// Close this DOM node.
+		/// </summary>
+		public void close()
+		{
+			// Release the native pNode!
+		
+			if (m_pNode != 0)
+			{
+				xflaim_DOMNode_Release( m_pNode);
+				m_pNode = 0;
+			}
+		
+			// Remove our reference to the db so it can be released.
+		
+			m_db = null;
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DOMNode_Release(
+			ulong	pNode);
+
 	}
 }

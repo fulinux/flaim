@@ -317,13 +317,13 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DataVector_getDataLength(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMINT32 FLMAPI xflaim_DataVector_getDataType(
+FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DataVector_getDataType(
 	FLMUINT64		ui64This,
 	FLMUINT32		ui32ElementNumber)
 {
 	IF_DataVector *	pDataVector = ((IF_DataVector *)(FLMUINT)ui64This);
 	
-	return( (FLMINT32)pDataVector->getDataType( (FLMUINT)ui32ElementNumber));
+	return( (FLMUINT32)pDataVector->getDataType( (FLMUINT)ui32ElementNumber));
 }
 
 /****************************************************************************
