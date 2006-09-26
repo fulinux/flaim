@@ -5155,7 +5155,9 @@
 													///< has been waiting to obtain the lock.\  Both times are milliseconds.
 			) = 0;
 	};
-															
+
+	// IMPORTANT NOTE: This structure needs to stay in sync with
+	// corresponding structures in java and C# code.
 	/**************************************************************************
 	/// Structure used in gathering statistics to hold an operation count and an elapsed time.
 	**************************************************************************/
@@ -5165,6 +5167,8 @@
 		FLMUINT64	ui64ElapMilli;						///< Total elapsed time (milliseconds) for the operations.
 	} F_COUNT_TIME_STAT;
 	
+	// IMPORTANT NOTE: This structure needs to stay in sync with
+	// corresponding structures in java and C# code.
 	/**************************************************************************
 	/// Structure for returning lock statistics.
 	**************************************************************************/
