@@ -359,6 +359,9 @@
 	// must be preserved as the code sometimes
 	// depends on the order to test ranges of
 	// node types.
+	// IMPORTANT NOTE: If any of these change or there
+	// are additions, be sure to also modify the
+	// corresponding java and C# definitions.
 
 	typedef enum
 	{
@@ -377,6 +380,9 @@
 	// NOTE: The eNodeInsertLoc enum values cannot
 	// be changed.  The RFL uses these values
 	// when logging packets.
+	// IMPORTANT NOTE: If any of these change or there
+	// are additions, be sure to also modify the
+	// corresponding java and C# definitions.
 	
 	typedef enum
 	{
@@ -880,6 +886,8 @@
 
 	/**************************************************************************
 	Desc:		STUFF FOR IF_Query interface
+	IMPORTANT NOTE: If any of these change or new ones are added, corresponding
+	changes should be made in the java and C# code.
 	**************************************************************************/
 	typedef enum
 	{
@@ -966,6 +974,8 @@
 		XFLM_FUNC_xxx = 0
 	} eQueryFunctions;
 
+	// IMPORTANT NOTE: If any of these change, corresponding changes need to
+	// be made in java and C# code.
 	typedef enum
 	{
 		ROOT_AXIS = 0,
@@ -1019,7 +1029,9 @@
 		GET_NEXT_VAL,
 		GET_PREV_VAL
 	} ValIterator;
-	
+
+	// IMPORTANT NOTE: Changes to these should be synchronized to the
+	// corresponding enums in java and C# code.
 	typedef enum
 	{
 		XFLM_QOPT_NONE = 0,
