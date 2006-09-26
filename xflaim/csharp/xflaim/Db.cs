@@ -94,6 +94,15 @@ namespace xflaim
 		}
 
 		/// <summary>
+		/// Return the DbSystem object associated with this Db
+		/// </summary>
+		/// <returns>Returns the DbSystem object associated with this Db</returns>
+		internal DbSystem getDbSystem()
+		{
+			return m_dbSystem;
+		}
+
+		/// <summary>
 		/// Close this database.
 		/// </summary>
 		public void close()

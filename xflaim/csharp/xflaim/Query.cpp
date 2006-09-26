@@ -325,3 +325,168 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getCurrent(
 	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
 	return( rc);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_Query_resetQuery(
+	FLMUINT64		ui64Query)
+{
+	IF_Query *		pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	
+	pQuery->resetQuery();
+}
+
+// IMPORTANT NOTE: This structure must be kept in sync with the
+// corresponding structure in C# code.
+typedef struct
+{
+	FLMUINT32	ui32OptType;
+	FLMUINT32	ui32Cost;
+	FLMUINT64	ui64NodeId;
+	FLMUINT64	ui64EndNodeId;
+	char			szIxName [80];
+	FLMUINT32	ui32IxNum;
+	FLMBOOL		bMustVerifyPath;
+	FLMBOOL		bDoNodeMatch;
+	FLMBOOL		bCanCompareOnKey;
+	FLMUINT64	ui64KeysRead;
+	FLMUINT64	ui64KeyHadDupDoc;
+	FLMUINT64	ui64KeysPassed;
+	FLMUINT64	ui64NodesRead;
+	FLMUINT64	ui64NodesTested;
+	FLMUINT64	ui64NodesPassed;
+	FLMUINT64	ui64DocsRead;
+	FLMUINT64	ui64DupDocsEliminated;
+	FLMUINT64	ui64NodesFailedValidation;
+	FLMUINT64	ui64DocsFailedValidation;
+	FLMUINT64	ui64DocsPassed;
+} CS_XFLM_OPT_INFO;
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getStatsAndOptInfo(
+	FLMUINT64			ui64Query,
+	XFLM_OPT_INFO **	ppOptInfoArray,
+	FLMUINT32 *			pui32NumOptInfos)
+{
+	RCODE					rc = NE_XFLM_OK;
+	IF_Query *			pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	FLMUINT				uiNumOptInfos = 0;
+
+	*ppOptInfoArray = NULL;
+	if (RC_BAD( rc = pQuery->getStatsAndOptInfo( &uiNumOptInfos, ppOptInfoArray)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	*pui32NumOptInfos = (FLMUINT32)uiNumOptInfos;
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_Query_getOptInfo(
+	XFLM_OPT_INFO *		pOptInfoArray,
+	FLMUINT32				ui32InfoToGet,
+	CS_XFLM_OPT_INFO *	pCSOptInfo)
+{
+	XFLM_OPT_INFO *	pOptInfo = &pOptInfoArray [ui32InfoToGet];
+
+	pCSOptInfo->ui32OptType = (FLMUINT32)pOptInfo->eOptType;
+	pCSOptInfo->ui32Cost = (FLMUINT32)pOptInfo->uiCost;
+	pCSOptInfo->ui64NodeId = pOptInfo->ui64NodeId;
+	pCSOptInfo->ui64EndNodeId = pOptInfo->ui64EndNodeId;
+	f_memcpy( pCSOptInfo->szIxName, pOptInfo->szIxName, sizeof( pCSOptInfo->szIxName));
+	pCSOptInfo->ui32IxNum = (FLMUINT32)pOptInfo->uiIxNum;
+	pCSOptInfo->bMustVerifyPath = pOptInfo->bMustVerifyPath;
+	pCSOptInfo->bDoNodeMatch = pOptInfo->bDoNodeMatch;
+	pCSOptInfo->bCanCompareOnKey = pOptInfo->bCanCompareOnKey;
+	pCSOptInfo->ui64KeysRead = pOptInfo->ui64KeysRead;
+	pCSOptInfo->ui64KeyHadDupDoc = pOptInfo->ui64KeyHadDupDoc;
+	pCSOptInfo->ui64KeysPassed = pOptInfo->ui64KeysPassed;
+	pCSOptInfo->ui64NodesRead = pOptInfo->ui64NodesRead;
+	pCSOptInfo->ui64NodesTested = pOptInfo->ui64NodesTested;
+	pCSOptInfo->ui64NodesPassed = pOptInfo->ui64NodesPassed;
+	pCSOptInfo->ui64DocsRead = pOptInfo->ui64DocsRead;
+	pCSOptInfo->ui64DupDocsEliminated = pOptInfo->ui64DupDocsEliminated;
+	pCSOptInfo->ui64NodesFailedValidation = pOptInfo->ui64NodesFailedValidation;
+	pCSOptInfo->ui64DocsFailedValidation = pOptInfo->ui64DocsFailedValidation;
+	pCSOptInfo->ui64DocsPassed = pOptInfo->ui64DocsPassed;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_Query_setDupHandling(
+	FLMUINT64	ui64Query,
+	FLMBOOL		bRemoveDups)
+{
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	
+	pQuery->setDupHandling( bRemoveDups);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_setIndex(
+	FLMUINT64	ui64Query,
+	FLMUINT32	ui32Index)
+{
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	
+	return( pQuery->setIndex( (FLMUINT)ui32Index));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getIndex(
+	FLMUINT64	ui64Query,
+	FLMUINT64	ui64Db,
+	FLMUINT32 *	pui32Index,
+	FLMBOOL *	pbHaveMultiple)
+{
+	RCODE			rc;
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	IF_Db *		pDb = (IF_Db *)((FLMUINT)ui64Db);
+	FLMUINT		uiIndex;
+	
+	rc = pQuery->getIndex( pDb, &uiIndex, pbHaveMultiple);
+	*pui32Index = (FLMUINT32)uiIndex;
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addSortKey(
+	FLMUINT64	ui64Query,
+	FLMUINT64	ui64SortKeyContext,
+	FLMBOOL		bChildToContext,
+	FLMBOOL		bElement,
+	FLMUINT32	ui32NameId,
+	FLMUINT32	ui32CompareFlags,
+	FLMUINT32	ui32Limit,
+	FLMUINT32	ui32KeyComponent,
+	FLMBOOL		bSortDescending,
+	FLMBOOL		bSortMissingHigh,
+	FLMUINT64 *	pui64Context)
+{
+	RCODE			rc;
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	void *		pvContext = NULL;
+	
+	rc = pQuery->addSortKey( (void *)((FLMUINT)ui64SortKeyContext),
+				bChildToContext, bElement, (FLMUINT)ui32NameId,
+				(FLMUINT)ui32CompareFlags, (FLMUINT)ui32Limit,
+				(FLMUINT)ui32KeyComponent, bSortDescending, bSortMissingHigh,
+				&pvContext);
+	*pui64Context = (FLMUINT64)((FLMUINT)pvContext);
+	return( rc);
+}

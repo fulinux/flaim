@@ -152,6 +152,85 @@ namespace xflaim
 		XFLM_RBRACKET_OP					= 24
 	}
 
+	/// <summary>
+	/// Types of optimizations for queries.
+	/// </summary>
+	public enum eQOptTypes : uint
+	{
+		/// <summary>No optimization</summary>
+		XFLM_QOPT_NONE = 0,
+		/// <summary>Using an index</summary>
+		XFLM_QOPT_USING_INDEX,
+		/// <summary>Full collection scan - no index</summary>
+		XFLM_QOPT_FULL_COLLECTION_SCAN,
+		/// <summary>Reading a single node id</summary>
+		XFLM_QOPT_SINGLE_NODE_ID,
+		/// <summary>No Reading a range of node ids</summary>
+		XFLM_QOPT_NODE_ID_RANGE
+  }
+
+	/// <summary>
+	/// Optimization information for queries.
+	/// IMPORTANT NOTE: This structure must be kept in sync with the
+	/// corresponding structure in C# code.
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
+	public class CS_XFLM_OPT_INFO
+	{
+		/// <summary>Type of optimization done</summary>
+		public eQOptTypes	eOptType;
+		/// <summary>Cost that was calculated for this particular optimization path.</summary>
+		public uint			uiCost;
+		/// <summary>
+		/// Node id we are searching for - only valid if eOptType is
+		/// XFLM_QOPT_SINGLE_NODE_ID or XFLM_QOPT_NODE_ID_RANGE
+		/// </summary>
+		public ulong		ulNodeId;
+		/// <summary>
+		/// End node id we are searching for - only valid if eOptType is
+		/// XFLM_QOPT_NODE_ID_RANGE
+		/// </summary>
+		public ulong		ulEndNodeId;
+		/// <summary>Index name - only valid if eOptType is XFLM_QOPT_USING_INDEX</summary>
+		[MarshalAs(UnmanagedType.ByValTStr, SizeConst = 80)]
+		public string		sIxName;
+		/// <summary>Index number - only valid if eOptType is XFLM_QOPT_USING_INDEX</summary>
+		public uint			uiIxNum;
+		/// <summary>Must verify node path</summary>
+		public int			bMustVerifyPath;
+		/// <summary>
+		/// Nodes must be retrieved to evaluate query - cannot do from the
+		/// data in the index.  This is only valid if eOptType is XFLM_QOPT_USING_INDEX.
+		/// </summary>
+		public int			bDoNodeMatch;
+		/// <summary>
+		/// Can we compare on index keys?  This is only valid if eOptType is XFLM_QOPT_USING_INDEX.
+		/// </summary>
+		public int			bCanCompareOnKey;
+		/// <summary>Total index keys read.</summary>
+		public ulong		ulKeysRead;
+		/// <summary>Total keys that pointed to the same document as another key.</summary>
+		public ulong		ulKeyHadDupDoc;
+		/// <summary>Total index keys that passed the query criteria.</summary>
+		public ulong		ulKeysPassed;
+		/// <summary>Total DOM nodes read.</summary>
+		public ulong		ulNodesRead;
+		/// <summary>Total DOM nodes tested.</summary>
+		public ulong		ulNodesTested;
+		/// <summary>Total DOM nodes that passed the query criteria.</summary>
+		public ulong		ulNodesPassed;
+		/// <summary>Total documents read.</summary>
+		public ulong		ulDocsRead;
+		/// <summary>Total documents that were duplicates of previously evaluated documents.</summary>
+		public ulong		ulDupDocsEliminated;
+		/// <summary>Total nodes that failed the validation callback.</summary>
+		public ulong		ulNodesFailedValidation;
+		/// <summary>Total documents that failed the validation callback.</summary>
+		public ulong		ulDocsFailedValidation;
+		/// <summary>Total documents that passed the query criteria.</summary>
+		public ulong		ulDocsPassed;
+	}
+
 	/// <remarks>
 	/// The Query class provides a number of methods that allow C#
 	/// applications to query an XFLAIM database.
@@ -636,7 +715,6 @@ namespace xflaim
 			}
 		
 			return( newNode);
-			
 		}
 
 		[DllImport("xflaim")]
@@ -694,7 +772,6 @@ namespace xflaim
 			}
 		
 			return( newNode);
-			
 		}
 
 		[DllImport("xflaim")]
@@ -752,7 +829,6 @@ namespace xflaim
 			}
 		
 			return( newNode);
-			
 		}
 
 		[DllImport("xflaim")]
@@ -810,7 +886,6 @@ namespace xflaim
 			}
 		
 			return( newNode);
-			
 		}
 
 		[DllImport("xflaim")]
@@ -865,7 +940,6 @@ namespace xflaim
 			}
 		
 			return( newNode);
-			
 		}
 
 		[DllImport("xflaim")]
@@ -874,6 +948,235 @@ namespace xflaim
 			ulong			pDb,
 			ulong			pOldNode,
 			out ulong	ppNode);
+
+//-----------------------------------------------------------------------------
+// resetQuery
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Resets the query criteria and results set for the query.
+		/// </summary>
+		public void resetQuery()
+		{
+			xflaim_Query_resetQuery( m_pQuery);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Query_resetQuery(
+			ulong			pQuery);
+
+//-----------------------------------------------------------------------------
+// getStatsAndOptInfo
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns statistics and optimization information for the query.
+		/// </summary>
+		/// <returns>Returns an array of <see cref="CS_XFLM_OPT_INFO"/> objects.</returns>
+		public CS_XFLM_OPT_INFO [] getStatsAndOptInfo()
+		{
+			RCODE						rc;
+			IntPtr					pOptInfoArray;
+			uint						uiNumOptInfos;
+			CS_XFLM_OPT_INFO []	optInfo;
+
+			if ((rc = xflaim_Query_getStatsAndOptInfo( m_pQuery, out pOptInfoArray,
+				out uiNumOptInfos)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			optInfo = new CS_XFLM_OPT_INFO [uiNumOptInfos];
+
+			for (uint uiLoop = 0; uiLoop < uiNumOptInfos; uiLoop++)
+			{
+				xflaim_Query_getOptInfo( pOptInfoArray, uiLoop, optInfo [uiLoop]);
+			}
+			m_db.getDbSystem().freeUnmanagedMem( pOptInfoArray);
+			return( optInfo);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_getStatsAndOptInfo(
+			ulong			pQuery,
+			out IntPtr	pOptInfoArray,
+			out uint		puiNumOptInfos);
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Query_getOptInfo(
+			IntPtr				pOptInfoArray,
+			uint					uiInfoToGet,
+			CS_XFLM_OPT_INFO	optInfo);
+
+//-----------------------------------------------------------------------------
+// setDupHandling
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set duplicate handling for the query.
+		/// </summary>
+		/// <param name="bRemoveDups">
+		/// Specifies whether duplicates should be removed from the result set.
+		/// </param>
+		public  void setDupHandling(
+			bool	bRemoveDups)
+		{
+			xflaim_Query_setDupHandling( m_pQuery, (int)(bRemoveDups ? 1 : 0));
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Query_setDupHandling(
+			ulong		pQuery,
+			int		bRemoveDups);
+
+//-----------------------------------------------------------------------------
+// setIndex
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set an index for the query.
+		/// </summary>
+		/// <param name="uiIndex">
+		/// Index that the query should use.
+		/// </param>
+		public  void setIndex(
+			uint	uiIndex)
+		{
+			RCODE	rc;
+			if ((rc = xflaim_Query_setIndex( m_pQuery, uiIndex)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_setIndex(
+			ulong		pQuery,
+			uint		uiIndex);
+
+//-----------------------------------------------------------------------------
+// getIndex
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the index that is being used for the query.
+		/// </summary>
+		/// <param name="uiIndex">
+		/// Returns the index the query is using.  If more than one index is being
+		/// used, this will be on the first of those indexes.
+		/// </param>
+		/// <param name="bHaveMultiple">
+		/// Returns whether multiple indexes are being used.
+		/// </param>
+		public  void getIndex(
+			out uint	uiIndex,
+			out bool	bHaveMultiple)
+		{
+			RCODE	rc;
+			int	bHaveMult;
+
+			if ((rc = xflaim_Query_getIndex( m_pQuery, m_db.getDb(), out uiIndex, out bHaveMult)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			bHaveMultiple = bHaveMult != 0 ? true : false;
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_getIndex(
+			ulong			pQuery,
+			ulong			pDb,
+			out uint		uiIndex,
+			out int		bHaveMultiple);
+
+//-----------------------------------------------------------------------------
+// addSortKey
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Add a sort key to the query.
+		/// </summary>
+		/// <param name="ulSortKeyContext">
+		/// Context that the current sort key is to be added relative to - either
+		/// as a child or a sibling.  If this is the first sort key, a zero should
+		/// be passed in here.  Otherwise, the value returned from a previous call
+		/// to addSortKey should be passed in.
+		/// </param>
+		/// <param name="bChildToContext">
+		/// Indicates whether this sort key should be added as a child or a sibling
+		/// to the sort key context that was passed in the pSortKeyContext parameter.
+		/// NOTE: If ulSortKeyContext is zero, then the bChildToContext parameter is ignored.
+		/// </param>
+		/// <param name="bElement">
+		/// Indicates whether the current key component is an element or an attribute.
+		/// </param>
+		/// <param name="uiNameId">
+		/// Name ID of the current key component.
+		/// </param>
+		/// <param name="compareFlags">
+		/// Flags for doing string comparisons when sorting for this sort key component.
+		/// Should be logical ORs of the members of <see cref="CompareFlags"/>.  This
+		/// parameter is only used if the component is a string element or attribute.
+		/// </param>
+		/// <param name="uiLimit">
+		/// Limit on the size of the key component.  If the component is a string element
+		/// or attribute, it is the number of characters.  If the component is a binary
+		/// element or attribute, it is the number of bytes.
+		/// </param>
+		/// <param name="uiKeyComponent">
+		/// Specifies which key component this sort key component is.  A value of zero
+		/// indicates that it is not a key component, but simply a context component for
+		/// other key components.
+		/// </param>
+		/// <param name="bSortDescending">
+		/// Indicates that this key component should be sorted in descending order.
+		/// </param>
+		/// <param name="bSortMissingHigh">
+		/// Indicates that when the value for this key component is missing, it should
+		/// be sorted high instead of low.
+		/// </param>
+		/// <returns>
+		/// Returns a value that can be passed back into subsequent calls to addSortKey
+		/// when this component needs to be used as a context for subsequent components.
+		/// </returns>
+		public ulong addSortKey(
+			ulong				ulSortKeyContext,
+			bool				bChildToContext,
+			bool				bElement,
+			uint				uiNameId,
+			CompareFlags	compareFlags,
+			uint				uiLimit,
+			uint				uiKeyComponent,
+			bool				bSortDescending,
+			bool				bSortMissingHigh)
+		{
+			RCODE	rc;
+			ulong	ulContext;
+
+			if ((rc = xflaim_Query_addSortKey( m_pQuery, ulSortKeyContext,
+				(int)(bChildToContext ? 1 : 0),
+				(int)(bElement ? 1 : 0),
+				uiNameId, compareFlags, uiLimit, uiKeyComponent,
+				(int)(bSortDescending ? 1 : 0),
+				(int)(bSortMissingHigh ? 1 : 0), out ulContext)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( ulContext);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_addSortKey(
+			ulong				pQuery,
+			ulong				ulSortKeyContext,
+			int				bChildToContext,
+			int				bElement,
+			uint				uiNameId,
+			CompareFlags	compareFlags,
+			uint				uiLimit,
+			uint				uiKeyComponent,
+			int				bSortDescending,
+			int				bSortMissingHigh,
+			out ulong		pulContext);
 
 	}
 }
