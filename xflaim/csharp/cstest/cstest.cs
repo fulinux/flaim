@@ -161,7 +161,6 @@ namespace cstest
 
 			DbSystem dbSystem = new DbSystem();
 
-#if false
 			// Database create test
 
 			CreateDbTest createDb = new CreateDbTest();
@@ -301,8 +300,6 @@ namespace cstest
 			{
 				return;
 			}
-
-#endif
 
 			// Various settings tests
 
