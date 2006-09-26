@@ -177,6 +177,14 @@ namespace cstest
 				return;
 			}
 
+			// Statistics test
+
+			StatsTests statsTests = new StatsTests();
+			if (!statsTests.statsTests( CREATE_DB_NAME, dbSystem))
+			{
+				return;
+			}
+
 			// Database copy test
 
 			CopyDbTest copyDb = new CopyDbTest();

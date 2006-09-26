@@ -638,6 +638,8 @@
 		FLMBOOL					bPreallocatedCache;
 	} CS_XFLM_CACHE_INFO;
 
+	// IMPORTANT NOTE: This structure needs to stay in sync with
+	// corresponding structures in java and C# code.
 	typedef struct
 	{
 		FLMUINT64		ui64Count;						// Number of times read or
@@ -650,12 +652,16 @@
 																// read or write operations.
 	} XFLM_DISKIO_STAT;
 
+	// IMPORTANT NOTE: This structure needs to stay in sync with
+	// corresponding structures in java and C# code.
 	typedef struct
 	{
 		F_COUNT_TIME_STAT		CommittedTrans;		// Transactions committed
 		F_COUNT_TIME_STAT		AbortedTrans;			// Transactions aborted
 	} XFLM_RTRANS_STATS;
 
+	// IMPORTANT NOTE: This structure needs to stay in sync with
+	// corresponding structures in java and C# code.
 	typedef struct
 	{
 		F_COUNT_TIME_STAT		CommittedTrans;		// Transactions committed
@@ -664,21 +670,23 @@
 		F_COUNT_TIME_STAT		AbortedTrans;			// Transactions aborted
 	} XFLM_UTRANS_STATS;
 
+	// IMPORTANT NOTE: This structure needs to stay in sync with
+	// corresponding structures in java and C# code.
 	typedef struct
 	{
 		XFLM_DISKIO_STAT	BlockReads;					// Statistics on block reads.
+		XFLM_DISKIO_STAT	BlockWrites;				// Statistics on Block writes.
 		XFLM_DISKIO_STAT	OldViewBlockReads;		// Statistics on old view
 																// block reads.
-		FLMUINT				uiBlockChkErrs;			// Number of times we had
+		FLMUINT32			ui32BlockChkErrs;			// Number of times we had
 																// check errors reading
 																// blocks.
-		FLMUINT				uiOldViewBlockChkErrs;	// Number of times we had
+		FLMUINT32			ui32OldViewBlockChkErrs;// Number of times we had
 																// check errors reading an
 																// old view of a block.
-		FLMUINT				uiOldViewErrors;			// Number of times we had an
+		FLMUINT32			ui32OldViewErrors;		// Number of times we had an
 																// old view error when
 																// reading.
-		XFLM_DISKIO_STAT	BlockWrites;				// Statistics on Block writes.
 	} XFLM_BLOCKIO_STATS;
 
 	typedef struct

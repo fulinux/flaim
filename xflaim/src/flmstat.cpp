@@ -593,9 +593,9 @@ void flmUpdateBlockIOStats(
 	flmUpdateDiskIOStats( &pDest->BlockReads, &pSrc->BlockReads);
 	flmUpdateDiskIOStats( &pDest->OldViewBlockReads,
 									&pSrc->OldViewBlockReads);
-	pDest->uiBlockChkErrs += pSrc->uiBlockChkErrs;
-	pDest->uiOldViewBlockChkErrs += pSrc->uiOldViewBlockChkErrs;
-	pDest->uiOldViewErrors += pSrc->uiOldViewErrors;
+	pDest->ui32BlockChkErrs += pSrc->ui32BlockChkErrs;
+	pDest->ui32OldViewBlockChkErrs += pSrc->ui32OldViewBlockChkErrs;
+	pDest->ui32OldViewErrors += pSrc->ui32OldViewErrors;
 	flmUpdateDiskIOStats( &pDest->BlockWrites, &pSrc->BlockWrites);
 }
 

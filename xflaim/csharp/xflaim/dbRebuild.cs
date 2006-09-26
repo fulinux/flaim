@@ -48,7 +48,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_REBUILD_INFO
 	/// structure defined in xflaim.h
 	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_REBUILD_INFO
 	{
 		/// <summary>Current phase of the rebuild operation</summary>

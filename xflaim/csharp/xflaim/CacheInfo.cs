@@ -34,7 +34,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: This structure must be kept in sync
 	/// with the corresponding structure in ftk.h
 	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class FLM_SLAB_USAGE
 	{
 		/// <summary>Total slabs currently allocated.</summary>
@@ -53,7 +53,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: This structure must be kept in sync
 	/// with the corresponding structure in xflaim.h
 	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_CACHE_USAGE
 	{
 		/// <summary>Total bytes allocated for current versions of objects</summary>
@@ -81,7 +81,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: This structure must be kept in sync
 	/// with the corresponding structure in xflaim.h
 	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_CACHE_INFO
 	{
 		/// <summary>Current limit for cache</summary>

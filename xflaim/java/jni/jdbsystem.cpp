@@ -2857,11 +2857,11 @@ FSTATIC jobject NewBlockIOStats(
 	pEnv->SetObjectField( jBlockIOStats, fid_BlockIOStats_oldViewBlockReads,
 		jOldViewBlockReads);
 	pEnv->SetIntField( jBlockIOStats, fid_BlockIOStats_iBlockChkErrs,
-		(jint)pBlockIOStats->uiBlockChkErrs);
+		(jint)pBlockIOStats->ui32BlockChkErrs);
 	pEnv->SetIntField( jBlockIOStats, fid_BlockIOStats_iOldViewBlockChkErrs,
-		(jint)pBlockIOStats->uiOldViewBlockChkErrs);
+		(jint)pBlockIOStats->ui32OldViewBlockChkErrs);
 	pEnv->SetIntField( jBlockIOStats, fid_BlockIOStats_iOldViewErrors,
-		(jint)pBlockIOStats->uiOldViewErrors);
+		(jint)pBlockIOStats->ui32OldViewErrors);
 	pEnv->SetObjectField( jBlockIOStats, fid_BlockIOStats_blockWrites,
 		jBlockWrites);
 	

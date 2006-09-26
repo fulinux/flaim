@@ -144,7 +144,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: This needs to be kept in sync with the same
 	/// structure that is defined in xflaim.h
 	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_CREATE_OPTS
 	{
 
@@ -2025,11 +2025,11 @@ namespace xflaim
 //-----------------------------------------------------------------------------
 
 		/// <summary>
-		/// Determine if dynamic cache limits are supported on this platform.
+		/// Get cache information.
 		/// </summary>
 		/// <returns>
-		/// Flag indicating whether or not dynamic cache limits are
-		/// supported on this platform.
+		/// Returns a <see cref="CS_XFLM_CACHE_INFO"/> object which contains
+		/// information about cache.
 		/// </returns>
 		public CS_XFLM_CACHE_INFO getCacheInfo()
 		{
@@ -2040,10 +2040,115 @@ namespace xflaim
 		}
 
 		[DllImport("xflaim")]
-		private static extern int xflaim_DbSystem_getCacheInfo(
-			ulong					pDbSystem,
+		private static extern void xflaim_DbSystem_getCacheInfo(
+			ulong						pDbSystem,
 			[Out]
 			CS_XFLM_CACHE_INFO	cacheInfo);
+
+//-----------------------------------------------------------------------------
+// closeUnusedFiles
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Close all file descriptors that have are not currently in use and
+		/// have been out of use for at least n seconds.
+		/// </summary>
+		/// <param name="uiSeconds">
+		/// Specifies the number of seconds.  File descriptors that are not currently
+		/// in use and have been out of use for at least this amount of time will be
+		/// closed and released.  A value of zero will cause all file descriptors not
+		///  currently in use to be closed and released.
+		/// </param>
+		public void closeUnusedFiles(
+			uint	uiSeconds)
+		{
+			RCODE	rc;
+
+			if ((rc = xflaim_DbSystem_closeUnusedFiles( m_pDbSystem, uiSeconds)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_closeUnusedFiles(
+			ulong		pDbSystem,
+			uint		uiSeconds);
+
+//-----------------------------------------------------------------------------
+// startStats
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Start collecting of statistics.
+		/// </summary>
+		public void startStats()
+		{
+			xflaim_DbSystem_startStats( m_pDbSystem);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_startStats(
+			ulong		pDbSystem);
+
+//-----------------------------------------------------------------------------
+// stopStats
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Stop collecting of statistics.  NOTE: Statistics collected from the time
+		/// the <see cref="startStats"/> method was called will still be available to
+		/// retrieve from the <see cref="getStats"/> method.
+		/// </summary>
+		public void stopStats()
+		{
+			xflaim_DbSystem_stopStats( m_pDbSystem);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_stopStats(
+			ulong		pDbSystem);
+
+//-----------------------------------------------------------------------------
+// resetStats
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Reset statistics.  All current statistics are started over - as if the
+		/// <see cref="startStats"/> method had been called.
+		/// </summary>
+		public void resetStats()
+		{
+			xflaim_DbSystem_resetStats( m_pDbSystem);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_resetStats(
+			ulong		pDbSystem);
+
+//-----------------------------------------------------------------------------
+// getStats
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieve the current statistics that have been collected so far.
+		/// </summary>
+		public DbSystemStats getStats()
+		{
+			RCODE	rc;
+			ulong	pDbSystemStats;
+
+			if ((rc = xflaim_DbSystem_getStats( m_pDbSystem, out pDbSystemStats)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new DbSystemStats( pDbSystemStats, this));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_getStats(
+			ulong			pDbSystem,
+			out ulong	ppDbSystemStats);
 
 	}
 }

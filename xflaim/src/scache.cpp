@@ -3262,14 +3262,14 @@ Exit:
 			flmUpdateDiskIOStats( &pBlockIOStats->OldViewBlockReads,
 										 &TmpReadStats.OldViewBlockReads);
 
-			pBlockIOStats->uiBlockChkErrs +=
-					TmpReadStats.uiBlockChkErrs;
+			pBlockIOStats->ui32BlockChkErrs +=
+					(FLMUINT32)TmpReadStats.uiBlockChkErrs;
 
-			pBlockIOStats->uiOldViewBlockChkErrs +=
-					TmpReadStats.uiOldViewBlockChkErrs;
+			pBlockIOStats->ui32OldViewBlockChkErrs +=
+					(FLMUINT32)TmpReadStats.uiOldViewBlockChkErrs;
 			if (rc == NE_XFLM_OLD_VIEW || bIncrOldViewCnt)
 			{
-				pBlockIOStats->uiOldViewErrors++;
+				pBlockIOStats->ui32OldViewErrors++;
 			}
 		}
 	}

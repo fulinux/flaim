@@ -1600,3 +1600,76 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getCacheInfo(
 	copyCacheUsage( &pCacheInfo->NodeCache, &cacheInfo.NodeCache);
 	pCacheInfo->bPreallocatedCache = cacheInfo.bPreallocatedCache;
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_closeUnusedFiles(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32Seconds)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( pDbSystem->closeUnusedFiles( (FLMUINT)ui32Seconds));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_startStats(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->startStats();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_stopStats(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->stopStats();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_resetStats(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->resetStats();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_getStats(
+	FLMUINT64		ui64This,
+	FLMUINT64 *		pui64Stats)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	XFLM_STATS *	pStats = NULL;
+
+	if (RC_BAD( rc = f_calloc( sizeof( XFLM_STATS), &pStats)))
+	{
+		goto Exit;
+	}
+
+	if (RC_BAD( rc = pDbSystem->getStats( pStats)))
+	{
+		f_free( &pStats);
+		goto Exit;
+	}
+
+Exit:
+
+	*pui64Stats = (FLMUINT64)((FLMUINT)pStats);
+	return( rc);
+}

@@ -287,7 +287,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_CORRUPT_INFO
 	/// structure defined in xflaim.h
 	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_CORRUPT_INFO
 	{
 		/// <summary>Corruption error code being reported.</summary>
@@ -358,7 +358,7 @@ namespace xflaim
 	/// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_PROGRESS_CHECK_INFO
 	/// structure defined in xflaim.h
 	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_PROGRESS_CHECK_INFO
 	{
 		/// <summary>
