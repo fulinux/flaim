@@ -38,7 +38,7 @@ namespace cstest
 		public void beginTest( 
 			string	sTestName)
 		{
-			System.Console.Write( "{0} ...", sTestName);
+			System.Console.Write( "{0} ... ", sTestName);
 		}
 
 		//--------------------------------------------------------------------------
@@ -161,6 +161,7 @@ namespace cstest
 
 			DbSystem dbSystem = new DbSystem();
 
+#if false
 			// Database create test
 
 			CreateDbTest createDb = new CreateDbTest();
@@ -297,6 +298,24 @@ namespace cstest
 
 			CacheTests cacheTests = new CacheTests();
 			if (!cacheTests.cacheTests( dbSystem))
+			{
+				return;
+			}
+
+#endif
+
+			// Various settings tests
+
+			SettingsTests settingsTests = new SettingsTests();
+			if (!settingsTests.settingsTests( dbSystem))
+			{
+				return;
+			}
+
+			// Various string comparison tests
+
+			CompareStringTests compareStringTests = new CompareStringTests();
+			if (!compareStringTests.compareStringTests( dbSystem))
 			{
 				return;
 			}

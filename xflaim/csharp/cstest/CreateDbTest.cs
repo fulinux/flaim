@@ -59,7 +59,7 @@ namespace cstest
 					createOpts.uiMaxRflFileSize = 20000000;
 					createOpts.bKeepRflFiles = 1;
 					createOpts.bLogAbortedTransToRfl = 1;
-					createOpts.uiDefaultLanguage = (uint)Languages.FLM_DE_LANG;
+					createOpts.eDefaultLanguage = Languages.FLM_DE_LANG;
 					db = dbSystem.dbCreate( sDbName, null, null, null, null, createOpts);
 				}
 				catch (XFlaimException ex)

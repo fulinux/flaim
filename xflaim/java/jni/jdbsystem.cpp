@@ -3252,7 +3252,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_DbSystem__1getTempDir(
 	char		szPath [F_PATH_MAX_SIZE];
 	jstring	jPath = NULL;
 	
-	if (RC_BAD( rc = THIS_DBSYS()->setTempDir( szPath)))
+	if (RC_BAD( rc = THIS_DBSYS()->getTempDir( szPath)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;

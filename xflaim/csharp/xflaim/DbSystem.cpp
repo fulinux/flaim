@@ -1673,3 +1673,254 @@ Exit:
 	*pui64Stats = (FLMUINT64)((FLMUINT)pStats);
 	return( rc);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setTempDir(
+	FLMUINT64		ui64This,
+	const char *	pszTempDir)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( pDbSystem->setTempDir( pszTempDir));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_getTempDir(
+	FLMUINT64		ui64This,
+	char **			ppszTempDir)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	char				szPath [F_PATH_MAX_SIZE];
+	FLMUINT			uiLen;
+	
+	if (RC_BAD( rc = pDbSystem->getTempDir( szPath)))
+	{
+		goto Exit;
+	}
+	uiLen = f_strlen( szPath) + 1;
+	if (RC_BAD( rc = f_alloc( uiLen, ppszTempDir)))
+	{
+		goto Exit;
+	}
+	f_memcpy( *ppszTempDir, szPath, uiLen);
+
+Exit:
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCheckpointInterval(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32Seconds)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->setCheckpointInterval( (FLMUINT)ui32Seconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCheckpointInterval(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( (FLMUINT32)pDbSystem->getCheckpointInterval());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCacheAdjustInterval(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32Seconds)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->setCacheAdjustInterval( (FLMUINT)ui32Seconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCacheAdjustInterval(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( (FLMUINT32)pDbSystem->getCacheAdjustInterval());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCacheCleanupInterval(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32Seconds)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->setCacheCleanupInterval( (FLMUINT)ui32Seconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCacheCleanupInterval(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( (FLMUINT32)pDbSystem->getCacheCleanupInterval());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setUnusedCleanupInterval(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32Seconds)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->setUnusedCleanupInterval( (FLMUINT)ui32Seconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getUnusedCleanupInterval(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( (FLMUINT32)pDbSystem->getUnusedCleanupInterval());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setMaxUnusedTime(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32Seconds)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->setMaxUnusedTime( (FLMUINT)ui32Seconds);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getMaxUnusedTime(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( (FLMUINT32)pDbSystem->getMaxUnusedTime());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_deactivateOpenDb(
+	FLMUINT64		ui64This,
+	const char *	pszDbFileName,
+	const char *	pszDataDir)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->deactivateOpenDb( pszDbFileName, pszDataDir);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setQuerySaveMax(
+	FLMUINT64		ui64This,
+	FLMUINT32		ui32MaxToSave)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->setQuerySaveMax( (FLMUINT)ui32MaxToSave);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getQuerySaveMax(
+	FLMUINT64		ui64This)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	return( (FLMUINT32)pDbSystem->getQuerySaveMax());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setDirtyCacheLimits(
+	FLMUINT64		ui64This,
+	FLMUINT64		ui64MaxDirty,
+	FLMUINT64		ui64LowDirty)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+
+	pDbSystem->setDirtyCacheLimits( (FLMUINT)ui64MaxDirty, (FLMUINT)ui64LowDirty);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getDirtyCacheLimits(
+	FLMUINT64		ui64This,
+	FLMUINT64 *		pui64MaxDirty,
+	FLMUINT64 *		pui64LowDirty)
+{
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	FLMUINT			uiMaxDirty;
+	FLMUINT			uiLowDirty;
+
+	pDbSystem->getDirtyCacheLimits( &uiMaxDirty, &uiLowDirty);
+	*pui64MaxDirty = (FLMUINT64)uiMaxDirty;
+	*pui64LowDirty = (FLMUINT64)uiLowDirty;
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_compareStrings(
+	FLMUINT64				ui64This,
+	const FLMUNICODE *	puzLeftString,
+	FLMBOOL					bLeftWild,
+	const FLMUNICODE *	puzRightString,
+	FLMBOOL					bRightWild,
+	FLMUINT32				ui32CompareRules,
+	FLMUINT32				ui32Language,
+	FLMINT32 *				pi32Result)
+{
+	RCODE				rc = NE_XFLM_OK;
+	IF_DbSystem *	pDbSystem = ((IF_DbSystem *)(FLMUINT)ui64This);
+	FLMINT			iResult;
+
+	if (RC_BAD( rc = pDbSystem->compareUnicodeStrings(
+							puzLeftString, f_unilen( puzLeftString) * 2, bLeftWild,
+							puzRightString, f_unilen( puzRightString) * 2, bRightWild,
+							(FLMUINT)ui32CompareRules, (FLMUINT)ui32Language,
+							&iResult)))
+	{
+		goto Exit;
+	}
+	*pi32Result = (FLMINT32)iResult;
+
+Exit:
+	return( rc);
+}

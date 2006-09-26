@@ -41,9 +41,11 @@ namespace xflaim
 	}
 
 	/// <summary>
-	/// Valid languages
+	/// Valid languages.
+	/// IMPORTANT NOTE: These need to be kept in sync with the definitions
+	/// in ftk.h.
 	/// </summary>
-	public enum Languages : int
+	public enum Languages : uint
 	{
 		/// <summary>English, United States</summary>
 		FLM_US_LANG 			= 0,
@@ -183,7 +185,7 @@ namespace xflaim
 		/// <summary>
 		/// Default language for the database.  Should be one of <see cref="Languages"/>
 		/// </summary>
-		public uint 		uiDefaultLanguage;
+		public Languages	eDefaultLanguage;
 	}
 
 	/// <remarks>
@@ -2149,6 +2151,496 @@ namespace xflaim
 		private static extern RCODE xflaim_DbSystem_getStats(
 			ulong			pDbSystem,
 			out ulong	ppDbSystemStats);
+
+//-----------------------------------------------------------------------------
+// setTempDir
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set the directory where temporary files are to be created.
+		/// </summary>
+		/// <param name="sTempDir">
+		/// Name of temporary directory.
+		/// </param>
+		public void setTempDir(
+			string	sTempDir)
+		{
+			RCODE	rc;
+
+			if ((rc = xflaim_DbSystem_setTempDir( m_pDbSystem, sTempDir)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_setTempDir(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr), In]
+			string		sTempDir);
+
+//-----------------------------------------------------------------------------
+// getTempDir
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the directory where temporary files are to be created.
+		/// </summary>
+		/// <returns>
+		/// Name of temporary directory.
+		/// </returns>
+		public string getTempDir()
+		{
+			RCODE		rc;
+			IntPtr	pszTempDir;
+			string	sTempDir;
+
+			if ((rc = xflaim_DbSystem_getTempDir( m_pDbSystem, out pszTempDir)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			sTempDir = Marshal.PtrToStringAnsi( pszTempDir);
+			freeUnmanagedMem( pszTempDir);
+			return( sTempDir);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_getTempDir(
+			ulong			pDbSystem,
+			out IntPtr	psTempDir);
+
+//-----------------------------------------------------------------------------
+// setCheckpointInterval
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set the checkpoint interval.  The checkpoint interval is the maximum number
+		/// of seconds that XFLAIM will allow to go by before a checkpoint is forced.
+		/// Note that XFLAIM attempt to complete a checkpoint as often as possible.
+		/// However, if many update transctions are being performed one after the other
+		/// with no break, it is possible that XFLAIM will not be able to complete
+		/// a checkpoint.  If the checkpoint interval is exceeded without a checkpoint
+		/// being done, XFLAIM will hold off updaters until a checkpoint can be
+		/// completed.  This is what is known as a "forced" checkpoint.
+		/// </summary>
+		/// <param name="uiSeconds">
+		/// Checkpoint interval, in seconds.
+		/// </param>
+		public void setCheckpointInterval(
+			uint	uiSeconds)
+		{
+			xflaim_DbSystem_setCheckpointInterval( m_pDbSystem, uiSeconds);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_setCheckpointInterval(
+			ulong			pDbSystem,
+			uint			uiSeconds);
+
+//-----------------------------------------------------------------------------
+// getCheckpointInterval
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the current checkpoint interval.
+		/// </summary>
+		/// <returns>
+		/// Returns current checkpoint interval, in seconds.
+		/// </returns>
+		public uint getCheckpointInterval()
+		{
+			return( xflaim_DbSystem_getCheckpointInterval( m_pDbSystem));
+		}
+
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbSystem_getCheckpointInterval(
+			ulong			pDbSystem);
+
+//-----------------------------------------------------------------------------
+// setCacheAdjustInterval
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set the cache adjust interval.  The cache adjust interval is only used
+		/// when the application has set a dynamic cache limit (see the
+		/// setDynamicCacheLimit API).  It specifies how often XFLAIM should calculate
+		/// a new cache limit.
+		/// </summary>
+		/// <param name="uiSeconds">
+		/// Specifies the number of seconds between times when XFLAIM
+		/// recalculates a new cache limit.
+		/// </param>
+		public void setCacheAdjustInterval(
+			uint	uiSeconds)
+		{
+			xflaim_DbSystem_setCacheAdjustInterval( m_pDbSystem, uiSeconds);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_setCacheAdjustInterval(
+			ulong			pDbSystem,
+			uint			uiSeconds);
+
+//-----------------------------------------------------------------------------
+// getCacheAdjustInterval
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the current cache adjust interval.
+		/// </summary>
+		/// <returns>
+		/// Returns the current cache adjust interval, in seconds.
+		/// </returns>
+		public uint getCacheAdjustInterval()
+		{
+			return( xflaim_DbSystem_getCacheAdjustInterval( m_pDbSystem));
+		}
+
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbSystem_getCacheAdjustInterval(
+			ulong			pDbSystem);
+
+//-----------------------------------------------------------------------------
+// setCacheCleanupInterval
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set the current cache cleanup interval.  XFLAIM has a background thread
+		/// that periodically wakes up and removes "old" objects from cache.  Old
+		/// objects are objects that are prior versions of current objects.  During
+		/// a cleanup cycle, XFLAIM determines which of these objects are never going
+		/// to be needed again and removes them from cache.
+		/// </summary>
+		/// <param name="uiSeconds">
+		/// Specifies the number of seconds between times when XFLAIM
+		/// cleans up "old" objects in cache.
+		/// </param>
+		public void setCacheCleanupInterval(
+			uint	uiSeconds)
+		{
+			xflaim_DbSystem_setCacheCleanupInterval( m_pDbSystem, uiSeconds);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_setCacheCleanupInterval(
+			ulong			pDbSystem,
+			uint			uiSeconds);
+
+//-----------------------------------------------------------------------------
+// getCacheCleanupInterval
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the current cache cleanup interval.
+		/// </summary>
+		/// <returns>
+		/// Returns the current cache cleanup interval, in seconds.
+		/// </returns>
+		public uint getCacheCleanupInterval()
+		{
+			return( xflaim_DbSystem_getCacheCleanupInterval( m_pDbSystem));
+		}
+
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbSystem_getCacheCleanupInterval(
+			ulong			pDbSystem);
+
+//-----------------------------------------------------------------------------
+// setUnusedCleanupInterval
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set the current unused cleanup interval.  XFLAIM has a background thread
+		/// that periodically wakes up and removes objects that have not been in use
+		/// for a certain amount of time (as specified by the setMaxUnusedTime method).
+		/// This includes file descriptors and other in-memory objects that XFLAIM
+		/// may have been holding on to in case they are reused.  It does NOT include
+		/// blocks in block cache or nodes in node cache.
+		/// </summary>
+		/// <param name="uiSeconds">
+		/// Specifies the number of seconds between times when XFLAIM
+		/// cleans up "unused" objects in cache.
+		/// </param>
+		public void setUnusedCleanupInterval(
+			uint	uiSeconds)
+		{
+			xflaim_DbSystem_setUnusedCleanupInterval( m_pDbSystem, uiSeconds);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_setUnusedCleanupInterval(
+			ulong			pDbSystem,
+			uint			uiSeconds);
+
+//-----------------------------------------------------------------------------
+// getUnusedCleanupInterval
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the current unused cleanup interval.
+		/// </summary>
+		/// <returns>
+		/// Returns the current unused cleanup interval, in seconds.
+		/// </returns>
+		public uint getUnusedCleanupInterval()
+		{
+			return( xflaim_DbSystem_getUnusedCleanupInterval( m_pDbSystem));
+		}
+
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbSystem_getUnusedCleanupInterval(
+			ulong			pDbSystem);
+
+//-----------------------------------------------------------------------------
+// setMaxUnusedTime
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set the maximum unused time limit.  XFLAIM has a background thread
+		/// that periodically wakes up and removes objects that have not been in
+		/// for a certain amount of time.  This includes file descriptors and
+		/// other in-memory objects that XFLAIM may have been holding on to in case
+		/// they are reused.  This method allows an application to specify a timeout
+		/// value that determines the maximum time an object may be "unused" before
+		/// it is cleaned up.
+		/// </summary>
+		/// <param name="uiSeconds">
+		/// Specifies the time limit (in seconds) for objects to be
+		/// "unused" before they are cleaned up.
+		/// </param>
+		public void setMaxUnusedTime(
+			uint	uiSeconds)
+		{
+			xflaim_DbSystem_setMaxUnusedTime( m_pDbSystem, uiSeconds);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_setMaxUnusedTime(
+			ulong			pDbSystem,
+			uint			uiSeconds);
+
+//-----------------------------------------------------------------------------
+// getMaxUnusedTime
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the maximum unused time limit.
+		/// </summary>
+		/// <returns>
+		/// Returns the maximum unused time limit, in seconds.
+		/// </returns>
+		public uint getMaxUnusedTime()
+		{
+			return( xflaim_DbSystem_getMaxUnusedTime( m_pDbSystem));
+		}
+
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbSystem_getMaxUnusedTime(
+			ulong			pDbSystem);
+
+//-----------------------------------------------------------------------------
+// deactivateOpenDb
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Deactivate an open database.  This method allows an application to force
+		/// a particular database to be closed by all threads.
+		/// </summary>
+		/// <param name="sDbFileName">
+		/// The name of the control file of the database to.
+		/// deactivate.  For more explanation see documentation for
+		/// <see cref="dbCreate"/>.
+		/// </param>
+		/// <param name="sDataDir">
+		/// The data file directory.  See <see cref="dbCreate"/> for more information.
+		/// </param>
+		public void deactivateOpenDb(
+			string	sDbFileName,
+			string	sDataDir)
+		{
+			xflaim_DbSystem_deactivateOpenDb( m_pDbSystem, sDbFileName, sDataDir);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_deactivateOpenDb(
+			ulong			pDbSystem,
+			[MarshalAs(UnmanagedType.LPStr), In]
+			string		sDbFileName,
+			[MarshalAs(UnmanagedType.LPStr), In]
+			string		sDataDir);
+
+//-----------------------------------------------------------------------------
+// setQuerySaveMax
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set maximum number of queries to save statistics and information on.  NOTE:
+		/// If the <see cref="startStats"/> method is called, the maximum is set to 20 until
+		/// <see cref="stopStats"/> is called - unless a non-zero value has already been set.
+		/// </summary>
+		/// <param name="uiMaxToSave">
+		/// The maximum number of queries to save information on.  The
+		/// last N queries that were executed will be saved.
+		/// </param>
+		public void setQuerySaveMax(
+			uint	uiMaxToSave)
+		{
+			xflaim_DbSystem_setQuerySaveMax( m_pDbSystem, uiMaxToSave);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_setQuerySaveMax(
+			ulong			pDbSystem,
+			uint			uiMaxToSave);
+
+//-----------------------------------------------------------------------------
+// getQuerySaveMax
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get maximum number of queries to save statistics and information on.
+		/// </summary>
+		/// <returns>
+		/// Returns the maximum number of queries to save information on.
+		/// </returns>
+		public uint getQuerySaveMax()
+		{
+			return( xflaim_DbSystem_getQuerySaveMax( m_pDbSystem));
+		}
+
+		[DllImport("xflaim")]
+		private static extern uint xflaim_DbSystem_getQuerySaveMax(
+			ulong			pDbSystem);
+
+//-----------------------------------------------------------------------------
+// setDirtyCacheLimits
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set dirty cache limits.
+		/// </summary>
+		/// <param name="ulMaxDirty">
+		/// This is the maximum amount of cache (in bytes) that the system
+		/// should allow to be dirty.  Once the maximum is exceeded, XFLAIM will
+		/// attempt to write out dirty blocks until the dirty cache is less than or
+		/// equal to the value specified by ulLowDirty.
+		/// </param>
+		/// <param name="ulLowDirty">
+		/// This number is the low threshhold for dirty cache.  It is
+		/// a hysteresis value.  Once dirty cache exceeds the value specified by
+		/// the ulMaxDirty parameter, XFLAIM will write out dirty blocks until the
+		/// dirty cache is once again less than or equal to this number.
+		/// </param>
+		public void setDirtyCacheLimits(
+			ulong	ulMaxDirty,
+			ulong	ulLowDirty)
+		{
+			xflaim_DbSystem_setDirtyCacheLimits( m_pDbSystem, ulMaxDirty, ulLowDirty);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_setDirtyCacheLimits(
+			ulong			pDbSystem,
+			ulong			ulMaxDirty,
+			ulong			ulLowDirty);
+
+//-----------------------------------------------------------------------------
+// getDirtyCacheLimits
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get dirty cache limits.
+		/// </summary>
+		/// <param name="ulMaxDirty">
+		/// Returns the maximum dirty cache limit.
+		/// </param>
+		/// <param name="ulLowDirty">
+		/// Returns the low dirty cache limit.
+		/// </param>
+		public void getDirtyCacheLimits(
+			out ulong	ulMaxDirty,
+			out ulong	ulLowDirty)
+		{
+			xflaim_DbSystem_getDirtyCacheLimits( m_pDbSystem, out ulMaxDirty, out ulLowDirty);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_DbSystem_getDirtyCacheLimits(
+			ulong			pDbSystem,
+			out ulong	pulMaxDirty,
+			out ulong	pulLowDirty);
+
+//-----------------------------------------------------------------------------
+// compareStrings
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Compare two strings.
+		/// </summary>
+		/// <param name="sLeftString">
+		/// This is the string on the left side of the comparison operation.
+		/// </param>
+		/// <param name="bLeftWild">
+		/// This flag, if true, specifies that wildcard characters
+		/// found in sLeftString  should be treated as wildcard characters instead of
+		/// literal characters to compare.  If false, the wildcard character (*) is
+		/// treated like a normal character.
+		/// </param>
+		/// <param name="sRightString">
+		/// This is the string on the right side of the comparison operation.
+		/// </param>
+		/// <param name="bRightWild">
+		/// This flag, if true, specifies that wildcard characters
+		/// found in sRightString should be treated as wildcard characters instead of
+		/// literal characters to compare.  If false, the wildcard character (*) is
+		/// treated like a normal character.
+		/// </param>
+		/// <param name="eCompareFlags">
+		/// Flags for doing string comparisons.  Should be logical ORs of the members
+		/// of <see cref="CompareFlags"/>.
+		/// </param>
+		/// <param name="eLanguage">
+		/// Language to use for doing collation of strings.
+		/// </param>
+		/// <returns>
+		/// Returns a value indicating whether sLeftString is less than, equal to,
+		/// or greater than sRightString.  A value of -1 means sLeftString &lt; sRightString.
+		/// A value of 0 means the strings are equal.  A value of 1 means that
+		/// sLeftString &gt; sRightString.
+		/// </returns>
+		public int compareStrings(
+			string			sLeftString,
+			bool				bLeftWild,
+			string			sRightString,
+			bool				bRightWild,
+			CompareFlags	eCompareFlags,
+			Languages		eLanguage)
+		{
+			RCODE	rc;
+			int	iResult;
+
+			if ((rc = xflaim_DbSystem_compareStrings( m_pDbSystem,
+				sLeftString, (int)(bLeftWild ? 1 : 0),
+				sRightString, (int)(bRightWild ? 1 : 0),
+				eCompareFlags, eLanguage, out iResult)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( iResult);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DbSystem_compareStrings(
+			ulong				pDbSystem,
+			[MarshalAs(UnmanagedType.LPWStr), In]
+			string			sLeftString,
+			int				bLeftWild,
+			[MarshalAs(UnmanagedType.LPWStr), In]
+			string			sRightString,
+			int				bRightWild,
+			CompareFlags	eCompareRules,
+			Languages		eLanguage,
+			out int			piResult);
 
 	}
 }
