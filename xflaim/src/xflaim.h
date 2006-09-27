@@ -328,6 +328,8 @@
 	} XFLM_DB_HDR;
 	
 	// uiFlags values for keyRetrieve() method
+	// IMPORTANT NOTE: If these change, please be sure to make
+	// corresponding changes in java and C# code.
 
 	#define XFLM_INCL							0x0010
 	#define XFLM_EXCL							0x0020
@@ -397,6 +399,8 @@
 	// NOTE: The order of the eDbTransType enum values
 	// cannot be changed.  XFLAIM tests ranges of these
 	// values.
+	// IMPORTANT NOTE: If these are changed, be sure to make the
+	// corresponding changes in java and C# code.
 	
 	typedef enum
 	{
@@ -406,6 +410,8 @@
 	} eDbTransType;
 
 	// Transaction flags
+	// IMPORTANT NOTE: If any of these are changed, the corresponding
+	// java and C# code should also be updated.
 
 	#define XFLM_DONT_KILL_TRANS		0x1
 	#define XFLM_DONT_POISON_CACHE	0x2
@@ -786,6 +792,8 @@
 																		// statistics.
 	} XFLM_STATS;
 
+	// IMPORTANT NOTE: If these change, please be sure to make
+	// corresponding changes in java and C# code.
 	typedef enum
 	{
 		XFLM_INDEX_ONLINE = 0,
@@ -793,6 +801,8 @@
 		XFLM_INDEX_SUSPENDED
 	} eXFlmIndexState;
 
+	// IMPORTANT NOTE: If these change, please be sure to make
+	// corresponding changes in java and C# code.
 	typedef struct
 	{
 		FLMUINT64			ui64LastDocumentIndexed;// If ~0 then index is online,

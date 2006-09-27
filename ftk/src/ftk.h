@@ -5120,6 +5120,8 @@
 		F_ListNode *		m_pListNodes;
 	};
 
+	// IMPORTANT NOTE: If these are changed, corresonding changes
+	// should be made in java and C# code as well.
 	/// Types of locks that may be requested.
 	typedef enum
 	{
