@@ -375,9 +375,9 @@ public class DOMNode
 	/**
 	 * Retrieves the requested attribute node associated with this node.
 	 * @param iAttributeId The dictionary tag number of the requested
-	 * attribute.  This value must exist in the dictionary before it can be
-	 * used here.  The value may be one of the predefined ones, or it may be
-	 * created with {@link Db#createElementDef Db::createElementDef}.
+	 * attribute.  This name id must exist in the dictionary before it can be
+	 * used here.  The name id may be one of the predefined ones, or it may be
+	 * created with {@link Db#createAttributeDef Db::createAttributeDef}.
 	 * @param ReusedNode An instance of DOMNode which is no longer needed and
 	 * can be reassigned to point to different data in the database.  (Reusing
 	 * DOMNode objects is encouraged as it saves the system from allocating
@@ -659,7 +659,7 @@ public class DOMNode
 	 * stored in this node.  If true, then no more text is expected and 
 	 * another call to setString will overwrite the what is currently
 	 * stored in this node.
-	 * @param iEncId Specifies the encryption definition to use to encryp
+	 * @param iEncId Specifies the encryption definition to use to encrypt
 	 * this data.  Zero means that the data is not to be encrypted.
 	 * @throws XFlaimException
 	 */
