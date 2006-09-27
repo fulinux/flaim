@@ -27,6 +27,158 @@ using System.Runtime.InteropServices;
 
 namespace xflaim
 {
+	//-----------------------------------------------------------------------------
+	// Database transaction types
+	//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// Database transaction types.
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	public enum eDbTransType : uint
+	{
+		/// <summary>No transaction</summary>
+		XFLM_NO_TRANS = 0,
+		/// <summary>Read transaction</summary>
+		XFLM_READ_TRANS,
+		/// <summary>Update transaction</summary>
+		XFLM_UPDATE_TRANS
+	}
+
+	//-----------------------------------------------------------------------------
+	// Database transaction flags
+	//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// Database transaction flags.
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	[Flags]
+	public enum DbTransFlags : uint
+	{
+		/// <summary>
+		/// Do not terminate the transaction, even if
+		/// a checkpoint is waiting to complete
+		/// </summary>
+		XFLM_DONT_KILL_TRANS = 0x0001,
+		/// <summary>
+		/// Place all blocks and nodes read during the transaction
+		/// at the least-recently used positions in the cache lists.
+		/// </summary>
+		XFLM_DONT_POISON_CACHE = 0x0002
+	}
+
+	//-----------------------------------------------------------------------------
+	// Database lock types
+	//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// Types of locks that may be requested.
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// enum in ftk.h
+	/// </summary>
+	public enum eLockType : uint
+	{
+		/// <summary>No lock</summary>
+		FLM_LOCK_NONE = 0,
+		/// <summary>Exclusive lock</summary>
+		FLM_LOCK_EXCLUSIVE,
+		/// <summary>Shared lock</summary>
+		FLM_LOCK_SHARED
+	}
+
+	/// <summary>
+	/// Types of locks that may be requested.
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	public enum eXFlmIndexState : uint
+	{
+		/// <summary>Index is on-line and available for use.</summary>
+		XFLM_INDEX_ONLINE = 0,
+		/// <summary>Index is being built and is unavailable.</summary>
+		XFLM_INDEX_BRINGING_ONLINE,
+		/// <summary>Index has been suspended and is unavailable.</summary>
+		XFLM_INDEX_SUSPENDED
+	}
+
+	/// <summary>
+	/// Index status object
+	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	public class XFLM_INDEX_STATUS
+	{
+		/// <summary>
+		/// If ~0 then index is online, otherwise this is the value of the 
+		/// last document ID that was indexed.
+		/// </summary>
+		public long  				ui64LastDocumentIndexed;
+		/// <summary>
+		/// Keys processed by the background indexing thread.
+		/// </summary>
+		public long					ui64KeysProcessed;
+		/// <summary>
+		/// Documents processed by the background indexing thread.
+		/// </summary>
+		public long					ui64DocumentsProcessed;
+		/// <summary>
+		/// Number of transactions completed by the background indexing thread.
+		/// </summary>
+		public long					ui64Transactions;
+		/// <summary>
+		/// ID of the index.
+		/// </summary>
+		public uint					ui32IndexNum;
+		/// <summary>
+		/// Time the bacground indexing thread (if any) was started.
+		/// </summary>
+		public uint					ui32StartTime;
+		/// <summary>
+		/// State of the background indexing thread (if any).
+		/// </summary>
+		public eXFlmIndexState	eState;
+	}
+
+	//-----------------------------------------------------------------------------
+	// RetrieveFlags
+	//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// Flags used to specify items to be retrieved from a result set.
+	/// The <see cref="Db.keyRetrieve"/> method also uses these flags
+	/// to specify how keys from an index are to be retrieved.
+	/// IMPORTANT NOTE: These flags need to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	[Flags]
+	public enum RetrieveFlags : uint
+	{
+		/// <summary>Return item greater than or equal to the search key.</summary>
+		XFLM_INCL			= 0x0010,
+		/// <summary>Return item greater than the search key.</summary>
+		XFLM_EXCL			= 0x0020,
+		/// <summary>Return item that exactly matches the search key.</summary>
+		XFLM_EXACT			= 0x0040,
+		/// <summary>
+		/// Used in conjunction with XFLM_EXCL.  Specifies that the item to be
+		/// returned must match the key components, but the node ids may be
+		/// different.
+		/// </summary>
+		XFLM_KEY_EXACT		= 0x0080,
+		/// <summary>Retrieve the first key in the index or first item in a result set.</summary>
+		XFLM_FIRST			= 0x0100,
+		/// <summary>Retrieve the last key in the index or last item in a result set.</summary>
+		XFLM_LAST			= 0x0200,
+		/// <summary>Specifies whether to match node IDs in the search key.</summary>
+		XFLM_MATCH_IDS		= 0x0400,
+		/// <summary>Specifies whether to match the document ID in the search key.</summary>
+		XFLM_MATCH_DOC_ID = 0x0800
+	}
+
 	/// <remarks>
 	/// The Db class provides a number of methods that allow C#
 	/// applications to access an XFLAIM database.  A Db object
@@ -37,173 +189,6 @@ namespace xflaim
 	{
 		private ulong 		m_pDb;			// Pointer to IF_Db object in unmanaged space
 		private DbSystem 	m_dbSystem;
-
-//-----------------------------------------------------------------------------
-// Database transaction types
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Database transaction types.
-		/// </summary>
-		public enum DbTransType : uint
-		{
-			/// <summary>No transaction</summary>
-			XFLM_NO_TRANS = 0,
-			/// <summary>Read transaction</summary>
-			XFLM_READ_TRANS,
-			/// <summary>Update transaction</summary>
-			XFLM_UPDATE_TRANS
-		}
-
-//-----------------------------------------------------------------------------
-// Database transaction flags
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Database transaction flags.
-		/// </summary>
-		[Flags]
-		public enum DbTransFlags : uint
-		{
-			/// <summary>
-			/// Do not terminate the transaction, even if
-			/// a checkpoint is waiting to complete
-			/// </summary>
-			XFLM_DONT_KILL_TRANS = 0x0001,
-			/// <summary>
-			/// Place all blocks and nodes read during the transaction
-			/// at the least-recently used positions in the cache lists.
-			/// </summary>
-			XFLM_DONT_POISON_CACHE = 0x0002
-		}
-
-//-----------------------------------------------------------------------------
-// Database lock types
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Types of locks that may be requested.
-		/// </summary>
-		public enum DbLockType : uint
-		{
-			/// <summary>
-			/// No lock
-			/// </summary>
-			FLM_LOCK_NONE = 0,
-			/// <summary>
-			///  Exclusive lock
-			/// </summary>
-			FLM_LOCK_EXCLUSIVE,
-			/// <summary>
-			/// Shared lock
-			/// </summary>
-			FLM_LOCK_SHARED
-		}
-
-//-----------------------------------------------------------------------------
-// Index status constants
-//-----------------------------------------------------------------------------
-
-	/// <summary>
-	/// Types of locks that may be requested.
-	/// </summary>
-	public enum DbIndexState : uint
-	{
-		/// <summary>
-		/// Index is on-line and available for use.
-		/// </summary>
-		XFLM_INDEX_ONLINE = 0,
-		/// <summary>
-		///  Index is being built and is unavailable.
-		/// </summary>
-		XFLM_INDEX_BRINGING_ONLINE,
-		/// <summary>
-		/// Index has been suspended and is unavailable.
-		/// </summary>
-		XFLM_INDEX_SUSPENDED
-	}
-
-	/// <summary>
-	/// Index status object
-	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-	public class XFLM_INDEX_STATUS
-	{
-		/// <summary>
-		/// If ~0 then index is online, otherwise this is the value of the 
-		/// last document ID that was indexed.
-		/// </summary>
-		public long  		ui64LastDocumentIndexed;
-		/// <summary>
-		/// Keys processed by the background indexing thread.
-		/// </summary>
-		public long			ui64KeysProcessed;
-		/// <summary>
-		/// Documents processed by the background indexing thread.
-		/// </summary>
-		public long			ui64DocumentsProcessed;
-		/// <summary>
-		/// Number of transactions completed by the background indexing thread.
-		/// </summary>
-		public long			ui64Transactions;
-		/// <summary>
-		/// ID of the index.
-		/// </summary>
-		public uint			ui32IndexNum;
-		/// <summary>
-		/// Time the bacground indexing thread (if any) was started.
-		/// </summary>
-		public uint			ui32StartTime;
-		/// <summary>
-		/// State of the background indexing thread (if any).
-		/// </summary>
-		DbIndexState		eState;
-	}
-
-//-----------------------------------------------------------------------------
-// RetrieveFlags
-//-----------------------------------------------------------------------------
-
-	/// <summary>
-	/// Flags used by the keyRetrieve method
-	/// </summary>
-	[Flags]
-	public enum RetrieveFlags : uint
-	{
-		/// <summary>
-		/// Search for keys greater than or equal to the "from" key.
-		/// </summary>
-		XFLM_INCL = 0x0010,
-		/// <summary>
-		/// Search for keys greater than the "from" key.
-		/// </summary>
-		XFLM_EXCL = 0x0020,
-		/// <summary>
-		/// Search for an exact "from" key match.
-		/// </summary>
-		XFLM_EXACT = 0x0040,
-		/// <summary>
-		/// Search for an exact "from" key match without comparing
-		/// the reference component of the key.
-		/// </summary>
-		XFLM_KEY_EXACT = 0x0080,
-		/// <summary>
-		/// Retrieve the first key in the index.
-		/// </summary>
-		XFLM_FIRST = 0x0100,
-		/// <summary>
-		/// Retrieve the last key in the index.
-		/// </summary>
-		XFLM_LAST = 0x0200,
-		/// <summary>
-		/// TBD
-		/// </summary>
-		XFLM_MATCH_IDS = 0x0400,
-		/// <summary>
-		/// TBD
-		/// </summary>
-		XFLM_MATCH_DOC_ID = 0x0800
-	}
 
 //-----------------------------------------------------------------------------
 // constructor
@@ -318,7 +303,7 @@ namespace xflaim
 	/// Starts a transaction.
 	/// </summary>
 	/// <param name="eTransType">
-	/// The type of transaction (<see cref="DbTransType"/>)
+	/// The type of transaction (<see cref="eDbTransType"/>)
 	/// </param>
 	/// <param name="uiMaxLockWait">
 	/// Specifies the amount of time to wait for lock requests occuring
@@ -332,7 +317,7 @@ namespace xflaim
 	/// </param>
 	/// <returns></returns>
 	public void transBegin(
-		DbTransType		eTransType,
+		eDbTransType	eTransType,
 		uint				uiMaxLockWait,
 		DbTransFlags	uiFlags)
 	{
@@ -348,7 +333,7 @@ namespace xflaim
 	[DllImport("xflaim")]
 	private static extern RCODE xflaim_Db_transBegin(
 		ulong				pDb,
-		DbTransType		eTransType,
+		eDbTransType	eTransType,
 		uint				uiMaxLockWait,
 		DbTransFlags	uiFlags);
 
@@ -434,14 +419,14 @@ namespace xflaim
 	/// <summary>
 	/// Get the current transaction type.
 	/// </summary>
-	/// <returns><see cref="DbTransType"/></returns>
-	public DbTransType getTransType()
+	/// <returns><see cref="eDbTransType"/></returns>
+	public eDbTransType getTransType()
 	{
 		return( xflaim_Db_getTransType( m_pDb));
 	}
 
 	[DllImport("xflaim")]
-	private static extern DbTransType xflaim_Db_getTransType(
+	private static extern eDbTransType xflaim_Db_getTransType(
 		ulong				pDb);
 
 //-----------------------------------------------------------------------------
@@ -480,7 +465,7 @@ namespace xflaim
 	/// <summary>
 	/// Lock the database. 
 	/// </summary>
-	/// <param name="eLockType">
+	/// <param name="eLckType">
 	/// Type of lock being requested.
 	/// </param>
 	/// <param name="iPriority">
@@ -494,13 +479,13 @@ namespace xflaim
 	/// </param>
 	/// <returns></returns>
 	public void dbLock(
-		DbLockType		eLockType,
+		eLockType		eLckType,
 		int				iPriority,
 		uint				uiTimeout)
 	{
 		RCODE				rc = RCODE.NE_XFLM_OK;
 
-		if( (rc = xflaim_Db_dbLock( m_pDb, eLockType, 
+		if( (rc = xflaim_Db_dbLock( m_pDb, eLckType, 
 			iPriority, uiTimeout)) != 0)
 		{
 			throw new XFlaimException(rc);
@@ -510,7 +495,7 @@ namespace xflaim
 	[DllImport("xflaim")]
 	private static extern RCODE xflaim_Db_dbLock(
 		ulong				pDb,
-		DbLockType		eLockType,
+		eLockType		eLckType,
 		int				iPriority,
 		uint				uiTimeout);
 	
@@ -544,13 +529,13 @@ namespace xflaim
 	/// Get the type of database lock current held.
 	/// </summary>
 	/// <returns></returns>
-	public DbLockType getLockType()
+	public eLockType getLockType()
 	{
 		return( xflaim_Db_getLockType( m_pDb));
 	}
 
 	[DllImport("xflaim")]
-	private static extern DbLockType xflaim_Db_getLockType(
+	private static extern eLockType xflaim_Db_getLockType(
 		ulong				pDb);
 
 //-----------------------------------------------------------------------------
