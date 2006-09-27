@@ -795,12 +795,6 @@
 
 	typedef struct
 	{
-		FLMUINT				uiIndexNum;					// Index number
-		eXFlmIndexState	eState;
-		
-		// Statistics when eState is INDEX_BRINGING_ONLINE
-		
-		FLMUINT				uiStartTime;				// Start time of the offline process or zero.
 		FLMUINT64			ui64LastDocumentIndexed;// If ~0 then index is online,
 																// otherwise this is the value of the last 
 																// document ID that was indexed.
@@ -808,6 +802,9 @@
 		FLMUINT64			ui64DocumentsProcessed;	// Documents processed for offline thread.
 		FLMUINT64			ui64Transactions;			// Number of transactions started by the
 																// indexing thread
+		FLMUINT32			ui32IndexNum;				// Index number
+		FLMUINT32			ui32StartTime;				// Start time of the offline process or zero.
+		eXFlmIndexState	eState;
 	} XFLM_INDEX_STATUS;
 
 	/****************************************************************************
