@@ -233,14 +233,13 @@ Desc:
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getFirst(
 	FLMUINT64		ui64Query,
 	FLMUINT64		ui64Db,
-	FLMUINT64		ui64OldNode,
 	FLMUINT32		ui32TimeLimit,
 	FLMUINT64 *		pui64Node)
 {
 	RCODE				rc;
 	IF_Query *		pQuery = (IF_Query *)((FLMUINT)ui64Query);
 	IF_Db *			pDb = (IF_Db *)((FLMUINT)ui64Db);
-	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)(*pui64Node));
 
 	rc = pQuery->getFirst( pDb, &pNode, (FLMUINT)ui32TimeLimit);
 	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
@@ -253,14 +252,13 @@ Desc:
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getLast(
 	FLMUINT64		ui64Query,
 	FLMUINT64		ui64Db,
-	FLMUINT64		ui64OldNode,
 	FLMUINT32		ui32TimeLimit,
 	FLMUINT64 *		pui64Node)
 {
 	RCODE				rc;
 	IF_Query *		pQuery = (IF_Query *)((FLMUINT)ui64Query);
 	IF_Db *			pDb = (IF_Db *)((FLMUINT)ui64Db);
-	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)(*pui64Node));
 
 	rc = pQuery->getLast( pDb, &pNode, (FLMUINT)ui32TimeLimit);
 	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
@@ -273,14 +271,13 @@ Desc:
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getNext(
 	FLMUINT64		ui64Query,
 	FLMUINT64		ui64Db,
-	FLMUINT64		ui64OldNode,
 	FLMUINT32		ui32TimeLimit,
 	FLMUINT64 *		pui64Node)
 {
 	RCODE				rc;
 	IF_Query *		pQuery = (IF_Query *)((FLMUINT)ui64Query);
 	IF_Db *			pDb = (IF_Db *)((FLMUINT)ui64Db);
-	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)(*pui64Node));
 
 	rc = pQuery->getNext( pDb, &pNode, (FLMUINT)ui32TimeLimit);
 	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
@@ -293,14 +290,13 @@ Desc:
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getPrev(
 	FLMUINT64		ui64Query,
 	FLMUINT64		ui64Db,
-	FLMUINT64		ui64OldNode,
 	FLMUINT32		ui32TimeLimit,
 	FLMUINT64 *		pui64Node)
 {
 	RCODE				rc;
 	IF_Query *		pQuery = (IF_Query *)((FLMUINT)ui64Query);
 	IF_Db *			pDb = (IF_Db *)((FLMUINT)ui64Db);
-	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)(*pui64Node));
 
 	rc = pQuery->getPrev( pDb, &pNode, (FLMUINT)ui32TimeLimit);
 	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
@@ -313,13 +309,12 @@ Desc:
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getCurrent(
 	FLMUINT64		ui64Query,
 	FLMUINT64		ui64Db,
-	FLMUINT64		ui64OldNode,
 	FLMUINT64 *		pui64Node)
 {
 	RCODE				rc;
 	IF_Query *		pQuery = (IF_Query *)((FLMUINT)ui64Query);
 	IF_Db *			pDb = (IF_Db *)((FLMUINT)ui64Db);
-	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)(*pui64Node));
 
 	rc = pQuery->getCurrent( pDb, &pNode);
 	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
@@ -508,7 +503,6 @@ Desc:
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionTo(
 	FLMUINT64		ui64Query,
 	FLMUINT64		ui64Db,
-	FLMUINT64		ui64OldNode,
 	FLMUINT32		ui32TimeLimit,
 	FLMUINT32		ui32Position,
 	FLMUINT64 *		pui64Node)
@@ -516,7 +510,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionTo(
 	RCODE				rc;
 	IF_Query *		pQuery = (IF_Query *)((FLMUINT)ui64Query);
 	IF_Db *			pDb = (IF_Db *)((FLMUINT)ui64Db);
-	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)(*pui64Node));
 
 	rc = pQuery->positionTo( pDb, &pNode, (FLMUINT)ui32TimeLimit, (FLMUINT)ui32Position);
 	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
@@ -529,7 +523,6 @@ Desc:
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionToByKey(
 	FLMUINT64		ui64Query,
 	FLMUINT64		ui64Db,
-	FLMUINT64		ui64OldNode,
 	FLMUINT32		ui32TimeLimit,
 	FLMUINT64		ui64SearchKey,
 	FLMUINT32		ui32RetrieveFlags,
@@ -538,7 +531,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionToByKey(
 	RCODE					rc;
 	IF_Query *			pQuery = (IF_Query *)((FLMUINT)ui64Query);
 	IF_Db *				pDb = (IF_Db *)((FLMUINT)ui64Db);
-	IF_DOMNode *		pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+	IF_DOMNode *		pNode = (IF_DOMNode *)((FLMUINT)(*pui64Node));
 	IF_DataVector *	pSearchKey = (IF_DataVector *)((FLMUINT)ui64SearchKey);
 
 	rc = pQuery->positionTo( pDb, &pNode, (FLMUINT)ui32TimeLimit,

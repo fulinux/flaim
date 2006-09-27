@@ -694,13 +694,10 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode;
-			ulong		pOldNode = (nodeToReuse == null)
-										? 0
-										: nodeToReuse.getNode();
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_Query_getFirst( m_pQuery, m_db.getDb(),
-											pOldNode, uiTimeLimit, out pNode)) != 0)
+											uiTimeLimit, ref pNode)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -721,9 +718,8 @@ namespace xflaim
 		private static extern RCODE xflaim_Query_getFirst(
 			ulong			pQuery,
 			ulong			pDb,
-			ulong			pOldNode,
 			uint			uiTimeLimit,
-			out ulong	ppNode);
+			ref ulong	ppNode);
 
 //-----------------------------------------------------------------------------
 // getLast
@@ -751,13 +747,10 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode;
-			ulong		pOldNode = (nodeToReuse == null)
-										? 0
-										: nodeToReuse.getNode();
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_Query_getLast( m_pQuery, m_db.getDb(),
-				pOldNode, uiTimeLimit, out pNode)) != 0)
+				uiTimeLimit, ref pNode)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -778,9 +771,8 @@ namespace xflaim
 		private static extern RCODE xflaim_Query_getLast(
 			ulong			pQuery,
 			ulong			pDb,
-			ulong			pOldNode,
 			uint			uiTimeLimit,
-			out ulong	ppNode);
+			ref ulong	ppNode);
 
 //-----------------------------------------------------------------------------
 // getNext
@@ -808,13 +800,10 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode;
-			ulong		pOldNode = (nodeToReuse == null)
-				? 0
-				: nodeToReuse.getNode();
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_Query_getNext( m_pQuery, m_db.getDb(),
-				pOldNode, uiTimeLimit, out pNode)) != 0)
+				uiTimeLimit, ref pNode)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -835,9 +824,8 @@ namespace xflaim
 		private static extern RCODE xflaim_Query_getNext(
 			ulong			pQuery,
 			ulong			pDb,
-			ulong			pOldNode,
 			uint			uiTimeLimit,
-			out ulong	ppNode);
+			ref ulong	ppNode);
 
 //-----------------------------------------------------------------------------
 // getPrev
@@ -865,13 +853,10 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode;
-			ulong		pOldNode = (nodeToReuse == null)
-				? 0
-				: nodeToReuse.getNode();
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_Query_getPrev( m_pQuery, m_db.getDb(),
-				pOldNode, uiTimeLimit, out pNode)) != 0)
+				uiTimeLimit, ref pNode)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -892,9 +877,8 @@ namespace xflaim
 		private static extern RCODE xflaim_Query_getPrev(
 			ulong			pQuery,
 			ulong			pDb,
-			ulong			pOldNode,
 			uint			uiTimeLimit,
-			out ulong	ppNode);
+			ref ulong	ppNode);
 
 //-----------------------------------------------------------------------------
 // getCurrent
@@ -919,13 +903,10 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode;
-			ulong		pOldNode = (nodeToReuse == null)
-				? 0
-				: nodeToReuse.getNode();
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_Query_getCurrent( m_pQuery, m_db.getDb(),
-				pOldNode, out pNode)) != 0)
+				ref pNode)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -946,8 +927,7 @@ namespace xflaim
 		private static extern RCODE xflaim_Query_getCurrent(
 			ulong			pQuery,
 			ulong			pDb,
-			ulong			pOldNode,
-			out ulong	ppNode);
+			ref ulong	ppNode);
 
 //-----------------------------------------------------------------------------
 // resetQuery
@@ -1227,13 +1207,11 @@ namespace xflaim
 			uint				uiPosition)
 		{
 			RCODE		rc;
-			ulong		pOldNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
-			ulong		pNode;
 			DOMNode	newNode;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_Query_positionTo( m_pQuery, m_db.getDb(),
-								pOldNode, uiTimeLimit,
-								uiPosition, out pNode)) != 0)
+								uiTimeLimit, uiPosition, ref pNode)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -1254,10 +1232,9 @@ namespace xflaim
 		private static extern RCODE xflaim_Query_positionTo(
 			ulong				pQuery,
 			ulong				pDb,
-			ulong				pOldNode,
 			uint				uiTimeLimit,
 			uint				uiPosition,
-			out ulong		ppNode);
+			ref ulong		ppNode);
 
 //-----------------------------------------------------------------------------
 // positionTo
@@ -1294,13 +1271,12 @@ namespace xflaim
 			RetrieveFlags	retrieveFlags)
 		{
 			RCODE		rc;
-			ulong		pOldNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
-			ulong		pNode;
 			DOMNode	newNode;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_Query_positionToByKey( m_pQuery, m_db.getDb(),
-				pOldNode, uiTimeLimit, searchKey.getDataVector(),
-				retrieveFlags, out pNode)) != 0)
+				uiTimeLimit, searchKey.getDataVector(),
+				retrieveFlags, ref pNode)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -1321,11 +1297,10 @@ namespace xflaim
 		private static extern RCODE xflaim_Query_positionToByKey(
 			ulong				pQuery,
 			ulong				pDb,
-			ulong				pOldNode,
 			uint				uiTimeLimit,
 			ulong				pDataVector,
 			RetrieveFlags	retrieveFlags,
-			out ulong		ppNode);
+			ref ulong		ppNode);
 
 //-----------------------------------------------------------------------------
 // getPosition
