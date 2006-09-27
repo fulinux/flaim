@@ -490,3 +490,142 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addSortKey(
 	*pui64Context = (FLMUINT64)((FLMUINT)pvContext);
 	return( rc);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_enablePositioning(
+	FLMUINT64	ui64Query)
+{
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	
+	return( pQuery->enablePositioning());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionTo(
+	FLMUINT64		ui64Query,
+	FLMUINT64		ui64Db,
+	FLMUINT64		ui64OldNode,
+	FLMUINT32		ui32TimeLimit,
+	FLMUINT32		ui32Position,
+	FLMUINT64 *		pui64Node)
+{
+	RCODE				rc;
+	IF_Query *		pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	IF_Db *			pDb = (IF_Db *)((FLMUINT)ui64Db);
+	IF_DOMNode *	pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+
+	rc = pQuery->positionTo( pDb, &pNode, (FLMUINT)ui32TimeLimit, (FLMUINT)ui32Position);
+	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionToByKey(
+	FLMUINT64		ui64Query,
+	FLMUINT64		ui64Db,
+	FLMUINT64		ui64OldNode,
+	FLMUINT32		ui32TimeLimit,
+	FLMUINT64		ui64SearchKey,
+	FLMUINT32		ui32RetrieveFlags,
+	FLMUINT64 *		pui64Node)
+{
+	RCODE					rc;
+	IF_Query *			pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	IF_Db *				pDb = (IF_Db *)((FLMUINT)ui64Db);
+	IF_DOMNode *		pNode = (IF_DOMNode *)((FLMUINT)ui64OldNode);
+	IF_DataVector *	pSearchKey = (IF_DataVector *)((FLMUINT)ui64SearchKey);
+
+	rc = pQuery->positionTo( pDb, &pNode, (FLMUINT)ui32TimeLimit,
+						pSearchKey, (FLMUINT)ui32RetrieveFlags);
+	*pui64Node = (FLMUINT64)((FLMUINT)pNode);
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getPosition(
+	FLMUINT64		ui64Query,
+	FLMUINT64		ui64Db,
+	FLMUINT32 *		pui32Position)
+{
+	RCODE			rc;
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	IF_Db *		pDb = (IF_Db *)((FLMUINT)ui64Db);
+	FLMUINT		uiPosition;
+
+	rc = pQuery->getPosition( pDb, &uiPosition);
+	*pui32Position = (FLMUINT32)uiPosition;
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_buildResultSet(
+	FLMUINT64	ui64Query,
+	FLMUINT64	ui64Db,
+	FLMUINT32	ui32TimeLimit)
+{
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	IF_Db *		pDb = (IF_Db *)((FLMUINT)ui64Db);
+
+	return( pQuery->buildResultSet( pDb, (FLMUINT)ui32TimeLimit));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_Query_stopBuildingResultSet(
+	FLMUINT64	ui64Query)
+{
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+
+	pQuery->stopBuildingResultSet();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP void FLMAPI xflaim_Query_enableResultSetEncryption(
+	FLMUINT64	ui64Query)
+{
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+
+	pQuery->enableResultSetEncryption();
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getCounts(
+	FLMUINT64		ui64Query,
+	FLMUINT64		ui64Db,
+	FLMUINT32		ui32TimeLimit,
+	FLMBOOL			bPartialCountOk,
+	FLMUINT32 *		pui32ReadCount,
+	FLMUINT32 *		pui32PassedCount,
+	FLMUINT32 *		pui32PositionableToCount,
+	FLMBOOL *		pbDoneBuildingResultSet)
+{
+	RCODE			rc;
+	IF_Query *	pQuery = (IF_Query *)((FLMUINT)ui64Query);
+	IF_Db *		pDb = (IF_Db *)((FLMUINT)ui64Db);
+	FLMUINT		uiReadCount;
+	FLMUINT		uiPassedCount;
+	FLMUINT		uiPositionableToCount;
+
+	rc = pQuery->getCounts( pDb, (FLMUINT)ui32TimeLimit, bPartialCountOk,
+							&uiReadCount, &uiPassedCount, &uiPositionableToCount,
+							pbDoneBuildingResultSet);
+	*pui32ReadCount = (FLMUINT32)uiReadCount;
+	*pui32PassedCount = (FLMUINT32)uiPassedCount;
+	*pui32PositionableToCount = (FLMUINT32)uiPositionableToCount;
+	return( rc);
+}

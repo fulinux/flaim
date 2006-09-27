@@ -1178,5 +1178,307 @@ namespace xflaim
 			int				bSortMissingHigh,
 			out ulong		pulContext);
 
+//-----------------------------------------------------------------------------
+// enablePositioning
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Enable absolute positioning in the query result set.
+		/// </summary>
+		public void enablePositioning()
+		{
+			RCODE	rc;
+
+			if ((rc = xflaim_Query_enablePositioning( m_pQuery)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_enablePositioning(
+			ulong				pQuery);
+
+//-----------------------------------------------------------------------------
+// positionTo
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Position to the <see cref="DOMNode"/> in the result that is at
+		/// the absolute position specified by the uiPosition parameter.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be
+		/// passed in, and it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <param name="uiTimeLimit">
+		/// Time limit (in milliseconds) for operation to complete.  A value of zero
+		/// indicates that the operation should not time out.
+		/// </param>
+		/// <param name="uiPosition">
+		/// Absolute position in the result set to position to.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode positionTo(
+			DOMNode			nodeToReuse,
+			uint				uiTimeLimit,
+			uint				uiPosition)
+		{
+			RCODE		rc;
+			ulong		pOldNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			ulong		pNode;
+			DOMNode	newNode;
+
+			if ((rc = xflaim_Query_positionTo( m_pQuery, m_db.getDb(),
+								pOldNode, uiTimeLimit,
+								uiPosition, out pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			if (nodeToReuse == null)
+			{
+				newNode = new DOMNode( pNode, m_db);
+			}
+			else
+			{
+				newNode = nodeToReuse;
+				newNode.setNodePtr( pNode, m_db);
+			}
+		
+			return( newNode);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_positionTo(
+			ulong				pQuery,
+			ulong				pDb,
+			ulong				pOldNode,
+			uint				uiTimeLimit,
+			uint				uiPosition,
+			out ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// positionTo
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Position to the <see cref="DOMNode"/> in the result that is at
+		/// the position specified by the searchKey parameter.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be
+		/// passed in, and it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <param name="uiTimeLimit">
+		/// Time limit (in milliseconds) for operation to complete.  A value of zero
+		/// indicates that the operation should not time out.
+		/// </param>
+		/// <param name="searchKey">
+		/// This is a key that corresponds to the sort key that was specified using
+		/// the addSortKey method.  This method looks up the node in the result set
+		/// that has this search key and returns it.
+		/// </param>
+		/// <param name="retrieveFlags">
+		/// The search flags that direct how the key is to be used to do positioning.
+		/// This should be values from <see cref="RetrieveFlags"/> that are ORed together.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode positionTo(
+			DOMNode			nodeToReuse,
+			uint				uiTimeLimit,
+			DataVector		searchKey,
+			RetrieveFlags	retrieveFlags)
+		{
+			RCODE		rc;
+			ulong		pOldNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			ulong		pNode;
+			DOMNode	newNode;
+
+			if ((rc = xflaim_Query_positionToByKey( m_pQuery, m_db.getDb(),
+				pOldNode, uiTimeLimit, searchKey.getDataVector(),
+				retrieveFlags, out pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			if (nodeToReuse == null)
+			{
+				newNode = new DOMNode( pNode, m_db);
+			}
+			else
+			{
+				newNode = nodeToReuse;
+				newNode.setNodePtr( pNode, m_db);
+			}
+		
+			return( newNode);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_positionToByKey(
+			ulong				pQuery,
+			ulong				pDb,
+			ulong				pOldNode,
+			uint				uiTimeLimit,
+			ulong				pDataVector,
+			RetrieveFlags	retrieveFlags,
+			out ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getPosition
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the absolute position within the result set where the query
+		/// is currently positioned.
+		/// </summary>
+		/// <returns>Returns absolute position.</returns>
+		public uint getPosition()
+		{
+			RCODE		rc;
+			uint		uiPosition;
+
+			if ((rc = xflaim_Query_getPosition( m_pQuery, m_db.getDb(),
+								out uiPosition)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiPosition);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_getPosition(
+			ulong		pQuery,
+			ulong		pDb,
+			out uint	puiPosition);
+
+//-----------------------------------------------------------------------------
+// buildResultSet
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Build the result set for the query.
+		/// </summary>
+		/// <param name="uiTimeLimit">
+		/// Time limit (in milliseconds) for operation to complete. A value of
+		/// zero indicates that the operation should not time out.
+		/// </param>
+		public void buildResultSet(
+			uint	uiTimeLimit)
+		{
+			RCODE		rc;
+
+			if ((rc = xflaim_Query_buildResultSet( m_pQuery, m_db.getDb(),
+				uiTimeLimit)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_buildResultSet(
+			ulong		pQuery,
+			ulong		pDb,
+			uint		uiTimeLimit);
+
+//-----------------------------------------------------------------------------
+// stopBuildingResultSet
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Stop building the result set for the query.
+		/// </summary>
+		public void stopBuildingResultSet()
+		{
+			xflaim_Query_stopBuildingResultSet( m_pQuery);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Query_stopBuildingResultSet(
+			ulong		pQuery);
+
+//-----------------------------------------------------------------------------
+// enableResultSetEncryption
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Enable encryption for the query result set while it is being built.
+		/// Anything that overflows to disk will be encrypted.
+		/// </summary>
+		public void enableResultSetEncryption()
+		{
+			xflaim_Query_enableResultSetEncryption( m_pQuery);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Query_enableResultSetEncryption(
+			ulong		pQuery);
+
+//-----------------------------------------------------------------------------
+// getCounts
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Return counts about the result set that has either been built or is
+		/// in the process of being built.
+		/// </summary>
+		/// <param name="uiTimeLimit">
+		/// Time limit (in milliseconds) for operation to complete. A value of
+		/// zero indicates that the operation should not time out.
+		/// </param>
+		/// <param name="bPartialCountOk">
+		/// Specifies whether the method should wait for the result set to be
+		/// completely built before returning counts.  If true, the method will
+		/// return the current counts, even if the result set is not completely built.
+		/// </param>
+		/// <param name="uiReadCount">
+		/// Returns total nodes or documents read so far.
+		/// </param>
+		/// <param name="uiPassedCount">
+		/// Returns total nodes or documents that have passed the query criteria.
+		/// This is essentially the current total of nodes or documents that will
+		/// be in the query result set.
+		/// </param>
+		/// <param name="uiPositionableToCount">
+		/// Returns the number of nodes that can be positioned to.  This will be
+		/// zero if the result set must be sorted before positioning can occur.
+		/// </param>
+		/// <param name="bDoneBuildingResultSet">
+		/// Indicates if the result set is completely built yet.
+		/// </param>
+		public void getCounts(
+			uint				uiTimeLimit,
+			bool				bPartialCountOk,
+			out uint			uiReadCount,
+			out uint			uiPassedCount,
+			out uint			uiPositionableToCount,
+			out bool			bDoneBuildingResultSet)
+		{
+			RCODE	rc;
+			int	bDoneBuilding;
+
+			if ((rc = xflaim_Query_getCounts( m_pQuery, m_db.getDb(), uiTimeLimit,
+				(int)(bPartialCountOk ? 1 : 0), out uiReadCount, out uiPassedCount,
+				out uiPositionableToCount, out bDoneBuilding)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			bDoneBuildingResultSet = bDoneBuilding != 0 ? true : false;
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Query_getCounts(
+			ulong		pQuery,
+			ulong		pDb,
+			uint		uiTimeLimit,
+			int		bPartialCountOk,
+			out uint	uiReadCount,
+			out uint	uiPassedCount,
+			out uint	uiPositionableToCount,
+			out int	bDoneBuilding);
+
 	}
 }
