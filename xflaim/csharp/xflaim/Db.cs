@@ -39,103 +39,103 @@ namespace xflaim
 	public enum ReservedElmTag : uint
 	{
 		/// <summary>
-		/// 
+		/// "element"
 		/// </summary>
 		ELM_ELEMENT_TAG = 0xFFFFFE00,
 		/// <summary>
-		/// 
+		/// "attribute"
 		/// </summary>
 		ELM_ATTRIBUTE_TAG = 0xFFFFFE01,
 		/// <summary>
-		/// 
+		/// "Index"
 		/// </summary>
 		ELM_INDEX_TAG = 0xFFFFFE02,
 		/// <summary>
-		/// 
+		/// "ElementComponent"
 		/// </summary>
 		ELM_ELEMENT_COMPONENT_TAG = 0xFFFFFE04,
 		/// <summary>
-		/// 
+		/// "AttributeComponent"
 		/// </summary>
 		ELM_ATTRIBUTE_COMPONENT_TAG = 0xFFFFFE05,
 		/// <summary>
-		/// 
+		/// "Collection"
 		/// </summary>
 		ELM_COLLECTION_TAG = 0xFFFFFE06,
 		/// <summary>
-		/// 
+		/// "Prefix"
 		/// </summary>
 		ELM_PREFIX_TAG = 0xFFFFFE07,
 		/// <summary>
-		/// 
+		/// "NextDictNums"
 		/// </summary>
 		ELM_NEXT_DICT_NUMS_TAG = 0xFFFFFE08,
 		/// <summary>
-		/// 
+		/// "DocumentTitle"
 		/// </summary>
 		ELM_DOCUMENT_TITLE_TAG = 0xFFFFFE09,
 		/// <summary>
-		/// 
+		/// "Invalid"
 		/// </summary>
 		ELM_INVALID_TAG = 0xFFFFFE0A,
 		/// <summary>
-		/// 
+		/// "Quarantined"
 		/// </summary>
 		ELM_QUARANTINED_TAG = 0xFFFFFE0B,
 		/// <summary>
-		/// 
+		/// "All"
 		/// </summary>
 		ELM_ALL_TAG = 0xFFFFFE0C,
 		/// <summary>
-		/// 
+		/// "Annotation"
 		/// </summary>
 		ELM_ANNOTATION_TAG = 0xFFFFFE0D,
 		/// <summary>
-		/// 
+		/// "Any"
 		/// </summary>
 		ELM_ANY_TAG = 0xFFFFFE0E,
 		/// <summary>
-		/// 
+		/// "AttributeGroup"
 		/// </summary>
 		ELM_ATTRIBUTE_GROUP_TAG = 0xFFFFFE0F,
 		/// <summary>
-		/// 
+		/// "Choice"
 		/// </summary>
 		ELM_CHOICE_TAG = 0xFFFFFE10,
 		/// <summary>
-		/// 
+		/// "ComplexContent"
 		/// </summary>
 		ELM_COMPLEX_CONTENT_TAG = 0xFFFFFE11,
 		/// <summary>
-		/// 
+		/// "ComplexType"
 		/// </summary>
 		ELM_COMPLEX_TYPE_TAG = 0xFFFFFE12,
 		/// <summary>
-		/// 
+		/// "Documentation"
 		/// </summary>
 		FLM_DOCUMENTATION_TAG = 0xFFFFFE13,
 		/// <summary>
-		/// 
+		/// "enumeration"
 		/// </summary>
 		ELM_ENUMERATION_TAG = 0xFFFFFE14,
 		/// <summary>
-		/// 
+		/// "extension"
 		/// </summary>
 		ELM_EXTENSION_TAG = 0xFFFFFE15,
 		/// <summary>
-		/// 
+		/// "Delete"
 		/// </summary>
 		ELM_DELETE_TAG = 0xFFFFFE16,
 		/// <summary>
-		/// 
+		/// "BlockChain"
 		/// </summary>
 		ELM_BLOCK_CHAIN_TAG = 0xFFFFFE17,
 		/// <summary>
-		/// 
+		/// "EncDef"
 		/// </summary>
 		ELM_ENCDEF_TAG = 0xFFFFFE18,
 		/// <summary>
-		/// 
+		/// "Sweep"
 		/// </summary>
 		ELM_SWEEP_TAG = 0xFFFFFE19
 	}
@@ -152,183 +152,183 @@ namespace xflaim
 	public enum ReservedAttrTag : uint
 	{
 		/// <summary>
-		/// 
+		/// "DictNumber"
 		/// </summary>
 		ATTR_DICT_NUMBER_TAG = 0xFFFFFE00,
 		/// <summary>
-		/// 
+		/// "CollectionNumber"
 		/// </summary>
 		ATTR_COLLECTION_NUMBER_TAG = 0xFFFFFE01,
 		/// <summary>
-		/// 
+		/// "CollectionName"
 		/// </summary>
 		ATTR_COLLECTION_NAME_TAG = 0xFFFFFE02,
 		/// <summary>
-		/// 
+		/// "name"
 		/// </summary>
 		ATTR_NAME_TAG = 0xFFFFFE03,
 		/// <summary>
-		/// 
+		/// "targetNameSpace"
 		/// </summary>
 		ATTR_TARGET_NAMESPACE_TAG = 0xFFFFFE04,
 		/// <summary>
-		/// 
+		/// "type"
 		/// </summary>
 		ATTR_TYPE_TAG = 0xFFFFFE05,
 		/// <summary>
-		/// 
+		/// "State"
 		/// </summary>
 		ATTR_STATE_TAG = 0xFFFFFE06,
 		/// <summary>
-		/// 
+		/// "Language"
 		/// </summary>
 		ATTR_LANGUAGE_TAG = 0xFFFFFE07,
 		/// <summary>
-		/// 
+		/// "IndexOptions"
 		/// </summary>
 		ATTR_INDEX_OPTIONS_TAG = 0xFFFFFE08,
 		/// <summary>
-		/// 
+		/// "IndexOn"
 		/// </summary>
 		ATTR_INDEX_ON_TAG = 0xFFFFFE09,
 		/// <summary>
-		/// 
+		/// "Required"
 		/// </summary>
 		ATTR_REQUIRED_TAG = 0xFFFFFE0A,
 		/// <summary>
-		/// 
+		/// "Limit"
 		/// </summary>
 		ATTR_LIMIT_TAG = 0xFFFFFE0B,
 		/// <summary>
-		/// 
+		/// "CompareRules"
 		/// </summary>
 		ATTR_COMPARE_RULES_TAG = 0xFFFFFE0C,
 		/// <summary>
-		/// 
+		/// "KeyComponent"
 		/// </summary>
 		ATTR_KEY_COMPONENT_TAG = 0xFFFFFE0D,
 		/// <summary>
-		/// 
+		/// "DataComponent"
 		/// </summary>
 		ATTR_DATA_COMPONENT_TAG = 0xFFFFFE0E,
 		/// <summary>
-		/// 
+		/// "LastDocumentIndexed"
 		/// </summary>
 		ATTR_LAST_DOC_INDEXED_TAG = 0xFFFFFE0F,
 		/// <summary>
-		/// 
+		/// "NextElementNum"
 		/// </summary>
 		ATTR_NEXT_ELEMENT_NUM_TAG = 0xFFFFFE10,
 		/// <summary>
-		/// 
+		/// "NextAttributeNum"
 		/// </summary>
 		ATTR_NEXT_ATTRIBUTE_NUM_TAG = 0xFFFFFE11,
 		/// <summary>
-		/// 
+		/// "NextIndexNum"
 		/// </summary>
 		ATTR_NEXT_INDEX_NUM_TAG = 0xFFFFFE12,
 		/// <summary>
-		/// 
+		/// "NextCollectionNum"
 		/// </summary>
 		ATTR_NEXT_COLLECTION_NUM_TAG = 0xFFFFFE13,
 		/// <summary>
-		/// 
+		/// "NextPrefixNum"
 		/// </summary>
 		ATTR_NEXT_PREFIX_NUM_TAG = 0xFFFFFE14,
 		/// <summary>
-		/// 
+		/// "Source"
 		/// </summary>
 		ATTR_SOURCE_TAG = 0xFFFFFE15,
 		/// <summary>
-		/// 
+		/// "StateChangeCount"
 		/// </summary>
 		ATTR_STATE_CHANGE_COUNT_TAG = 0xFFFFFE16,
 		/// <summary>
-		/// 
+		/// "xmlns"
 		/// </summary>
 		ATTR_XMLNS_TAG = 0xFFFFFE17,
 		/// <summary>
-		/// 
+		/// "abstract"
 		/// </summary>
 		ATTR_ABSTRACT_TAG = 0xFFFFFE18,
 		/// <summary>
-		/// 
+		/// "base"
 		/// </summary>
 		ATTR_BASE_TAG = 0xFFFFFE19,
 		/// <summary>
-		/// 
+		/// "block"
 		/// </summary>
 		ATTR_BLOCK_TAG = 0xFFFFFE1A,
 		/// <summary>
-		/// 
+		/// "default"
 		/// </summary>
 		ATTR_DEFAULT_TAG = 0xFFFFFE1B,
 		/// <summary>
-		/// 
+		/// "final"
 		/// </summary>
 		ATTR_FINAL_TAG = 0xFFFFFE1C,
 		/// <summary>
-		/// 
+		/// "fixed"
 		/// </summary>
 		ATTR_FIXED_TAG = 0xFFFFFE1D,
 		/// <summary>
-		/// 
+		/// "itemtype"
 		/// </summary>
 		ATTR_ITEM_TYPE_TAG = 0xFFFFFE1E,
 		/// <summary>
-		/// 
+		/// "membertypes"
 		/// </summary>
 		ATTR_MEMBER_TYPES_TAG = 0xFFFFFE1F,
 		/// <summary>
-		/// 
+		/// "mixed"
 		/// </summary>
 		ATTR_MIXED_TAG = 0xFFFFFE20,
 		/// <summary>
-		/// 
+		/// "nillable"
 		/// </summary>
 		ATTR_NILLABLE_TAG = 0xFFFFFE21,
 		/// <summary>
-		/// 
+		/// "ref"
 		/// </summary>
 		ATTR_REF_TAG = 0xFFFFFE22,
 		/// <summary>
-		/// 
+		/// "use"
 		/// </summary>
 		ATTR_USE_TAG = 0xFFFFFE23,
 		/// <summary>
-		/// 
+		/// "value"
 		/// </summary>
 		ATTR_VALUE_TAG = 0xFFFFFE24,
 		/// <summary>
-		/// 
+		/// "address"
 		/// </summary>
 		ATTR_ADDRESS_TAG = 0xFFFFFE25,
 		/// <summary>
-		/// 
+		/// "xmlns:xflaim"
 		/// </summary>
 		ATTR_XMLNS_XFLAIM_TAG = 0xFFFFFE26,
 		/// <summary>
-		/// 
+		/// "Key"
 		/// </summary>
 		ATTR_ENCRYPTION_KEY_TAG = 0xFFFFFE27,
 		/// <summary>
-		/// 
+		/// "Transaction"
 		/// </summary>
 		ATTR_TRANSACTION_TAG = 0xFFFFFE28,
 		/// <summary>
-		/// 
+		/// "NextEncDefNum"
 		/// </summary>
 		ATTR_NEXT_ENCDEF_NUM_TAG = 0xFFFFFE29,
 		/// <summary>
-		/// 
+		/// "encId"
 		/// </summary>
 		ATTR_ENCRYPTION_ID_TAG = 0xFFFFFE2A,
 		/// <summary>
-		/// 
+		/// "keySize"
 		/// </summary>
 		ATTR_ENCRYPTION_KEY_SIZE_TAG = 0xFFFFFE2B,
 		/// <summary>
-		/// 
+		/// "UniqueSubElements"
 		/// </summary>
 		ATTR_UNIQUE_SUB_ELEMENTS_TAG = 0xFFFFFE2C
 	}
@@ -495,6 +495,82 @@ namespace xflaim
 	{
 		private ulong 		m_pDb;			// Pointer to IF_Db object in unmanaged space
 		private DbSystem 	m_dbSystem;
+
+		//-----------------------------------------------------------------------------
+		// Reserved strings
+		//-----------------------------------------------------------------------------
+
+		const string ELM_ELEMENT_TAG_NAME = "element";
+		const string ELM_ATTRIBUTE_TAG_NAME = "attribute";
+		const string ELM_INDEX_TAG_NAME = "Index";
+		const string ELM_ELEMENT_COMPONENT_TAG_NAME = "ElementComponent";
+		const string ELM_ATTRIBUTE_COMPONENT_TAG_NAME = "AttributeComponent";
+		const string ELM_COLLECTION_TAG_NAME = "Collection";
+		const string ELM_PREFIX_TAG_NAME = "Prefix";
+		const string ELM_NEXT_DICT_NUMS_TAG_NAME = "NextDictNums";
+		const string ELM_DOCUMENT_TITLE_TAG_NAME = "DocumentTitle";
+		const string ELM_INVALID_TAG_NAME = "Invalid";
+		const string ELM_QUARANTINED_TAG_NAME = "Quarantined";
+		const string ELM_ALL_TAG_NAME = "All";
+		const string ELM_ANNOTATION_TAG_NAME = "Annotation";
+		const string ELM_ANY_TAG_NAME = "Any";
+		const string ELM_ATTRIBUTE_GROUP_TAG_NAME = "AttributeGroup";
+		const string ELM_CHOICE_TAG_NAME = "Choice";
+		const string ELM_COMPLEX_CONTENT_TAG_NAME = "ComplexContent";
+		const string ELM_COMPLEX_TYPE_TAG_NAME = "ComplexType";
+		const string ELM_DOCUMENTATION_TAG_NAME = "Documentation";
+		const string ELM_ENUMERATION_TAG_NAME = "enumeration";
+		const string ELM_EXTENSION_TAG_NAME = "extension";
+		const string ELM_DELETE_TAG_NAME = "Delete";
+		const string ELM_BLOCK_CHAIN_TAG_NAME = "BlockChain";
+		const string ELM_ENCDEF_TAG_NAME = "EncDef";
+		const string ELM_SWEEP_TAG_NAME = "Sweep";
+
+		const string ATTR_DICT_NUMBER_TAG_NAME = "DictNumber";
+		const string ATTR_COLLECTION_NUMBER_TAG_NAME = "CollectionNumber";
+		const string ATTR_COLLECTION_NAME_TAG_NAME = "CollectionName";
+		const string ATTR_NAME_TAG_NAME = "name";
+		const string ATTR_TARGET_NAMESPACE_TAG_NAME = "targetNameSpace";
+		const string ATTR_TYPE_TAG_NAME = "type";
+		const string ATTR_STATE_TAG_NAME = "State";
+		const string ATTR_LANGUAGE_TAG_NAME = "Language";
+		const string ATTR_INDEX_OPTIONS_TAG_NAME = "IndexOptions";
+		const string ATTR_INDEX_ON_TAG_NAME = "IndexOn";
+		const string ATTR_REQUIRED_TAG_NAME = "Required";
+		const string ATTR_LIMIT_TAG_NAME = "Limit";
+		const string ATTR_COMPARE_RULES_TAG_NAME = "CompareRules";
+		const string ATTR_KEY_COMPONENT_TAG_NAME = "KeyComponent";
+		const string ATTR_DATA_COMPONENT_TAG_NAME = "DataComponent";
+		const string ATTR_LAST_DOC_INDEXED_TAG_NAME = "LastDocumentIndexed";
+		const string ATTR_NEXT_ELEMENT_NUM_TAG_NAME = "NextElementNum";
+		const string ATTR_NEXT_ATTRIBUTE_NUM_TAG_NAME = "NextAttributeNum";
+		const string ATTR_NEXT_INDEX_NUM_TAG_NAME = "NextIndexNum";
+		const string ATTR_NEXT_COLLECTION_NUM_TAG_NAME = "NextCollectionNum";
+		const string ATTR_NEXT_PREFIX_NUM_TAG_NAME = "NextPrefixNum";
+		const string ATTR_SOURCE_TAG_NAME = "Source";
+		const string ATTR_STATE_CHANGE_COUNT_TAG_NAME = "StateChangeCount";
+		const string ATTR_XMLNS_TAG_NAME = "xmlns";
+		const string ATTR_ABSTRACT_TAG_NAME = "abstract";
+		const string ATTR_BASE_TAG_NAME = "base";
+		const string ATTR_BLOCK_TAG_NAME = "block";
+		const string ATTR_DEFAULT_TAG_NAME = "default";
+		const string ATTR_FINAL_TAG_NAME = "final";
+		const string ATTR_FIXED_TAG_NAME = "fixed";
+		const string ATTR_ITEM_TYPE_TAG_NAME = "itemtype";
+		const string ATTR_MEMBER_TYPES_TAG_NAME = "membertypes";
+		const string ATTR_MIXED_TAG_NAME = "mixed";
+		const string ATTR_NILLABLE_TAG_NAME = "nillable";
+		const string ATTR_REF_TAG_NAME = "ref";
+		const string ATTR_USE_TAG_NAME = "use";
+		const string ATTR_VALUE_TAG_NAME = "value";
+		const string ATTR_ADDRESS_TAG_NAME = "address";
+		const string ATTR_XMLNS_XFLAIM_TAG_NAME = "xmlns:xflaim";
+		const string ATTR_ENCRYPTION_KEY_TAG_NAME = "Key";
+		const string ATTR_TRANSACTION_TAG_NAME = "Transaction";
+		const string ATTR_NEXT_ENCDEF_NUM_TAG_NAME = "NextEncDefNum";
+		const string ATTR_ENCRYPTION_ID_TAG_NAME = "encId";
+		const string ATTR_ENCRYPTION_KEY_SIZE_TAG_NAME = "keySize";
+		const string ATTR_UNIQUE_SUB_ELEMENTS_TAG_NAME = "UniqueSubElements";
 
 		//-----------------------------------------------------------------------------
 		// constructor
