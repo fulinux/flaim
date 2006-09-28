@@ -863,6 +863,8 @@ public class DOMNode
 	 * @param bDefaultOk If true, specifies that if the attribute is not found
 	 * then the value in lDefaultToUse is to be returned.  If false, and the
 	 * attribute is not found, an exception will be thrown.
+	 * @param lDefaultToUse Default value to use if the attribute is not
+	 * found and bDefaultOk is true.
 	 * @return Returns the value stored in the element node's attribute.
 	 * @throws XFlaimException
 	 */
@@ -886,8 +888,8 @@ public class DOMNode
 	}
 
 	/**
-	 * Retrieves a string representation of the value stored in this node. 
-	 * @param iStartPos Starting character position in string to retrieve from.
+	 * Retrieves a sub-string of the value stored in this node. 
+	 * @param iStartPos Starting character position in string to retrieve sub-string from.
 	 * @param iNumChars Maximum number of characters to retrieve.  May return
 	 * fewer than this number of characters if there are not that many
 	 * characters available from the specified starting position.
@@ -1607,7 +1609,7 @@ public class DOMNode
 	}
 
 	/**
-	 * Creates an annotation node and assignes it to the current node
+	 * Creates an annotation node and associates it with this node.
 	 * @param ReusedNode An instance of DOMNode which is no longer needed and
 	 * can be reassigned to point to different data in the database.  (Reusing
 	 * DOMNode objects is encouraged as it saves the system from allocating
