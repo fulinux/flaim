@@ -27,9 +27,9 @@ using System.Runtime.InteropServices;
 
 namespace xflaim
 {
-	//-----------------------------------------------------------------------------
-	// Element tags
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Element tags
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// Reserved dictionary tags for elements
@@ -140,9 +140,9 @@ namespace xflaim
 		ELM_SWEEP_TAG = 0xFFFFFE19
 	}
 
-	//-----------------------------------------------------------------------------
-	// Attribute tags
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Attribute tags
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// Reserved dictionary tags for attributes
@@ -333,9 +333,9 @@ namespace xflaim
 		ATTR_UNIQUE_SUB_ELEMENTS_TAG = 0xFFFFFE2C
 	}
 
-	//-----------------------------------------------------------------------------
-	// XML parse errors
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// XML parse errors
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
@@ -537,9 +537,9 @@ namespace xflaim
 		XML_ERR_CREATING_ELEMENT_NODE
 	}
 	
-	//-----------------------------------------------------------------------------
-	// XML encoding
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// XML encoding
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
@@ -557,9 +557,9 @@ namespace xflaim
 		XFLM_XML_USASCII_ENCODING
 	}
 
-	//-----------------------------------------------------------------------------
-	// XML import stats
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// XML import stats
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// XML import stats
@@ -619,9 +619,9 @@ namespace xflaim
 		public XMLEncoding		eXMLEncoding;
 	}
 
-	//-----------------------------------------------------------------------------
-	// Database transaction types
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Database transaction types
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// Database transaction types.
@@ -638,9 +638,9 @@ namespace xflaim
 		XFLM_UPDATE_TRANS
 	}
 
-	//-----------------------------------------------------------------------------
-	// Database transaction flags
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Database transaction flags
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// Database transaction flags.
@@ -662,9 +662,9 @@ namespace xflaim
 		XFLM_DONT_POISON_CACHE = 0x0002
 	}
 
-	//-----------------------------------------------------------------------------
-	// Database lock types
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// Database lock types
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// Types of locks that may be requested.
@@ -735,9 +735,9 @@ namespace xflaim
 		public eXFlmIndexState	eState;
 	}
 
-	//-----------------------------------------------------------------------------
-	// RetrieveFlags
-	//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// RetrieveFlags
+//-----------------------------------------------------------------------------
 
 	/// <summary>
 	/// Flags used to specify items to be retrieved from a result set.
@@ -887,9 +887,9 @@ namespace xflaim
 		private static extern void xflaim_Db_Release(
 			IntPtr	pDb);
 
-		//-----------------------------------------------------------------------------
-		// transBegin
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// transBegin
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Starts a transaction.
@@ -3006,494 +3006,768 @@ namespace xflaim
 			IntPtr	pDb,
 			out uint	puiRflFileNum);
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// setRflFileSizeLimits
+//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Set size limits for RFL files.
-	 * @param iMinRflSize Minimum RFL file size.  Database will roll to the
-	 * next RFL file when the current RFL file reaches this size.  If possible
-	 * it will complete the current transaction before rolling to the next file.
-	 * @param iMaxRflSize Maximum RFL file size.  Database will not allow an
-	 * RFL file to exceed this size.  Even if it is in the middle of a
-	 * transaction, it will roll to the next RFL file before this size is allowed
-	 * to be exceeded.  Thus, the database first looks for an opportunity to
-	 * roll to the next file when the RFL file exceeds iMinRflSize.  If it can
-	 * fit the current transaction in without exceeded iMaxRflSize, it will do
-	 * so and then roll to the next file.  Otherwise, it will roll to the next
-	 * file before iMaxRflSize is exceeded.
-	 * @throws XFlaimException
-	 */
+		/// <summary>
+		/// Set size limits for RFL files.
+		/// </summary>
+		/// <param name="uiMinRflSize">
+		/// Minimum RFL file size.  Database will roll to the next RFL file when 
+		/// the current RFL file reaches this size.  If possible it will complete
+		/// the current transaction before rolling to the next file.
+		/// </param>
+		/// <param name="uiMaxRflSize">
+		/// Maximum RFL file size.  Database will not allow an RFL file 
+		/// to exceed this size.  Even if it is in the middle of a transaction,
+		/// it will roll to the next RFL file before this size is allowed
+		/// to be exceeded.  Thus, the database first looks for an opportunity to
+		/// roll to the next file when the RFL file exceeds iMinRflSize.  If it can
+		/// fit the current transaction in without exceeded iMaxRflSize, it will do
+		/// so and then roll to the next file.  Otherwise, it will roll to the next
+		/// file before iMaxRflSize is exceeded.	
+		/// </param>
 		public void setRflFileSizeLimits(
 			uint		uiMinRflSize,
 			uint		uiMaxRflSize)
 		{
+			RCODE rc;
+
+			if ((rc = xflaim_Db_setRflFileSizeLimits(m_pDb, 
+				uiMinRflSize, uiMaxRflSize)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 		}
-#endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_setRflFileSizeLimits(
+			IntPtr pDb,
+			uint uiMinRflSize,
+			uint uiMaxRflSize);
 
-#if TODO
-	/**
-	 * Get the minimum RFL file size.  This is the minimum size an RFL file
-	 * must reach before rolling to the next RFL file.
-	 * @return Returns minimum RFL file size.
-	 * @throws XFlaimException
-	 */
-	public int getMinRflFileSize() throws XFlaimException
-	{
-		return( _getMinRflFileSize( m_this));
-	}
-#endif
+//-----------------------------------------------------------------------------
+// getMinRflFileSize
+//-----------------------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		/// <summary>
+		/// Get the minimum RFL file size.  This is the minimum size an RFL file
+		/// must reach before rolling to the next RFL file.
+		/// </summary>
+		/// <returns>
+		/// Returns minimum RFL file size.
+		/// </returns>
+		public uint getMinRflFileSize()
+		{
+			RCODE rc;
+			uint uiRflFileSize;
 
-#if TODO
-	/**
-	 * Get the maximum RFL file size.  This is the maximum size an RFL file
-	 * is allowed to grow to.  When the current RFL file exceeds the minimum
-	 * RFL file size, the database will attempt to fit the rest of the
-	 * transaction in the current file.  If the transaction completes before
-	 * the current RFL file grows larger than the maximum RFL file size,
-	 * the database will roll to the next RFL file.  However, if the current transaction
-	 * would cause the RFL file to grow larger than the maximum RFL file size,
-	 * the database will roll to the next file before the transaction completes,
-	 * and the transaction will be split across multiple RFL files.
-	 * @return Returns maximum RFL file size.
-	 * @throws XFlaimException
-	 */
-	public int getMaxRflFileSize() throws XFlaimException
-	{
-		return( _getMaxRflFileSize( m_this));
-	}
-#endif
+			if ((rc = xflaim_Db_getMinRflFileSize(m_pDb,
+				out uiRflFileSize)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+			return (uiRflFileSize);
+		}
 
-#if TODO
-	/**
-	 * Force the database to roll to the next RFL file.
-	 * @throws XFlaimException
-	 */
-	public void rflRollToNextFile() throws XFlaimException
-	{
-		_rflRollToNextFile( m_this);
-	}
-#endif
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getMinRflFileSize(
+			IntPtr pDb,
+			out uint uiRflFileSize);
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// getMaxRflFileSize
+//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Specify whether the roll-forward log should keep or not keep aborted
-	 * transactions.
-	 * @param bKeep Flag specifying whether to keep or not keep aborted
-	 * transactions.
-	 * @throws XFlaimException
-	 */
-	public void setKeepAbortedTransInRflFlag(
-		boolean	bKeep) throws XFlaimException
-	{
-		_setKeepAbortedTransInRflFlag( m_this, bKeep);
-	}
-#endif
+		/// <summary>
+		/// Get the maximum RFL file size.  This is the maximum size an RFL file
+		/// is allowed to grow to.  When the current RFL file exceeds the minimum
+		/// RFL file size, the database will attempt to fit the rest of the
+		/// transaction in the current file.  If the transaction completes before
+		/// the current RFL file grows larger than the maximum RFL file size,
+		/// the database will roll to the next RFL file.  However, if the current transaction
+		/// would cause the RFL file to grow larger than the maximum RFL file size,
+		/// the database will roll to the next file before the transaction completes,
+		/// and the transaction will be split across multiple RFL files.
+		/// </summary>
+		/// <returns>
+		/// Returns maximum RFL file size.
+		/// </returns>
+		public uint getMaxRflFileSize()
+		{
+			RCODE rc;
+			uint uiRflFileSize;
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+			if ((rc = xflaim_Db_getMaxRflFileSize(m_pDb,
+				out uiRflFileSize)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 
-#if TODO
-	/**
-	 * Determine whether or not the roll-forward log is keeping aborted
-	 * transactions.
-	 * @return Returns true if aborted transactions are being kept, false otherwise.
-	 * @throws XFlaimException
-	 */
-	public boolean getKeepAbortedTransInRflFlag() throws XFlaimException
-	{
-		return( _getKeepAbortedTransInRflFlag( m_this));
-	}
-#endif
+			return (uiRflFileSize);
+		}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getMaxRflFileSize(
+			IntPtr pDb,
+			out uint uiRflFileSize);
 
-#if TODO
-	/**
-	 * Specify whether the roll-forward log should automatically turn off the
-	 * keeping of RFL files if the RFL volume fills up.
-	 * @param bAutoTurnOff Flag specifying whether to automatically turn off the
-	 * keeping of RFL files if the RFL volume fills up.
-	 * @throws XFlaimException
-	 */
-	public void setAutoTurnOffKeepRflFlag(
-		boolean	bAutoTurnOff) throws XFlaimException
-	{
-		_setAutoTurnOffKeepRflFlag( m_this, bAutoTurnOff);
-	}
-#endif
+//-----------------------------------------------------------------------------
+// rflRollToNextFile
+//-----------------------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		/// <summary>
+		/// Force the database to roll to the next RFL file.
+		/// </summary>
+		public void rflRollToNextFile()
+		{
+			RCODE rc;
 
-#if TODO
-	/**
-	 * Determine whether or not keeping of RFL files will automatically be
-	 * turned off if the RFL volume fills up.
-	 * @return Returns true if the keeping of RFL files will automatically be
-	 * turned off when the RFL volume fills up, false otherwise.
-	 * @throws XFlaimException
-	 */
-	public boolean getAutoTurnOffKeepRflFlag() throws XFlaimException
-	{
-		return( _getAutoTurnOffKeepRflFlag( m_this));
-	}
-#endif
+			if ((rc = xflaim_Db_rflRollToNextFile(m_pDb)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_rflRollToNextFile(
+			IntPtr pDb);
 
-#if TODO
-	/**
-	 * Set the file extend size for the database.  This size specifies how much
-	 * to extend a database file when it needs to be extended.
-	 * @param iFileExtendSize  File extend size.
-	 * @throws XFlaimException
-	 */
-	public void setFileExtendSize(
-		int	iFileExtendSize) throws XFlaimException
-	{
-		_setFileExtendSize( m_this, iFileExtendSize);
-	}
-#endif
+//-----------------------------------------------------------------------------
+// setKeepAbortedTransInRflFlag
+//-----------------------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		/// <summary>
+		/// Specify whether the roll-forward log should keep or not keep aborted
+		/// transactions.
+		/// </summary>
+		/// <param name="bKeep">
+		/// Flag specifying whether to keep or not keep aborted transactions.
+		/// </param>
+		public void setKeepAbortedTransInRflFlag(
+			bool	bKeep)
+		{
+			RCODE rc;
 
-#if TODO
-	/**
-	 * Get the file extend size for the database.
-	 * @return Returns file extend size.
-	 * @throws XFlaimException
-	 */
-	public int getFileExtendSize() throws XFlaimException
-	{
-		return( _getFileExtendSize( m_this));
-	}
-#endif
+			if ((rc = xflaim_Db_setKeepAbortedTransInRflFlag(m_pDb, bKeep)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_setKeepAbortedTransInRflFlag(
+			IntPtr pDb,
+			bool bKeep);
 
-#if TODO
-	/**
-	 * Get the database version for the database.  This is the version of the
-	 * database, not the code.
-	 * @return Returns database version.
-	 * @throws XFlaimException
-	 */
-	public int getDbVersion() throws XFlaimException
-	{
-		return( _getDbVersion( m_this));
-	}
-#endif
+//-----------------------------------------------------------------------------
+// getKeepAbortedTransInRflFlag
+//-----------------------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		/// <summary>
+		/// Determine whether or not the roll-forward log is keeping aborted
+		/// transactions.
+		/// </summary>
+		/// <returns>
+		/// Returns true if aborted transactions are being kept, false otherwise.
+		/// </returns>
+		public bool getKeepAbortedTransInRflFlag()
+		{
+			RCODE rc;
+			int bKeep;
 
-#if TODO
-	/**
-	 * Get the database block size.
-	 * @return Returns database block size.
-	 * @throws XFlaimException
-	 */
-	public int getBlockSize() throws XFlaimException
-	{
-		return( _getBlockSize( m_this));
-	}
-#endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+			if ((rc = xflaim_Db_getKeepAbortedTransInRflFlag(m_pDb,
+				out bKeep)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 
-#if TODO
-	/**
-	 * Get the database default language.
-	 * @return Returns database default language.
-	 * @throws XFlaimException
-	 */
-	public int getDefaultLanguage() throws XFlaimException
-	{
-		return( _getDefaultLanguage( m_this));
-	}
-#endif
+			return (bKeep != 0 ? true : false);
+		}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getKeepAbortedTransInRflFlag(
+			IntPtr pDb,
+			out int bKeep);
 
-#if TODO
-	/**
-	 * Get the database's current transaction ID.  If no transaction is
-	 * currently running, but this Db object has an exclusive lock on the database,
-	 * the transaction ID of the last committed transaction will be returned.
-	 * If no transaction is running, and this Db object does not have an
-	 * exclusive lock on the database, zero is returned.
-	 * @return Returns transaction ID.
-	 * @throws XFlaimException
-	 */
-	public long getTransID() throws XFlaimException
-	{
-		return( _getTransID( m_this));
-	}
-#endif
+//-----------------------------------------------------------------------------
+// setAutoTurnOffKeepRflFlag
+//-----------------------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		/// <summary>
+		/// Specify whether the roll-forward log should automatically turn off the
+		/// keeping of RFL files if the RFL volume fills up.
+		/// </summary>
+		/// <param name="bAutoTurnOff">
+		/// Flag specifying whether to automatically turn off the
+		/// keeping of RFL files if the RFL volume fills up.
+		/// </param>
+		public void setAutoTurnOffKeepRflFlag(
+			bool	bAutoTurnOff)
+		{
+			RCODE rc;
 
-#if TODO
-	/**
-	 * Get the name of the database's control file (e.g.&nbsp;mystuff.db).
-	 * @return Returns control file name.
-	 * @throws XFlaimException
-	 */
-	public String getDbControlFileName() throws XFlaimException
-	{
-		return( _getDbControlFileName( m_this));
-	}
-#endif
+			if ((rc = xflaim_Db_setAutoTurnOffKeepRflFlag(m_pDb, bAutoTurnOff)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_setAutoTurnOffKeepRflFlag(
+			IntPtr pDb,
+			bool bAutoTurnOff);
 
-#if TODO
-	/**
-	 * Get the transaction ID of the last backup that was taken on the database.
-	 * @return Returns last backup transaction ID.
-	 * @throws XFlaimException
-	 */
-	public long getLastBackupTransID() throws XFlaimException
-	{
-		return( _getLastBackupTransID( m_this));
-	}
-#endif
+//-----------------------------------------------------------------------------
+// getAutoTurnOffKeepRflFlag
+//-----------------------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		/// <summary>
+		/// Determine whether or not keeping of RFL files will automatically be
+		/// turned off if the RFL volume fills up.
+		/// </summary>
+		/// <returns>
+		/// Returns true if the keeping of RFL files will automatically be
+		/// turned off when the RFL volume fills up, false otherwise.
+		/// </returns>
+		public bool getAutoTurnOffKeepRflFlag()
+		{
+			RCODE rc;
+			int bAutoTurnOff;
 
-#if TODO
-	/**
-	 * Get the number of blocks that have changed since the last backup was
-	 * taken.
-	 * @return Returns number of blocks that have changed.
-	 * @throws XFlaimException
-	 */
-	public int getBlocksChangedSinceBackup() throws XFlaimException
-	{
-		return( _getBlocksChangedSinceBackup( m_this));
-	}
-#endif
+			if ((rc = xflaim_Db_getAutoTurnOffKeepRflFlag(m_pDb,
+				out bAutoTurnOff)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+			return (bAutoTurnOff != 0 ? true : false);
+		}
 
-#if TODO
-	/**
-	 * Get the next incremental backup sequence number for the database.
-	 * @return Returns next incremental backup sequence number.
-	 * @throws XFlaimException
-	 */
-	public int getNextIncBackupSequenceNum() throws XFlaimException
-	{
-		return( _getNextIncBackupSequenceNum( m_this));
-	}
-#endif
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getAutoTurnOffKeepRflFlag(
+			IntPtr pDb,
+			out int bAutoTurnOff);
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// setFileExtendSize
+//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get the amount of disk space currently being used by data files.
-	 * @return Returns disc space used by data files.
-	 * @throws XFlaimException
-	 */
-	public long getDiskSpaceDataSize()throws XFlaimException
-	{
-		return( _getDiskSpaceDataSize( m_this));
-	}
-#endif
+		/// <summary>
+		/// Set the file extend size for the database.  This size specifies how much
+		/// to extend a database file when it needs to be extended. 
+		/// </summary>
+		/// <param name="uiFileExtendSize">
+		/// File extend size.
+		/// </param>
+		public void setFileExtendSize(
+			uint	uiFileExtendSize)
+		{
+			RCODE rc;
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+			if ((rc = xflaim_Db_setFileExtendSize(m_pDb, uiFileExtendSize)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
 
-#if TODO
-	/**
-	 * Get the amount of disk space currently being used by rollback files.
-	 * @return Returns disc space used by rollback files.
-	 * @throws XFlaimException
-	 */
-	public long getDiskSpaceRollbackSize() throws XFlaimException
-	{
-		return( _getDiskSpaceRollbackSize( m_this));
-	}
-#endif
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_setFileExtendSize(
+			IntPtr pDb,
+			uint uiFileExtendSize);
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// getFileExtendSize
+//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get the amount of disk space currently being used by RFL files.
-	 * @return Returns disc space used by RFL files.
-	 * @throws XFlaimException
-	 */
-	public long getDiskSpaceRflSize() throws XFlaimException
-	{
-		return( _getDiskSpaceRflSize( m_this));
-	}
-#endif
+		/// <summary>
+		/// Get the file extend size for the database.
+		/// </summary>
+		/// <returns>
+		/// Returns file extend size.
+		/// </returns>
+		public uint getFileExtendSize()
+		{
+			RCODE rc;
+			uint uiFileExtendSize;
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+			if ((rc = xflaim_Db_getFileExtendSize(m_pDb,
+				out uiFileExtendSize)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 
-#if TODO
-	/**
-	 * Get the amount of disk space currently being used by all types of
-	 * database files.  This includes the total of data files plus rollback
-	 * files plus RFL files.
-	 * @return Returns total disc space used by database files of all types.
-	 * @throws XFlaimException
-	 */
-	public long getDiskSpaceTotalSize() throws XFlaimException
-	{
-		return( _getDiskSpaceTotalSize( m_this));
-	}
-#endif
+			return (uiFileExtendSize);
+		}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getFileExtendSize(
+			IntPtr pDb,
+			out uint uiFileExtendSize);
 
-#if TODO
-	/**
-	 * Get error code that caused the database to force itself to close.  This should
-	 * be one of the values in {@link xflaim.RCODE RCODE}.
-	 * @return Returns error code that caused the database to force itself to close.
-	 * @throws XFlaimException
-	 */
-	public int getMustCloseRC() throws XFlaimException
-	{
-		return( _getMustCloseRC( m_this));
-	}
-#endif
+//-----------------------------------------------------------------------------
+// getDbVersion
+//-----------------------------------------------------------------------------
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		/// <summary>
+		/// Get the database version for the database.  This is the version of the
+		/// database, not the code.
+		/// </summary>
+		/// <returns>
+		/// Returns database version.
+		/// </returns>
+		public uint getDbVersion()
+		{
+			RCODE rc;
+			uint uiDbVersion;
 
-#if TODO
-	/**
-	 * Get error code that caused the current transaction to require an abort.
-	 * This may be one of the values in {@link xflaim.RCODE RCODE}, but not
-	 * necessarily.
-	 * @return Returns error code that caused the current transaction to require
-	 * itself to abort.
-	 * @throws XFlaimException
-	 */
-	public int getAbortRC() throws XFlaimException
-	{
-		return( _getAbortRC( m_this));
-	}
-#endif
+			if ((rc = xflaim_Db_getDbVersion(m_pDb, out uiDbVersion)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+			return (uiDbVersion);
+		}
 
-#if TODO
-	/**
-	 * Force the current transaction to abort.  This method should be called
-	 * when the code should not be the code that aborts the transation, but
-	 * wants to require that the transaction be aborted by whatever module has
-	 * the authority to abort or commit the transaction.  An error code may be
-	 * set to indicate what error condition is causing the transaction to be
-	 * aborted.
-	 * @param iRc Error code that indicates why the transaction is aborting.
-	 * @throws XFlaimException
-	 */
-	public void setMustAbortTrans(
-		int	iRc) throws XFlaimException
-	{
-		_setMustAbortTrans( m_this, iRc);
-	}
-#endif
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getDbVersion(
+			IntPtr pDb,
+			out uint uiDbVersion);
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// getBlockSize
+//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Enable encryption for this database.
-	 * @throws XFlaimException
-	 */
-	public void enableEncryption() throws XFlaimException
-	{
-		_enableEncryption( m_this);
-	}
-#endif
+		/// <summary>
+		/// Get the database block size.
+		/// </summary>
+		/// <returns>
+		/// Returns database block size.
+		/// </returns>
+		public uint getBlockSize()
+		{
+			RCODE rc;
+			uint uiBlockSize;
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+			if ((rc = xflaim_Db_getBlockSize(m_pDb, out uiBlockSize)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 
-#if TODO
-	/**
-	 * Wrap the database key in a password.  This method is called when it is
-	 * desirable to move the database to a different machine.  Normally, the
-	 * database key is wrapped in the local NICI storage key - which means that
-	 * the database can only be opened and accessed on that machine. -- Once
-	 * the database key is wrapped in a password, the password must be
-	 * supplied to the dbOpen method to open the database.
-	 * @param sPassword Password the database key should be wrapped in.
-	 * @throws XFlaimException
-	 */
-	public void wrapKey(
-		String	sPassword) throws XFlaimException
-	{
-		_wrapKey( m_this, sPassword);
-	}
-#endif
+			return (uiBlockSize);
+		}
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getBlockSize(
+			IntPtr pDb,
+			out uint uiBlockSize);
+
+//-----------------------------------------------------------------------------
+// getDefaultLanguage
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the database default language.
+		/// </summary>
+		/// <returns>
+		/// Returns database default language.
+		/// </returns>
+		public Languages getDefaultLanguage()
+		{
+			RCODE rc;
+			Languages defaultLang;
+
+			if ((rc = xflaim_Db_getDefaultLanguage(m_pDb, out defaultLang)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (defaultLang);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getDefaultLanguage(
+			IntPtr pDb,
+			out Languages defaultLang);
+
+//-----------------------------------------------------------------------------
+// getTransID
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the database's current transaction ID.  If no transaction is
+		/// currently running, but this Db object has an exclusive lock on the database,
+		/// the transaction ID of the last committed transaction will be returned.
+		/// If no transaction is running, and this Db object does not have an
+		/// exclusive lock on the database, zero is returned.
+		/// </summary>
+		/// <returns>
+		/// Transaction ID
+		/// </returns>
+		public ulong getTransID()
+		{
+			RCODE rc;
+			ulong ulTransId;
+
+			if ((rc = xflaim_Db_getTransID(m_pDb, out ulTransId)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (ulTransId);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getTransID(
+			IntPtr pDb,
+			out ulong ulTransId);
+
+//-----------------------------------------------------------------------------
+// getDbControlFileName
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the name of the database's control file
+		/// </summary>
+		/// <returns>
+		/// Returns control file name.
+		/// </returns>
+		public string getDbControlFileName()
+		{
+			RCODE rc;
+			IntPtr pszFileName;
+			string sFileName;
+
+			if ((rc = xflaim_Db_getDbControlFileName(m_pDb, 
+				out pszFileName)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			sFileName = Marshal.PtrToStringAnsi(pszFileName);
+			m_dbSystem.freeUnmanagedMem(pszFileName);
+			return (sFileName);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getDbControlFileName(
+			IntPtr pDb,
+			out IntPtr pszFileName);
+
+//-----------------------------------------------------------------------------
+// getLastBackupTransID
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the transaction ID of the last backup that was taken on the database.
+		/// </summary>
+		/// <returns>
+		/// Returns last backup transaction ID.
+		/// </returns>
+		public ulong getLastBackupTransID()
+		{
+			RCODE rc;
+			ulong ulTransId;
+
+			if ((rc = xflaim_Db_getLastBackupTransID(m_pDb, 
+				out ulTransId)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (ulTransId);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getLastBackupTransID(
+			IntPtr pDb,
+			out ulong ulTransId);
+
+//-----------------------------------------------------------------------------
+// getBlocksChangedSinceBackup
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the number of blocks that have changed since the last backup was
+		/// taken.
+		/// </summary>
+		/// <returns>
+		/// Returns number of blocks that have changed.
+		/// </returns>
+		public uint getBlocksChangedSinceBackup()
+		{
+			RCODE rc;
+			uint uiBlocksChanged;
+
+			if ((rc = xflaim_Db_getBlocksChangedSinceBackup(m_pDb,
+				out uiBlocksChanged)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (uiBlocksChanged);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getBlocksChangedSinceBackup(
+			IntPtr pDb,
+			out uint uiBlocksChanged);
+
+//-----------------------------------------------------------------------------
+// getNextIncBackupSequenceNum
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the next incremental backup sequence number for the database.
+		/// </summary>
+		/// <returns>
+		/// Returns next incremental backup sequence number.
+		/// </returns>
+		public uint getNextIncBackupSequenceNum()
+		{
+			RCODE rc;
+			uint uiNextIncBackupSequenceNum;
+
+			if ((rc = xflaim_Db_getNextIncBackupSequenceNum(m_pDb,
+				out uiNextIncBackupSequenceNum)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (uiNextIncBackupSequenceNum);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getNextIncBackupSequenceNum(
+			IntPtr pDb,
+			out uint uiNextIncBackupSequenceNum);
+
+//-----------------------------------------------------------------------------
+// getDiskSpaceDataSize
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the amount of disk space currently being used by data files.
+		/// </summary>
+		/// <returns>
+		/// Returns disk space used by data files.
+		/// </returns>
+		public ulong getDiskSpaceDataSize()
+		{
+			RCODE rc;
+			ulong ulDiskSpace;
+
+			if ((rc = xflaim_Db_getDiskSpaceDataSize(m_pDb,
+				out ulDiskSpace)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (ulDiskSpace);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getDiskSpaceDataSize(
+			IntPtr pDb,
+			out ulong ulDiskSpace);
+
+//-----------------------------------------------------------------------------
+// getDiskSpaceRollbackSize
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the amount of disk space currently being used by rollback files.
+		/// </summary>
+		/// <returns>
+		/// Returns disk space used by rollback files.
+		/// </returns>
+		public ulong getDiskSpaceRollbackSize()
+		{
+			RCODE rc;
+			ulong ulDiskSpace;
+
+			if ((rc = xflaim_Db_getDiskSpaceRollbackSize(m_pDb,
+				out ulDiskSpace)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (ulDiskSpace);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getDiskSpaceRollbackSize(
+			IntPtr pDb,
+			out ulong ulDiskSpace);
+
+//-----------------------------------------------------------------------------
+// getDiskSpaceRflSize
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the amount of disk space currently being used by RFL files.
+		/// </summary>
+		/// <returns>
+		/// Returns disk space used by RFL files.
+		/// </returns>
+		public ulong getDiskSpaceRflSize()
+		{
+			RCODE rc;
+			ulong ulDiskSpace;
+
+			if ((rc = xflaim_Db_getDiskSpaceRflSize(m_pDb,
+				out ulDiskSpace)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (ulDiskSpace);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getDiskSpaceRflSize(
+			IntPtr pDb,
+			out ulong ulDiskSpace);
+
+//-----------------------------------------------------------------------------
+// getDiskSpaceTotalSize
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the amount of disk space currently being used by all types of
+		/// database files.  This includes the total of data files plus rollback
+		/// files plus RFL files.
+		/// </summary>
+		/// <returns>
+		/// Returns total disk space used by database files of all types.
+		/// </returns>
+		public ulong getDiskSpaceTotalSize()
+		{
+			RCODE rc;
+			ulong ulDiskSpace;
+
+			if ((rc = xflaim_Db_getDiskSpaceTotalSize(m_pDb,
+				out ulDiskSpace)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (ulDiskSpace);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getDiskSpaceTotalSize(
+			IntPtr pDb,
+			out ulong ulDiskSpace);
+
+//-----------------------------------------------------------------------------
+// getMustCloseRC
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get error code that caused the database to force itself to close.  This should
+		/// be one of the values in {@link xflaim.RCODE RCODE}.
+		/// </summary>
+		/// <returns>
+		/// Returns error code that caused the "must close" condition.
+		/// </returns>
+		public RCODE getMustCloseRC()
+		{
+			return( xflaim_Db_getMustCloseRC(m_pDb));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getMustCloseRC(
+			IntPtr pDb);
+
+//-----------------------------------------------------------------------------
+// getAbortRC
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get error code that caused the current transaction to require an abort.
+		/// </summary>
+		/// <returns>
+		/// Returns the error code that requires the transaction to abort
+		/// </returns>
+		public RCODE getAbortRC()
+		{
+			return (xflaim_Db_getAbortRC(m_pDb));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getAbortRC(
+			IntPtr pDb);
+
+//-----------------------------------------------------------------------------
+// setMustAbortTrans
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Force the current transaction to abort.  This method should be called
+		/// when the code should not be the code that aborts the transation, but
+		/// wants to require that the transaction be aborted by whatever module has
+		/// the authority to abort the transaction.  An error code may be
+		/// set to indicate what error condition is causing the transaction to be
+		/// aborted.
+		/// </summary>
+		/// <param name="rc">
+		/// Error code that indicates why the transaction is aborting.
+		/// </param>
+		public void setMustAbortTrans(
+			RCODE		rc)
+		{
+			xflaim_Db_setAbortRC( m_pDb, rc);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Db_setAbortRC(
+			IntPtr pDb,
+			RCODE rc);
+
+//-----------------------------------------------------------------------------
+// enableEncryption
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Enable encryption support for this database.
+		/// </summary>
+		public void enableEncryption()
+		{
+			xflaim_Db_enableEncryption( m_pDb);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Db_enableEncryption(
+			IntPtr pDb);
+
+//-----------------------------------------------------------------------------
+// wrapKey
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Wrap the database key in a password.  This method is called when it is
+		/// desirable to move the database to a different machine.  Normally, the
+		/// database key is wrapped in the local NICI storage key - which means that
+		/// the database can only be opened and accessed on that machine. -- Once
+		/// the database key is wrapped in a password, the password must be
+		/// supplied to the dbOpen method to open the database.
+		/// </summary>
+		/// <param name="sPassword">
+		/// Password the database key should be wrapped in.
+		/// </param>
+		public void wrapKey(
+			string	sPassword)
+		{
+//			_wrapKey( m_this, sPassword);
+		}
+
+//-----------------------------------------------------------------------------
+// rollOverDbKey
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3507,9 +3781,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// getSerialNumber
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3524,9 +3798,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// getCheckpointInfo.
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3541,9 +3815,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// exportXML
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3565,9 +3839,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// exportXML
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3586,9 +3860,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// getLockWaiters
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3606,9 +3880,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// setDeleteStatusObject
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3627,9 +3901,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// setIndexingClientObject
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3648,9 +3922,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// setIndexingStatusObject
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3669,9 +3943,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// setCommitClientObject
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3691,9 +3965,9 @@ namespace xflaim
 	}
 #endif
 
-		//-----------------------------------------------------------------------------
-		//
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// upgrade
+//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
