@@ -202,6 +202,21 @@ namespace xflaim
 		private static extern void xflaim_DOMNode_Release(
 			ulong	pNode);
 
+		private DOMNode makeNode(
+			DOMNode	nodeToReuse,
+			ulong		pNode)
+		{
+			if (nodeToReuse == null)
+			{
+				return( new DOMNode( pNode, m_db));
+			}
+			else
+			{
+				nodeToReuse.setNodePtr( pNode, m_db);
+				return( nodeToReuse);
+			}
+		}
+
 //-----------------------------------------------------------------------------
 // createNode
 //-----------------------------------------------------------------------------
@@ -238,7 +253,6 @@ namespace xflaim
 			DOMNode			nodeToReuse)
 		{
 			RCODE		rc;
-			DOMNode	newNode;
 			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_DOMNode_createNode( m_pNode, m_db.getDb(),
@@ -246,17 +260,7 @@ namespace xflaim
 			{
 				throw new XFlaimException( rc);
 			}
-			if (nodeToReuse == null)
-			{
-				newNode = new DOMNode( pNode, m_db);
-			}
-			else
-			{
-				newNode = nodeToReuse;
-				newNode.setNodePtr( pNode, m_db);
-			}
-		
-			return( newNode);
+			return( makeNode( nodeToReuse, pNode));
 		}
 
 		[DllImport("xflaim")]
@@ -300,7 +304,6 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			DOMNode	newNode;
 			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_DOMNode_createChildElement( m_pNode, m_db.getDb(),
@@ -308,17 +311,7 @@ namespace xflaim
 			{
 				throw new XFlaimException( rc);
 			}
-			if (nodeToReuse == null)
-			{
-				newNode = new DOMNode( pNode, m_db);
-			}
-			else
-			{
-				newNode = nodeToReuse;
-				newNode.setNodePtr( pNode, m_db);
-			}
-		
-			return( newNode);
+			return( makeNode( nodeToReuse, pNode));
 		}
 
 		[DllImport("xflaim")]
@@ -446,7 +439,6 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			DOMNode	newNode;
 			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_DOMNode_createAttribute( m_pNode, m_db.getDb(),
@@ -454,17 +446,7 @@ namespace xflaim
 			{
 				throw new XFlaimException( rc);
 			}
-			if (nodeToReuse == null)
-			{
-				newNode = new DOMNode( pNode, m_db);
-			}
-			else
-			{
-				newNode = nodeToReuse;
-				newNode.setNodePtr( pNode, m_db);
-			}
-		
-			return( newNode);
+			return( makeNode( nodeToReuse, pNode));
 		}
 
 		[DllImport("xflaim")]
@@ -492,7 +474,6 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			DOMNode	newNode;
 			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_DOMNode_getFirstAttribute( m_pNode, m_db.getDb(),
@@ -500,17 +481,7 @@ namespace xflaim
 			{
 				throw new XFlaimException( rc);
 			}
-			if (nodeToReuse == null)
-			{
-				newNode = new DOMNode( pNode, m_db);
-			}
-			else
-			{
-				newNode = nodeToReuse;
-				newNode.setNodePtr( pNode, m_db);
-			}
-		
-			return( newNode);
+			return( makeNode( nodeToReuse, pNode));
 		}
 
 		[DllImport("xflaim")]
@@ -537,7 +508,6 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			DOMNode	newNode;
 			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_DOMNode_getLastAttribute( m_pNode, m_db.getDb(),
@@ -545,17 +515,7 @@ namespace xflaim
 			{
 				throw new XFlaimException( rc);
 			}
-			if (nodeToReuse == null)
-			{
-				newNode = new DOMNode( pNode, m_db);
-			}
-			else
-			{
-				newNode = nodeToReuse;
-				newNode.setNodePtr( pNode, m_db);
-			}
-		
-			return( newNode);
+			return( makeNode( nodeToReuse, pNode));
 		}
 
 		[DllImport("xflaim")]
@@ -589,7 +549,6 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			DOMNode	newNode;
 			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
 
 			if ((rc = xflaim_DOMNode_getAttribute( m_pNode, m_db.getDb(),
@@ -597,17 +556,7 @@ namespace xflaim
 			{
 				throw new XFlaimException( rc);
 			}
-			if (nodeToReuse == null)
-			{
-				newNode = new DOMNode( pNode, m_db);
-			}
-			else
-			{
-				newNode = nodeToReuse;
-				newNode.setNodePtr( pNode, m_db);
-			}
-		
-			return( newNode);
+			return( makeNode( nodeToReuse, pNode));
 		}
 
 		[DllImport("xflaim")]
@@ -1877,6 +1826,1608 @@ namespace xflaim
 			byte []		ucValue,
 			uint			uiLen,
 			uint			uiEncId);
+
+//-----------------------------------------------------------------------------
+// getDataLength
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the data length for the value of this node.
+		/// </summary>
+		/// <returns>Node's value data length.</returns>
+		public uint getDataLength()
+		{
+			RCODE		rc;
+			uint		uiDataLength;
+
+			if ((rc = xflaim_DOMNode_getDataLength( m_pNode, m_db.getDb(),
+				out uiDataLength)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiDataLength);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getDataLength(
+			ulong			pNode,
+			ulong			pDb,
+			out uint		puiDataLength);
+
+//-----------------------------------------------------------------------------
+// getDataType
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the data type for the value of this node.
+		/// </summary>
+		/// <returns>Node's value data type.</returns>
+		public FlmDataType getDataType()
+		{
+			RCODE				rc;
+			FlmDataType		eDataType;
+
+			if ((rc = xflaim_DOMNode_getDataType( m_pNode, m_db.getDb(),
+				out eDataType)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( eDataType);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getDataType(
+			ulong					pNode,
+			ulong					pDb,
+			out FlmDataType	peDataType);
+
+//-----------------------------------------------------------------------------
+// getULong
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for this node as an unsigned long integer.
+		/// </summary>
+		/// <returns>Node's value as an unsigned long integer.</returns>
+		public ulong getULong()
+		{
+			RCODE	rc;
+			ulong	ulValue;
+
+			if ((rc = xflaim_DOMNode_getULong( m_pNode, m_db.getDb(),
+				out ulValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( ulValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getULong(
+			ulong			pNode,
+			ulong			pDb,
+			out ulong	pulValue);
+
+//-----------------------------------------------------------------------------
+// getAttributeValueULong
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for the specified attribute associated with this
+		/// node.  Value is returned as an unsigned long integer.
+		/// </summary>
+		/// <param name="uiAttrNameId">
+		/// Name id of the attribute whose value is to be returned.
+		/// </param>
+		/// <param name="bDefaultOk">
+		/// If true, specifies that if the attribute is not found then the
+		/// value in ulDefaultToUse is to be returned.  If false, and the
+		/// attribute is not found, an exception will be thrown.
+		/// </param>
+		/// <param name="ulDefaultToUse">
+		/// Default value to use if the attribute is not found and bDefaultOk is true.
+		/// </param>
+		/// <returns>Attribute's value is returned as an unsigned long integer.</returns>
+		public ulong getAttributeValueULong(
+			uint		uiAttrNameId,
+			bool		bDefaultOk,
+			ulong		ulDefaultToUse)
+		{
+			RCODE	rc;
+			ulong	ulValue;
+
+			if ((rc = xflaim_DOMNode_getAttributeValueULong( m_pNode, m_db.getDb(),
+				uiAttrNameId, (int)(bDefaultOk ? 1 : 0), ulDefaultToUse, out ulValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( ulValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAttributeValueULong(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiAttrNameId,
+			int			bDefaultOk,
+			ulong			ulDefaultToUse,
+			out ulong	pulValue);
+
+//-----------------------------------------------------------------------------
+// getLong
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for this node as a signed long integer.
+		/// </summary>
+		/// <returns>Node's value as a signed long integer.</returns>
+		public long getLong()
+		{
+			RCODE	rc;
+			long	lValue;
+
+			if ((rc = xflaim_DOMNode_getLong( m_pNode, m_db.getDb(),
+				out lValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( lValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getLong(
+			ulong			pNode,
+			ulong			pDb,
+			out long		plValue);
+
+//-----------------------------------------------------------------------------
+// getAttributeValueLong
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for the specified attribute associated with this
+		/// node.  Value is returned as a signed long integer.
+		/// </summary>
+		/// <param name="uiAttrNameId">
+		/// Name id of the attribute whose value is to be returned.
+		/// </param>
+		/// <param name="bDefaultOk">
+		/// If true, specifies that if the attribute is not found then the
+		/// value in lDefaultToUse is to be returned.  If false, and the
+		/// attribute is not found, an exception will be thrown.
+		/// </param>
+		/// <param name="lDefaultToUse">
+		/// Default value to use if the attribute is not found and bDefaultOk is true.
+		/// </param>
+		/// <returns>Attribute's value is returned as an unsigned long integer.</returns>
+		public long getAttributeValueLong(
+			uint		uiAttrNameId,
+			bool		bDefaultOk,
+			long		lDefaultToUse)
+		{
+			RCODE	rc;
+			long	lValue;
+
+			if ((rc = xflaim_DOMNode_getAttributeValueLong( m_pNode, m_db.getDb(),
+				uiAttrNameId, (int)(bDefaultOk ? 1 : 0), lDefaultToUse, out lValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( lValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAttributeValueLong(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiAttrNameId,
+			int			bDefaultOk,
+			long			lDefaultToUse,
+			out long		plValue);
+
+//-----------------------------------------------------------------------------
+// getUInt
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for this node as an unsigned integer.
+		/// </summary>
+		/// <returns>Node's value as an unsigned integer.</returns>
+		public uint getUInt()
+		{
+			RCODE	rc;
+			uint	uiValue;
+
+			if ((rc = xflaim_DOMNode_getUInt( m_pNode, m_db.getDb(),
+				out uiValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getUInt(
+			ulong			pNode,
+			ulong			pDb,
+			out uint		puiValue);
+
+//-----------------------------------------------------------------------------
+// getAttributeValueUInt
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for the specified attribute associated with this
+		/// node.  Value is returned as an unsigned integer.
+		/// </summary>
+		/// <param name="uiAttrNameId">
+		/// Name id of the attribute whose value is to be returned.
+		/// </param>
+		/// <param name="bDefaultOk">
+		/// If true, specifies that if the attribute is not found then the
+		/// value in uiDefaultToUse is to be returned.  If false, and the
+		/// attribute is not found, an exception will be thrown.
+		/// </param>
+		/// <param name="uiDefaultToUse">
+		/// Default value to use if the attribute is not found and bDefaultOk is true.
+		/// </param>
+		/// <returns>Attribute's value is returned as an unsigned long integer.</returns>
+		public uint getAttributeValueUInt(
+			uint		uiAttrNameId,
+			bool		bDefaultOk,
+			uint		uiDefaultToUse)
+		{
+			RCODE	rc;
+			uint	uiValue;
+
+			if ((rc = xflaim_DOMNode_getAttributeValueUInt( m_pNode, m_db.getDb(),
+				uiAttrNameId, (int)(bDefaultOk ? 1 : 0), uiDefaultToUse, out uiValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAttributeValueUInt(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiAttrNameId,
+			int			bDefaultOk,
+			uint			uiDefaultToUse,
+			out uint		puiValue);
+
+//-----------------------------------------------------------------------------
+// getInt
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for this node as a signed integer.
+		/// </summary>
+		/// <returns>Node's value as a signed integer.</returns>
+		public int getInt()
+		{
+			RCODE	rc;
+			int	iValue;
+
+			if ((rc = xflaim_DOMNode_getInt( m_pNode, m_db.getDb(),
+				out iValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( iValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getInt(
+			ulong			pNode,
+			ulong			pDb,
+			out int		piValue);
+
+//-----------------------------------------------------------------------------
+// getAttributeValueInt
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for the specified attribute associated with this
+		/// node.  Value is returned as a signed integer.
+		/// </summary>
+		/// <param name="uiAttrNameId">
+		/// Name id of the attribute whose value is to be returned.
+		/// </param>
+		/// <param name="bDefaultOk">
+		/// If true, specifies that if the attribute is not found then the
+		/// value in iDefaultToUse is to be returned.  If false, and the
+		/// attribute is not found, an exception will be thrown.
+		/// </param>
+		/// <param name="iDefaultToUse">
+		/// Default value to use if the attribute is not found and bDefaultOk is true.
+		/// </param>
+		/// <returns>Attribute's value is returned as an unsigned long integer.</returns>
+		public int getAttributeValueInt(
+			uint		uiAttrNameId,
+			bool		bDefaultOk,
+			int		iDefaultToUse)
+		{
+			RCODE	rc;
+			int	iValue;
+
+			if ((rc = xflaim_DOMNode_getAttributeValueInt( m_pNode, m_db.getDb(),
+				uiAttrNameId, (int)(bDefaultOk ? 1 : 0), iDefaultToUse, out iValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( iValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAttributeValueInt(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiAttrNameId,
+			int			bDefaultOk,
+			int			iDefaultToUse,
+			out int		piValue);
+
+//-----------------------------------------------------------------------------
+// getString and getSubString
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for this node as a string
+		/// </summary>
+		/// <returns>Node's value as a string.</returns>
+		public string getString()
+		{
+			RCODE		rc;
+			string	sValue;
+			IntPtr	puzValue;
+
+			if ((rc = xflaim_DOMNode_getString( m_pNode, m_db.getDb(),
+				0, 0, out puzValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			sValue = Marshal.PtrToStringUni( puzValue);
+			m_db.getDbSystem().freeUnmanagedMem( puzValue);
+			return( sValue);
+		}
+
+		/// <summary>
+		/// Returns a sub-string of the value in this node.
+		/// </summary>
+		/// <param name="uiStartPos">
+		/// Starting character position in string to retrieve sub-string from.
+		/// </param>
+		/// <param name="uiNumChars">
+		/// Maximum number of characters to retrieve.  May return fewer than
+		/// this number of characters if there are not that many characters
+		/// available from the specified starting position.
+		/// </param>
+		/// <returns>Node's sub-string value.</returns>
+		public string getSubString(
+			uint	uiStartPos,
+			uint	uiNumChars)
+		{
+			RCODE		rc;
+			string	sValue;
+			IntPtr	puzValue;
+
+			if ((rc = xflaim_DOMNode_getString( m_pNode, m_db.getDb(),
+				uiStartPos, uiNumChars, out puzValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			sValue = Marshal.PtrToStringUni( puzValue);
+			m_db.getDbSystem().freeUnmanagedMem( puzValue);
+			return( sValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getString(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiStartPos,
+			uint			uiNumChars,
+			out IntPtr	ppuzValue);
+
+//-----------------------------------------------------------------------------
+// getAttributeValueString
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for the specified attribute of this node as a string
+		/// </summary>
+		/// <param name="uiAttrNameId">
+		/// Name id of the attribute whose value is to be returned.
+		/// </param>
+		/// <returns>Attribute's value as a string.</returns>
+		public string getAttributeValueString(
+			uint	uiAttrNameId)
+		{
+			RCODE		rc;
+			string	sValue;
+			IntPtr	puzValue;
+
+			if ((rc = xflaim_DOMNode_getAttributeValueString( m_pNode, m_db.getDb(),
+				uiAttrNameId, out puzValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			sValue = Marshal.PtrToStringUni( puzValue);
+			m_db.getDbSystem().freeUnmanagedMem( puzValue);
+			return( sValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAttributeValueString(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiAttrNameId,
+			out IntPtr	ppuzValue);
+
+//-----------------------------------------------------------------------------
+// getStringLen
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the number of characters this node's string value contains.
+		/// </summary>
+		/// <returns>Number of characters in node's value string.</returns>
+		public uint getStringLen()
+		{
+			RCODE		rc;
+			uint		uiNumChars;
+
+			if ((rc = xflaim_DOMNode_getStringLen( m_pNode, m_db.getDb(),
+				out uiNumChars)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiNumChars);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getStringLen(
+			ulong			pNode,
+			ulong			pDb,
+			out uint		puiNumChars);
+
+//-----------------------------------------------------------------------------
+// getBinary
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the value for this node as a binary byte array
+		/// </summary>
+		/// <returns>Node's value as a string.</returns>
+		public byte [] getBinary()
+		{
+			RCODE		rc;
+			byte []	ucValue;
+			uint		uiLen;
+
+			uiLen = getDataLength();
+			ucValue = new byte [uiLen];
+
+			if ((rc = xflaim_DOMNode_getBinary( m_pNode, m_db.getDb(),
+				0, uiLen, ucValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( ucValue);
+		}
+
+		/// <summary>
+		/// Returns a sub-part of this node's value as a binary byte array.
+		/// </summary>
+		/// <param name="uiStartPos">
+		/// Starting byte position in node's value to retrieve data from.
+		/// </param>
+		/// <param name="uiNumBytes">
+		/// Maximum number of bytes to retrieve.  May return fewer than
+		/// this number of bytes if there are not that many bytes
+		/// available from the specified starting position.
+		/// </param>
+		/// <returns>Node's sub-part value.</returns>
+		public byte [] getBinary(
+			uint	uiStartPos,
+			uint	uiNumBytes)
+		{
+			RCODE		rc;
+			byte []	ucValue;
+			uint		uiLen;
+
+			uiLen = getDataLength();
+			if (uiStartPos >= uiLen)
+			{
+				return( null);
+			}
+			uiLen -= uiStartPos;
+			if (uiNumBytes > 0 && uiNumBytes < uiLen)
+			{
+				uiLen = uiNumBytes;
+			}
+			ucValue = new byte [uiLen];
+
+			if ((rc = xflaim_DOMNode_getBinary( m_pNode, m_db.getDb(),
+				uiStartPos, uiLen, ucValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( ucValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getBinary(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiStartPos,
+			uint			uiNumBytes,
+			[MarshalAs(UnmanagedType.LPArray), Out] 
+			byte []		pucValue);
+
+//-----------------------------------------------------------------------------
+// getAttributeValueDataLength
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the data length for the specified attribute of this node.
+		/// </summary>
+		/// <param name="uiAttrNameId">
+		/// Name id of the attribute whose value length is to be returned.
+		/// </param>
+		/// <returns>Attribute's value data length.</returns>
+		public uint getAttributeValueDataLength(
+			uint	uiAttrNameId)
+		{
+			RCODE		rc;
+			uint		uiDataLength;
+
+			if ((rc = xflaim_DOMNode_getAttributeValueDataLength( m_pNode, m_db.getDb(),
+				uiAttrNameId, out uiDataLength)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiDataLength);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAttributeValueDataLength(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiAttrNameId,
+			out uint		puiDataLength);
+
+//-----------------------------------------------------------------------------
+// getAttributeValueBinary
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Returns the data for the specified attribute of this node as a byte
+		/// array of binary data.
+		/// </summary>
+		/// <param name="uiAttrNameId">
+		/// Name id of the attribute whose data is to be returned.
+		/// </param>
+		/// <returns>Attribute's value.</returns>
+		public byte [] getAttributeValueBinary(
+			uint	uiAttrNameId)
+		{
+			RCODE		rc;
+			byte []	ucValue;
+			uint		uiLen;
+
+			uiLen = getAttributeValueDataLength( uiAttrNameId);
+			ucValue = new byte [uiLen];
+
+			if ((rc = xflaim_DOMNode_getAttributeValueBinary( m_pNode, m_db.getDb(),
+				uiAttrNameId, uiLen, ucValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( ucValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAttributeValueBinary(
+			ulong			pNode,
+			ulong			pDb,
+			uint			uiAttrNameId,
+			uint			uiLen,
+			[MarshalAs(UnmanagedType.LPArray), Out] 
+			byte []		pucValue);
+
+//-----------------------------------------------------------------------------
+// getDocumentNode
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the document node of the document this node belongs to.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getDocumentNode(
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getDocumentNode( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getDocumentNode(
+			ulong			pNode,
+			ulong			pDb,
+			ref ulong	ppNode);
+
+//-----------------------------------------------------------------------------
+// getParentNode
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the parent node of this node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getParentNode(
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getParentNode( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getParentNode(
+			ulong			pNode,
+			ulong			pDb,
+			ref ulong	ppNode);
+
+//-----------------------------------------------------------------------------
+// getFirstChild
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the first child node of this node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getFirstChild(
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getFirstChild( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getFirstChild(
+			ulong			pNode,
+			ulong			pDb,
+			ref ulong	ppNode);
+
+//-----------------------------------------------------------------------------
+// getLastChild
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the last child node of this node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getLastChild(
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getLastChild( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getLastChild(
+			ulong			pNode,
+			ulong			pDb,
+			ref ulong	ppNode);
+
+//-----------------------------------------------------------------------------
+// getChild
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the first instance of the specified type of node from this
+		/// node's child nodes.
+		/// </summary>
+		/// <param name="eNodeType">
+		/// Type of node to retrieve.
+		/// </param>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getChild(
+			eDomNodeType	eNodeType,
+			DOMNode			nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getChild( m_pNode, m_db.getDb(),
+				eNodeType, ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getChild(
+			ulong				pNode,
+			ulong				pDb,
+			eDomNodeType	eNodeType,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getChildElement
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the first instance of the specified element node from this
+		/// node's child nodes.
+		/// </summary>
+		/// <param name="uiElementNameId">
+		/// The element name ID for the node to be retrieved.
+		/// </param>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getChildElement(
+			uint		uiElementNameId,
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getChildElement( m_pNode, m_db.getDb(),
+				uiElementNameId, ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getChildElement(
+			ulong				pNode,
+			ulong				pDb,
+			uint				uiElementNameId,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getSiblingElement
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the first instance of the specified element node from this
+		/// node's sibling nodes.
+		/// </summary>
+		/// <param name="uiElementNameId">
+		/// The element name ID for the node to be retrieved.
+		/// </param>
+		/// <param name="bNext">
+		/// If true, will search siblings that follow this node.
+		/// If false, will search siblings that precede this node.
+		/// </param>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getSiblingElement(
+			uint		uiElementNameId,
+			bool		bNext,
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getSiblingElement( m_pNode, m_db.getDb(),
+				uiElementNameId, (int)(bNext ? 1 : 0), ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getSiblingElement(
+			ulong				pNode,
+			ulong				pDb,
+			uint				uiElementNameId,
+			int				bNext,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getAncestorElement
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the first instance of the specified element node from this
+		/// node's ancestor nodes.
+		/// </summary>
+		/// <param name="uiElementNameId">
+		/// The element name ID for the node to be retrieved.
+		/// </param>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getAncestorElement(
+			uint		uiElementNameId,
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getAncestorElement( m_pNode, m_db.getDb(),
+				uiElementNameId, ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAncestorElement(
+			ulong				pNode,
+			ulong				pDb,
+			uint				uiElementNameId,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getDescendantElement
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the first instance of the specified element node from this
+		/// node's descendant nodes.
+		/// </summary>
+		/// <param name="uiElementNameId">
+		/// The element name ID for the node to be retrieved.
+		/// </param>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getDescendantElement(
+			uint		uiElementNameId,
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getDescendantElement( m_pNode, m_db.getDb(),
+				uiElementNameId, ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getDescendantElement(
+			ulong				pNode,
+			ulong				pDb,
+			uint				uiElementNameId,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getPreviousSibling
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves this node's previous sibling node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getPreviousSibling(
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getPreviousSibling( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getPreviousSibling(
+			ulong				pNode,
+			ulong				pDb,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getNextSibling
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves this node's next sibling node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getNextSibling(
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getNextSibling( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getNextSibling(
+			ulong				pNode,
+			ulong				pDb,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getPreviousDocument
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the previous document.  This node must be a root node or
+		/// a document node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getPreviousDocument(
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getPreviousDocument( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getPreviousDocument(
+			ulong				pNode,
+			ulong				pDb,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getNextDocument
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the next document.  This node must be a root node or
+		/// a document node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getNextDocument(
+			DOMNode	nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getNextDocument( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getNextDocument(
+			ulong				pNode,
+			ulong				pDb,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getPrefix
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the prefix string for this node.
+		/// </summary>
+		/// <returns>
+		/// Returns a string containing the node's prefix.
+		/// </returns>
+		public string getPrefix()
+		{
+			RCODE		rc;
+			uint		uiNumChars;
+			char []	cPrefix;
+
+			if ((rc = xflaim_DOMNode_getPrefixChars( m_pNode, m_db.getDb(),
+				out uiNumChars)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			cPrefix = new char [uiNumChars + 1];
+
+			if ((rc = xflaim_DOMNode_getPrefix( m_pNode, m_db.getDb(),
+				uiNumChars, cPrefix)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new string( cPrefix, 0, (int)uiNumChars));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getPrefixChars(
+			ulong			pNode,
+			ulong			pDb,
+			out uint		puiNumChars);
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getPrefix(
+			ulong		pNode,
+			ulong		pDb,
+			uint		uiNumChars,
+			[MarshalAs(UnmanagedType.LPArray), Out]
+			char []	puzPrefix);
+
+//-----------------------------------------------------------------------------
+// getPrefixId
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the name id of the prefix for this node.
+		/// </summary>
+		/// <returns>
+		/// Returns prefix name id.
+		/// </returns>
+		public uint getPrefixId()
+		{
+			RCODE		rc;
+			uint		uiPrefixId;
+
+			if ((rc = xflaim_DOMNode_getPrefixId( m_pNode, m_db.getDb(),
+				out uiPrefixId)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiPrefixId);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getPrefixId(
+			ulong		pNode,
+			ulong		pDb,
+			out uint	puiPrefixId);
+
+//-----------------------------------------------------------------------------
+// getEncDefId
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the id of the encryption definition that is being used
+		/// to encrypt this node's data.  Zero is returned if the data is not
+		/// being encrypted.
+		/// </summary>
+		/// <returns>
+		/// Returns encryption definition id.
+		/// </returns>
+		public uint getEncDefId()
+		{
+			RCODE		rc;
+			uint		uiEncDefId;
+
+			if ((rc = xflaim_DOMNode_getEncDefId( m_pNode, m_db.getDb(),
+				out uiEncDefId)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiEncDefId);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getEncDefId(
+			ulong		pNode,
+			ulong		pDb,
+			out uint	puiEncDefId);
+
+//-----------------------------------------------------------------------------
+// setPrefix
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Sets the namespace prefix for this node
+		/// </summary>
+		/// <param name="sPrefix">
+		/// The prefix that is to be set for this node
+		/// </param>
+		public void setPrefix(
+			string	sPrefix)
+		{
+			RCODE		rc;
+
+			if ((rc = xflaim_DOMNode_setPrefix( m_pNode, m_db.getDb(),
+				sPrefix)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_setPrefix(
+			ulong		pNode,
+			ulong		pDb,
+			[MarshalAs(UnmanagedType.LPWStr), In]
+			string	sPrefix);
+
+//-----------------------------------------------------------------------------
+// setPrefixId
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Sets the namespace prefix for this node.
+		/// </summary>
+		/// <param name="uiPrefixId">
+		/// The prefix that is to be set for this node
+		/// </param>
+		public void setPrefixId(
+			uint	uiPrefixId)
+		{
+			RCODE		rc;
+
+			if ((rc = xflaim_DOMNode_setPrefixId( m_pNode, m_db.getDb(),
+				uiPrefixId)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_setPrefixId(
+			ulong		pNode,
+			ulong		pDb,
+			uint		uiPrefixId);
+
+//-----------------------------------------------------------------------------
+// getNamespaceURI
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the namespace URI string for this node.
+		/// </summary>
+		/// <returns>
+		/// Returns a string containing the node's namespace URI.
+		/// </returns>
+		public string getNamespaceURI()
+		{
+			RCODE		rc;
+			uint		uiNumChars;
+			char []	cNamespaceURI;
+
+			if ((rc = xflaim_DOMNode_getNamespaceURIChars( m_pNode, m_db.getDb(),
+				out uiNumChars)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			cNamespaceURI = new char [uiNumChars + 1];
+
+			if ((rc = xflaim_DOMNode_getNamespaceURI( m_pNode, m_db.getDb(),
+				uiNumChars, cNamespaceURI)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new string( cNamespaceURI, 0, (int)uiNumChars));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getNamespaceURIChars(
+			ulong			pNode,
+			ulong			pDb,
+			out uint		puiNumChars);
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getNamespaceURI(
+			ulong		pNode,
+			ulong		pDb,
+			uint		uiNumChars,
+			[MarshalAs(UnmanagedType.LPArray), Out]
+			char []	puzNamespaceURI);
+
+//-----------------------------------------------------------------------------
+// getLocalName
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the name of this node, without the namespace prefix.
+		/// </summary>
+		/// <returns>
+		/// Returns a string containing the node's local name.
+		/// </returns>
+		public string getLocalName()
+		{
+			RCODE		rc;
+			uint		uiNumChars;
+			char []	cLocalName;
+
+			if ((rc = xflaim_DOMNode_getLocalNameChars( m_pNode, m_db.getDb(),
+				out uiNumChars)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			cLocalName = new char [uiNumChars + 1];
+
+			if ((rc = xflaim_DOMNode_getLocalName( m_pNode, m_db.getDb(),
+				uiNumChars, cLocalName)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new string( cLocalName, 0, (int)uiNumChars));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getLocalNameChars(
+			ulong			pNode,
+			ulong			pDb,
+			out uint		puiNumChars);
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getLocalName(
+			ulong		pNode,
+			ulong		pDb,
+			uint		uiNumChars,
+			[MarshalAs(UnmanagedType.LPArray), Out]
+			char []	puzLocalName);
+
+//-----------------------------------------------------------------------------
+// getQualifiedName
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the fully qualified name (namespace prefix plus local
+		/// name) for this element or attribute.
+		/// </summary>
+		/// <returns>
+		/// Returns a string containing the node's fully qualified name.
+		/// </returns>
+		public string getQualifiedName()
+		{
+			RCODE		rc;
+			uint		uiNumChars;
+			char []	cQualifiedName;
+
+			if ((rc = xflaim_DOMNode_getQualifiedNameChars( m_pNode, m_db.getDb(),
+				out uiNumChars)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			cQualifiedName = new char [uiNumChars + 1];
+
+			if ((rc = xflaim_DOMNode_getQualifiedName( m_pNode, m_db.getDb(),
+				uiNumChars, cQualifiedName)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( new string( cQualifiedName, 0, (int)uiNumChars));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getQualifiedNameChars(
+			ulong			pNode,
+			ulong			pDb,
+			out uint		puiNumChars);
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getQualifiedName(
+			ulong		pNode,
+			ulong		pDb,
+			uint		uiNumChars,
+			[MarshalAs(UnmanagedType.LPArray), Out]
+			char []	puzQualifiedName);
+
+//-----------------------------------------------------------------------------
+// getCollection
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieves the collection this node belongs to.
+		/// </summary>
+		/// <returns>
+		/// Returns the collection number.
+		/// </returns>
+		public uint getCollection()
+		{
+			RCODE		rc;
+			uint		uiCollection;
+
+			if ((rc = xflaim_DOMNode_getCollection( m_pNode, m_db.getDb(),
+				out uiCollection)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( uiCollection);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getCollection(
+			ulong		pNode,
+			ulong		pDb,
+			out uint	puiCollection);
+
+//-----------------------------------------------------------------------------
+// createAnnotation
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Creates an annotation node and associates it with this node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode createAnnotation(
+			DOMNode			nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_createAnnotation( m_pNode, m_db.getDb(),
+									ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_createAnnotation(
+			ulong				pNode,
+			ulong				pDb,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getAnnotation
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieve the annotation node that is associated with this node.
+		/// </summary>
+		/// <param name="nodeToReuse">
+		/// An existing <see cref="DOMNode"/> object can optionally be passed in, and
+		/// it will be reused instead of a new object being allocated.
+		/// </param>
+		/// <returns>
+		/// Returns a <see cref="DOMNode"/> object.
+		/// </returns>
+		public DOMNode getAnnotation(
+			DOMNode			nodeToReuse)
+		{
+			RCODE		rc;
+			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+
+			if ((rc = xflaim_DOMNode_getAnnotation( m_pNode, m_db.getDb(),
+				ref pNode)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( makeNode( nodeToReuse, pNode));
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAnnotation(
+			ulong				pNode,
+			ulong				pDb,
+			ref ulong		ppNode);
+
+//-----------------------------------------------------------------------------
+// getAnnotationId
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Retrieve the node ID of the annotation node that is associated with this node.
+		/// </summary>
+		/// <returns>
+		/// Returns node ID of the annotation node associated with this node.
+		/// </returns>
+		public ulong getAnnotationId()
+		{
+			RCODE		rc;
+			ulong		ulAnnotationId;
+
+			if ((rc = xflaim_DOMNode_getAnnotationId( m_pNode, m_db.getDb(),
+				out ulAnnotationId)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( ulAnnotationId);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getAnnotationId(
+			ulong			pNode,
+			ulong			pDb,
+			out ulong	pulAnnotationId);
+
+//-----------------------------------------------------------------------------
+// hasAnnotation
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Determine if a node has an annotation node associated with it.
+		/// </summary>
+		/// <returns>
+		/// Returns true if there is an annotation node assocated with this node,
+		/// false otherwise.
+		/// </returns>
+		public bool hasAnnotation()
+		{
+			RCODE		rc;
+			int		bHasAnnotation;
+
+			if ((rc = xflaim_DOMNode_hasAnnotation( m_pNode, m_db.getDb(),
+								out bHasAnnotation)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( bHasAnnotation != 0 ? true : false);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_hasAnnotation(
+			ulong		pNode,
+			ulong		pDb,
+			out int	pbHasAnnotation);
+
+//-----------------------------------------------------------------------------
+// getMetaValue
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get a node's "meta" value.
+		/// </summary>
+		/// <returns>
+		/// Returns node's meta value.
+		/// </returns>
+		public ulong getMetaValue()
+		{
+			RCODE		rc;
+			ulong		ulValue;
+
+			if ((rc = xflaim_DOMNode_getMetaValue( m_pNode, m_db.getDb(),
+				out ulValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( ulValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_getMetaValue(
+			ulong			pNode,
+			ulong			pDb,
+			out ulong	pulValue);
+
+//-----------------------------------------------------------------------------
+// setMetaValue
+//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Set a node's "meta" value.
+		/// </summary>
+		/// <param name="ulValue">
+		/// Value to set.
+		/// </param>
+		public void setMetaValue(
+			ulong	ulValue)
+		{
+			RCODE		rc;
+
+			if ((rc = xflaim_DOMNode_setMetaValue( m_pNode, m_db.getDb(),
+				ulValue)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_DOMNode_setMetaValue(
+			ulong	pNode,
+			ulong	pDb,
+			ulong	ulValue);
 
 	}
 }
