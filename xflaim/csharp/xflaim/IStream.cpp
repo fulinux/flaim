@@ -29,10 +29,8 @@
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_IStream_Release(
-	FLMUINT64	ui64This)
+	IF_IStream *	pIStream)
 {
-	IF_IStream *	pIStream = ((IF_IStream *)(FLMUINT)ui64This);
-	
 	if (pIStream)
 	{
 		pIStream->Release();

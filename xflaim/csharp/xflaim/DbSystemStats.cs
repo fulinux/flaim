@@ -198,7 +198,7 @@ namespace xflaim
 	/// </remarks>
 	public class DbSystemStats
 	{
-		private ulong 		m_pStats;			// Pointer to XFLM_STATS object in unmanaged space
+		private IntPtr		m_pStats;			// Pointer to XFLM_STATS object in unmanaged space
 		private DbSystem 	m_dbSystem;
 
 		/// <summary>
@@ -211,10 +211,10 @@ namespace xflaim
 		/// DbSystem object that this DbSystemStats object is associated with.
 		/// </param>
 		internal DbSystemStats(
-			ulong		pStats,
+			IntPtr	pStats,
 			DbSystem	dbSystem)
 		{
-			if (pStats == 0)
+			if (pStats == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid pointer to XFLM_STATS structure");
 			}
@@ -232,7 +232,7 @@ namespace xflaim
 			// m_dbSystem object gets a compiler warning on linux because
 			// it is not used anywhere.  Other than that, there is really
 			// no need to make the following call.
-			if (m_dbSystem.getDbSystem() == 0)
+			if (m_dbSystem.getDbSystem() == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid DbSystem.IF_DbSystem object");
 			}
@@ -253,10 +253,10 @@ namespace xflaim
 		{
 			// Free the unmanaged XFLM_STATS structure.
 		
-			if (m_pStats != 0)
+			if (m_pStats != IntPtr.Zero)
 			{
 				xflaim_DbSystemStats_freeStats( m_dbSystem.getDbSystem(), m_pStats);
-				m_pStats = 0;
+				m_pStats = IntPtr.Zero;
 			}
 		
 			// Remove our reference to the dbSystem so it can be released.
@@ -266,8 +266,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystemStats_freeStats(
-			ulong	pDbSystem,
-			ulong	pStats);
+			IntPtr	pDbSystem,
+			IntPtr	pStats);
 
 //-----------------------------------------------------------------------------
 // getGeneralStats
@@ -296,7 +296,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystemStats_getGeneralStats(
-			ulong		pStats,
+			IntPtr	pStats,
 			out uint	puiNumDatabases,
 			out uint	puiStartTime,
 			out uint	puiStopTime);
@@ -344,7 +344,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystemStats_getDbStats(
-			ulong					pStats,
+			IntPtr				pStats,
 			uint					uiDatabaseNum,
 			[Out]
 			CS_XFLM_DB_STATS	pDbStats);
@@ -406,7 +406,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystemStats_getLFileStats(
-			ulong						pStats,
+			IntPtr					pStats,
 			uint						uiDatabaseNum,
 			uint						uiLFileNum,
 			[Out]

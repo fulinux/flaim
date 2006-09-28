@@ -245,7 +245,7 @@ namespace xflaim
 		}
 	
 		private string		m_message;
-		private RCODE	m_rc;
+		private RCODE		m_rc;
 	}
 
 	/// <remarks>
@@ -254,7 +254,7 @@ namespace xflaim
 	/// </remarks>
 	public class DbSystem
 	{
-		private ulong	m_pDbSystem;	// Pointer to IF_DbSystem object in unmanaged space
+		private IntPtr	m_pDbSystem;	// Pointer to IF_DbSystem object in unmanaged space
 
 		/// <summary>
 		/// Maximum key size - keep in sync with definition in xflaim.h
@@ -276,7 +276,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_createDbSystem(
-			out ulong	ppDbSystem);
+			out IntPtr	ppDbSystem);
 
 		/// <summary>
 		/// DbSystem destructor.
@@ -284,25 +284,25 @@ namespace xflaim
 		~DbSystem()
 		{
 			xflaim_DbSystem_Release( m_pDbSystem);
-			m_pDbSystem = 0;
+			m_pDbSystem = IntPtr.Zero;
 		}
 		
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_Release(
-			ulong	pDbSystem);
+			IntPtr	pDbSystem);
 
 		/// <summary>
 		/// Called by <see cref="Db"/> class to silence compiler warning.
 		/// Has no other important use!
 		/// </summary>
-		internal ulong getDbSystem()
+		internal IntPtr getDbSystem()
 		{
 			return m_pDbSystem;
 		}
 
-		//-----------------------------------------------------------------------------
-		// dbCreate
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// dbCreate
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Creates a new XFlaim database.
@@ -355,7 +355,7 @@ namespace xflaim
 			string 				sDictBuf,
 			XFLM_CREATE_OPTS	createOpts)
 		{
-			ulong 	pDb;
+			IntPtr	pDb;
 			RCODE		rc;
 		
 			if ((rc = xflaim_DbSystem_dbCreate( m_pDbSystem, sDbFileName, sDataDir, sRflDir,
@@ -368,7 +368,7 @@ namespace xflaim
 	
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbCreate(
-			ulong					pDbSystem,
+			IntPtr				pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string				pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -380,11 +380,11 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string 				pszDictBuf,
 			XFLM_CREATE_OPTS	pCreateOpts,
-			out ulong			ppDb);
+			out IntPtr			ppDb);
 
-		//-----------------------------------------------------------------------------
-		// dbOpen
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// dbOpen
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Opens an existing XFlaim database.
@@ -415,7 +415,7 @@ namespace xflaim
 			string	sPassword,
 			bool		bAllowLimited)
 		{
-			ulong 	pDb;
+			IntPtr	pDb;
 			RCODE		rc;
 		
 			if ((rc = xflaim_DbSystem_dbOpen( m_pDbSystem, sDbFileName, sDataDir, sRflDir,
@@ -429,7 +429,7 @@ namespace xflaim
 	
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbOpen(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -439,11 +439,11 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string 		pszPassword,
 			int			bAllowLimited,
-			out ulong	ppDb);
+			out IntPtr	ppDb);
 
-		//-----------------------------------------------------------------------------
-		// dbRemove
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// dbRemove
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Removes (deletes) an XFlaim database.
@@ -478,7 +478,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbRemove(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -487,9 +487,9 @@ namespace xflaim
 			string 		pszRflDir,
 			int			bRemoveRflFiles);
 
-		//-----------------------------------------------------------------------------
-		// dbRestore
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// dbRestore
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Restores a previously backed up database. The <paramref name="sBackupPath"/> parameter
@@ -564,7 +564,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbRestore(
-			ulong							pDbSystem,
+			IntPtr						pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string						pszDbFileName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -800,9 +800,9 @@ namespace xflaim
 			private RestoreStatus	m_restoreStatus;
 		}
 
-		//-----------------------------------------------------------------------------
-		// dbCheck
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// dbCheck
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Check for physical and logical corruptions on the specified database.
@@ -844,7 +844,7 @@ namespace xflaim
 			RCODE							rc;
 			DbCheckStatusDelegate	dbCheckStatus = null;
 			DbCheckStatusCallback	fnDbCheckStatus = null;
-			ulong							pDbInfo;
+			IntPtr						pDbInfo;
 
 			if (checkStatus != null)
 			{
@@ -862,7 +862,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbCheck(
-			ulong							pDbSystem,
+			IntPtr						pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string						pszDbName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -873,7 +873,7 @@ namespace xflaim
 			string 						pszPassword,
 			DbCheckFlags				eFlags,
 			DbCheckStatusCallback	fnDbCheckStatus,
-			out ulong					ppDbInfo);
+			out IntPtr					ppDbInfo);
 
 		private delegate RCODE DbCheckStatusCallback(
 			int				bHaveProgressInfo,
@@ -917,9 +917,9 @@ namespace xflaim
 			private DbCheckStatus	m_dbCheckStatus;
 		}
 
-		//-----------------------------------------------------------------------------
-		// dbCopy
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// dbCopy
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Makes a copy of an existing database.
@@ -977,7 +977,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbCopy(
-			ulong						pDbSystem,
+			IntPtr					pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string					pszSrcDbName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -1035,9 +1035,9 @@ namespace xflaim
 			private DbCopyStatus	m_dbCopyStatus;
 		}
 
-		//-----------------------------------------------------------------------------
-		// dbRename
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// dbRename
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Rename a database.
@@ -1088,7 +1088,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbRename(
-			ulong							pDbSystem,
+			IntPtr						pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string						pszSrcDbName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -1128,9 +1128,9 @@ namespace xflaim
 			private DbRenameStatus	m_dbRenameStatus;
 		}
 
-		//-----------------------------------------------------------------------------
-		// dbRebuild
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// dbRebuild
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Rebuild a database.
@@ -1202,7 +1202,7 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_dbRebuild(
-			ulong							pDbSystem,
+			IntPtr						pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string						pszSourceDbPath,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -1262,9 +1262,9 @@ namespace xflaim
 			private DbRebuildStatus	m_dbRebuildStatus;
 		}
 
-		//-----------------------------------------------------------------------------
-		// openBufferIStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openBufferIStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that reads from a string buffer.
@@ -1280,7 +1280,7 @@ namespace xflaim
 			string	sBuffer)
 		{
 			RCODE		rc;
-			ulong		pIStream = 0;
+			IntPtr	pIStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openBufferIStream( sBuffer, out pIStream)) != 0)
 			{
@@ -1293,11 +1293,11 @@ namespace xflaim
 		private static extern RCODE xflaim_DbSystem_openBufferIStream(
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszBuffer,
-			out ulong	ppIStream);
+			out IntPtr	ppIStream);
 
-		//-----------------------------------------------------------------------------
-		// openFileIStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openFileIStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that reads from a file.
@@ -1313,7 +1313,7 @@ namespace xflaim
 			string	sFileName)
 		{
 			RCODE		rc;
-			ulong		pIStream = 0;
+			IntPtr	pIStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openFileIStream( m_pDbSystem, sFileName, out pIStream)) != 0)
 			{
@@ -1324,14 +1324,14 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openFileIStream(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszFileName,
-			out ulong	ppIStream);
+			out IntPtr	ppIStream);
 
-		//-----------------------------------------------------------------------------
-		// openMultiFileIStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openMultiFileIStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that reads from multiple files.
@@ -1353,7 +1353,7 @@ namespace xflaim
 			string	sBaseName)
 		{
 			RCODE		rc;
-			ulong		pIStream = 0;
+			IntPtr	pIStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openMultiFileIStream( m_pDbSystem, sDirectory,
 				sBaseName, out pIStream)) != 0)
@@ -1365,16 +1365,16 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openMultiFileIStream(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDirectory,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszBaseName,
-			out ulong	ppIStream);
+			out IntPtr	ppIStream);
 
-		//-----------------------------------------------------------------------------
-		// openBufferedIStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openBufferedIStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that buffers an existing input stream.
@@ -1397,7 +1397,7 @@ namespace xflaim
 			uint			uiBufferSize)
 		{
 			RCODE		rc;
-			ulong		pIStream = 0;
+			IntPtr	pIStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openBufferedIStream( m_pDbSystem,
 				inputIStream.getIStream(), uiBufferSize, out pIStream)) != 0)
@@ -1409,14 +1409,14 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openBufferedIStream(
-			ulong			pDbSystem,
-			ulong			pInputIStream,
+			IntPtr		pDbSystem,
+			IntPtr		pInputIStream,
 			uint			uiBufferSize,
-			out ulong	ppIStream);
+			out IntPtr	ppIStream);
 
-		//-----------------------------------------------------------------------------
-		// openUncompressingIStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openUncompressingIStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that decompresses data from another input stream.  It
@@ -1433,7 +1433,7 @@ namespace xflaim
 			IStream	inputIStream)
 		{
 			RCODE		rc;
-			ulong		pIStream = 0;
+			IntPtr	pIStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openUncompressingIStream( m_pDbSystem,
 				inputIStream.getIStream(), out pIStream)) != 0)
@@ -1445,13 +1445,13 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openUncompressingIStream(
-			ulong			pDbSystem,
-			ulong			pInputIStream,
-			out ulong	ppIStream);
+			IntPtr		pDbSystem,
+			IntPtr		pInputIStream,
+			out IntPtr	ppIStream);
 
-		//-----------------------------------------------------------------------------
-		// openBase64Encoder
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openBase64Encoder
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that encodes data from another input stream into
@@ -1474,7 +1474,7 @@ namespace xflaim
 			bool		bInsertLineBreaks)
 		{
 			RCODE		rc;
-			ulong		pIStream = 0;
+			IntPtr	pIStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openBase64Encoder( m_pDbSystem,
 				inputIStream.getIStream(), (int)(bInsertLineBreaks ? 1 : 0),
@@ -1487,14 +1487,14 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openBase64Encoder(
-			ulong			pDbSystem,
-			ulong			pInputIStream,
+			IntPtr		pDbSystem,
+			IntPtr		pInputIStream,
 			int			bInsertLineBreaks,
-			out ulong	ppIStream);
+			out IntPtr	ppIStream);
 
-		//-----------------------------------------------------------------------------
-		// openBase64Decoder
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openBase64Decoder
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an input stream that decodes data from another input stream.  It is
@@ -1513,7 +1513,7 @@ namespace xflaim
 			IStream	inputIStream)
 		{
 			RCODE		rc;
-			ulong		pIStream = 0;
+			IntPtr	pIStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openBase64Decoder( m_pDbSystem,
 				inputIStream.getIStream(), out pIStream)) != 0)
@@ -1525,13 +1525,13 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openBase64Decoder(
-			ulong			pDbSystem,
-			ulong			pInputIStream,
-			out ulong	ppIStream);
+			IntPtr		pDbSystem,
+			IntPtr		pInputIStream,
+			out IntPtr	ppIStream);
 
-		//-----------------------------------------------------------------------------
-		// openFileOStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openFileOStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open an output stream that writes data to a file.
@@ -1553,7 +1553,7 @@ namespace xflaim
 			bool		bTruncateIfExists)
 		{
 			RCODE		rc;
-			ulong		pOStream = 0;
+			IntPtr	pOStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openFileOStream( m_pDbSystem,
 				sFileName, (int)(bTruncateIfExists ? 1 : 0), out pOStream)) != 0)
@@ -1565,15 +1565,15 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openFileOStream(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszFileName,
 			int			bTruncateIfExists,
-			out ulong	ppOStream);
+			out IntPtr	ppOStream);
 
-		//-----------------------------------------------------------------------------
-		// openMultiFileOStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openMultiFileOStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open a multi-file output stream.  Data is written to one or more files.
@@ -1604,7 +1604,7 @@ namespace xflaim
 			bool		bOkToOverwrite)
 		{
 			RCODE		rc;
-			ulong		pOStream = 0;
+			IntPtr	pOStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openMultiFileOStream( m_pDbSystem,
 				sDirectory, sBaseName, uiMaxFileSize,
@@ -1617,18 +1617,18 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openMultiFileOStream(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDirectory,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		sBaseName,
 			uint			uiMaxFileSize,
 			int			bOkToOverwrite,
-			out ulong	ppOStream);
+			out IntPtr	ppOStream);
 
-		//-----------------------------------------------------------------------------
-		// removeMultiFileStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// removeMultiFileStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Remove a multi-file output stream from disk.
@@ -1656,15 +1656,15 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_removeMultiFileStream(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		pszDirectory,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		sBaseName);
 
-		//-----------------------------------------------------------------------------
-		// openBufferedOStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openBufferedOStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open a buffered output stream.  A buffer is allocated for writing data to
@@ -1690,7 +1690,7 @@ namespace xflaim
 			uint		uiBufferSize)
 		{
 			RCODE		rc;
-			ulong		pOStream = 0;
+			IntPtr	pOStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openBufferedOStream( m_pDbSystem,
 				inputOStream.getOStream(), uiBufferSize, out pOStream)) != 0)
@@ -1702,14 +1702,14 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openBufferedOStream(
-			ulong			pDbSystem,
-			ulong			pInputOStream,
+			IntPtr		pDbSystem,
+			IntPtr		pInputOStream,
 			uint			uiBufferSize,
-			out ulong	ppOStream);
+			out IntPtr	ppOStream);
 
-		//-----------------------------------------------------------------------------
-		// openCompressingOStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// openCompressingOStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Open a compressing output stream.  Data is compressed before writing it
@@ -1727,7 +1727,7 @@ namespace xflaim
 			OStream	inputOStream)
 		{
 			RCODE		rc;
-			ulong		pOStream = 0;
+			IntPtr	pOStream = IntPtr.Zero;
 
 			if ((rc = xflaim_DbSystem_openCompressingOStream( m_pDbSystem,
 				inputOStream.getOStream(), out pOStream)) != 0)
@@ -1739,13 +1739,13 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_openCompressingOStream(
-			ulong			pDbSystem,
-			ulong			pInputOStream,
-			out ulong	ppOStream);
+			IntPtr		pDbSystem,
+			IntPtr		pInputOStream,
+			out IntPtr	ppOStream);
 
-		//-----------------------------------------------------------------------------
-		// writeToOStream
-		//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+// writeToOStream
+//-----------------------------------------------------------------------------
 
 		/// <summary>
 		/// Read data from an input stream and write it out to an output stream.  This
@@ -1772,9 +1772,9 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_writeToOStream(
-			ulong			pDbSystem,
-			ulong			pIStream,
-			ulong			pOStream);
+			IntPtr		pDbSystem,
+			IntPtr		pIStream,
+			IntPtr		pOStream);
 
 //-----------------------------------------------------------------------------
 // createDataVector
@@ -1786,8 +1786,8 @@ namespace xflaim
 		/// <returns>Returns a <see cref="DataVector"/> objecdt</returns>
 		public DataVector createDataVector()
 		{
-			RCODE	rc;
-			ulong	pDataVector;
+			RCODE		rc;
+			IntPtr	pDataVector;
 			
 			if ((rc = xflaim_DbSystem_createDataVector( m_pDbSystem, out pDataVector)) != 0)
 			{
@@ -1798,8 +1798,8 @@ namespace xflaim
 
 		[DllImport("xflaim",CharSet=CharSet.Ansi)]
 		private static extern RCODE xflaim_DbSystem_createDataVector(
-			ulong			pDbSystem,
-			out ulong	ppDataVector);
+			IntPtr		pDbSystem,
+			out IntPtr	ppDataVector);
 
 //-----------------------------------------------------------------------------
 // freeUnmanagedMem
@@ -1813,7 +1813,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_freeUnmanagedMem(
-			ulong		pDbSystem,
+			IntPtr	pDbSystem,
 			IntPtr	pMem);
 
 //-----------------------------------------------------------------------------
@@ -1843,7 +1843,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_updateIniFile(
-			ulong		pDbSystem,
+			IntPtr	pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string	sParamName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -1866,8 +1866,8 @@ namespace xflaim
 		public Db dbDup(
 			Db			dbToDup)
 		{
-			RCODE	rc;
-			ulong	pDupDb;
+			RCODE		rc;
+			IntPtr	pDupDb;
 
 			if ((rc = xflaim_DbSystem_dbDup( m_pDbSystem, dbToDup.getDb(), out pDupDb)) != 0)
 			{
@@ -1878,9 +1878,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_dbDup(
-			ulong			pDbSystem,
-			ulong			pDbToDup,
-			out ulong	ppDupDb);
+			IntPtr		pDbSystem,
+			IntPtr		pDbToDup,
+			out IntPtr	ppDupDb);
 
 //-----------------------------------------------------------------------------
 // setDynamicMemoryLimit
@@ -1925,7 +1925,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_setDynamicMemoryLimit(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			uint			uiCacheAdjustPercent,
 			ulong			ulCacheAdjustMin,
 			ulong			ulCacheAdjustMax,
@@ -1992,7 +1992,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_setHardMemoryLimit(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			uint			uiPercent,
 			int			bPercentOfAvail,
 			ulong			ulMin,
@@ -2020,7 +2020,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DbSystem_getDynamicCacheSupported(
-			ulong			pDbSystem);
+			IntPtr		pDbSystem);
 
 //-----------------------------------------------------------------------------
 // getCacheInfo
@@ -2043,7 +2043,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_getCacheInfo(
-			ulong						pDbSystem,
+			IntPtr					pDbSystem,
 			[Out]
 			CS_XFLM_CACHE_INFO	cacheInfo);
 
@@ -2074,7 +2074,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_closeUnusedFiles(
-			ulong		pDbSystem,
+			IntPtr	pDbSystem,
 			uint		uiSeconds);
 
 //-----------------------------------------------------------------------------
@@ -2091,7 +2091,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_startStats(
-			ulong		pDbSystem);
+			IntPtr	pDbSystem);
 
 //-----------------------------------------------------------------------------
 // stopStats
@@ -2109,7 +2109,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_stopStats(
-			ulong		pDbSystem);
+			IntPtr	pDbSystem);
 
 //-----------------------------------------------------------------------------
 // resetStats
@@ -2126,7 +2126,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_resetStats(
-			ulong		pDbSystem);
+			IntPtr	pDbSystem);
 
 //-----------------------------------------------------------------------------
 // getStats
@@ -2137,8 +2137,8 @@ namespace xflaim
 		/// </summary>
 		public DbSystemStats getStats()
 		{
-			RCODE	rc;
-			ulong	pDbSystemStats;
+			RCODE		rc;
+			IntPtr	pDbSystemStats;
 
 			if ((rc = xflaim_DbSystem_getStats( m_pDbSystem, out pDbSystemStats)) != 0)
 			{
@@ -2149,8 +2149,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_getStats(
-			ulong			pDbSystem,
-			out ulong	ppDbSystemStats);
+			IntPtr		pDbSystem,
+			out IntPtr	ppDbSystemStats);
 
 //-----------------------------------------------------------------------------
 // setTempDir
@@ -2175,7 +2175,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_setTempDir(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		sTempDir);
 
@@ -2206,7 +2206,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_getTempDir(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			out IntPtr	psTempDir);
 
 //-----------------------------------------------------------------------------
@@ -2234,7 +2234,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_setCheckpointInterval(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			uint			uiSeconds);
 
 //-----------------------------------------------------------------------------
@@ -2254,7 +2254,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbSystem_getCheckpointInterval(
-			ulong			pDbSystem);
+			IntPtr		pDbSystem);
 
 //-----------------------------------------------------------------------------
 // setCacheAdjustInterval
@@ -2278,7 +2278,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_setCacheAdjustInterval(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			uint			uiSeconds);
 
 //-----------------------------------------------------------------------------
@@ -2298,7 +2298,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbSystem_getCacheAdjustInterval(
-			ulong			pDbSystem);
+			IntPtr		pDbSystem);
 
 //-----------------------------------------------------------------------------
 // setCacheCleanupInterval
@@ -2323,7 +2323,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_setCacheCleanupInterval(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			uint			uiSeconds);
 
 //-----------------------------------------------------------------------------
@@ -2343,7 +2343,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbSystem_getCacheCleanupInterval(
-			ulong			pDbSystem);
+			IntPtr		pDbSystem);
 
 //-----------------------------------------------------------------------------
 // setUnusedCleanupInterval
@@ -2369,7 +2369,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_setUnusedCleanupInterval(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			uint			uiSeconds);
 
 //-----------------------------------------------------------------------------
@@ -2389,7 +2389,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbSystem_getUnusedCleanupInterval(
-			ulong			pDbSystem);
+			IntPtr		pDbSystem);
 
 //-----------------------------------------------------------------------------
 // setMaxUnusedTime
@@ -2416,7 +2416,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_setMaxUnusedTime(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			uint			uiSeconds);
 
 //-----------------------------------------------------------------------------
@@ -2436,7 +2436,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbSystem_getMaxUnusedTime(
-			ulong			pDbSystem);
+			IntPtr		pDbSystem);
 
 //-----------------------------------------------------------------------------
 // deactivateOpenDb
@@ -2463,7 +2463,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_deactivateOpenDb(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string		sDbFileName,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -2490,7 +2490,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_setQuerySaveMax(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			uint			uiMaxToSave);
 
 //-----------------------------------------------------------------------------
@@ -2510,7 +2510,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbSystem_getQuerySaveMax(
-			ulong			pDbSystem);
+			IntPtr		pDbSystem);
 
 //-----------------------------------------------------------------------------
 // setDirtyCacheLimits
@@ -2540,7 +2540,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_setDirtyCacheLimits(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			ulong			ulMaxDirty,
 			ulong			ulLowDirty);
 
@@ -2566,7 +2566,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbSystem_getDirtyCacheLimits(
-			ulong			pDbSystem,
+			IntPtr		pDbSystem,
 			out ulong	pulMaxDirty,
 			out ulong	pulLowDirty);
 
@@ -2631,7 +2631,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_compareStrings(
-			ulong				pDbSystem,
+			IntPtr			pDbSystem,
 			[MarshalAs(UnmanagedType.LPWStr), In]
 			string			sLeftString,
 			int				bLeftWild,
@@ -2664,7 +2664,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DbSystem_uniIsUpper(
-			ulong				pDbSystem,
+			IntPtr			pDbSystem,
 			char				uzChar);
 
 //-----------------------------------------------------------------------------
@@ -2689,7 +2689,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DbSystem_uniIsLower(
-			ulong				pDbSystem,
+			IntPtr			pDbSystem,
 			char				uzChar);
 
 //-----------------------------------------------------------------------------
@@ -2714,7 +2714,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DbSystem_uniIsAlpha(
-			ulong				pDbSystem,
+			IntPtr			pDbSystem,
 			char				uzChar);
 
 //-----------------------------------------------------------------------------
@@ -2739,7 +2739,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DbSystem_uniIsDecimalDigit(
-			ulong				pDbSystem,
+			IntPtr			pDbSystem,
 			char				uzChar);
 
 //-----------------------------------------------------------------------------
@@ -2763,7 +2763,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern char xflaim_DbSystem_uniToLower(
-			ulong				pDbSystem,
+			IntPtr			pDbSystem,
 			char				uzChar);
 
 //-----------------------------------------------------------------------------
@@ -2793,7 +2793,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_waitToClose(
-			ulong				pDbSystem,
+			IntPtr			pDbSystem,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string			sDbFileName);
 
@@ -2824,8 +2824,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DbSystem_clearCache(
-			ulong				pDbSystem,
-			ulong				pDbWithUpdateTrans);
+			IntPtr	pDbSystem,
+			IntPtr	pDbWithUpdateTrans);
 
 	}
 }

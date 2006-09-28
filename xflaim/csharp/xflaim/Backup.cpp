@@ -29,10 +29,8 @@
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_Backup_Release(
-	FLMUINT64	ui64This)
+	IF_Backup *	pBackup)
 {
-	IF_Backup *	pBackup = ((IF_Backup *)(FLMUINT)ui64This);
-	
 	if (pBackup)
 	{
 		pBackup->Release();
@@ -43,10 +41,8 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Backup_Release(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Backup_getBackupTransId(
-	FLMUINT64	ui64This)
+	IF_Backup *	pBackup)
 {
-	IF_Backup *	pBackup = ((IF_Backup *)(FLMUINT)ui64This);
-	
 	return( pBackup->getBackupTransId());
 }
 
@@ -54,10 +50,8 @@ FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Backup_getBackupTransId(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Backup_getLastBackupTransId(
-	FLMUINT64	ui64This)
+	IF_Backup *	pBackup)
 {
-	IF_Backup *	pBackup = ((IF_Backup *)(FLMUINT)ui64This);
-	
 	return( pBackup->getLastBackupTransId());
 }
 
@@ -131,7 +125,7 @@ private:
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Backup_backup(
-	FLMUINT64		ui64This,
+	IF_Backup *		pBackup,
 	const char *	pszBackupPath,
 	const char *	pszPassword,
 	FLMUINT32 *		pui32SeqNum,
@@ -139,7 +133,6 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Backup_backup(
 	BACKUP_STATUS	fnBackupStatus)
 {
 	RCODE					rc = NE_XFLM_OK;
-	IF_Backup *			pBackup = (IF_Backup *)((FLMUINT)ui64This);
 	IF_BackupClient *	pBackupClient = NULL;
 	IF_BackupStatus *	pBackupStatus = NULL;
 	FLMUINT				uiSeqNum;
@@ -189,9 +182,7 @@ Exit:
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Backup_endBackup(
-	FLMUINT64	ui64This)
+	IF_Backup *	pBackup)
 {
-	IF_Backup *	pBackup = ((IF_Backup *)(FLMUINT)ui64This);
-	
 	return( pBackup->endBackup());
 }

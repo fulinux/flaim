@@ -29,10 +29,8 @@
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_Db_Release(
-	FLMUINT64		ui64This)
+	IF_Db *	pDb)
 {
-	IF_Db *			pDb = ((IF_Db *)(FLMUINT)ui64This);
-	
 	if (pDb)
 	{
 		pDb->Release();
@@ -43,27 +41,22 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Db_Release(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transBegin(
-	FLMUINT64		ui64This,
-	FLMUINT32		ui32TransType,
-	FLMUINT32		uiMaxLockWait,
-	FLMUINT32		uiFlags)
+	IF_Db *		pDb,
+	FLMUINT32	ui32TransType,
+	FLMUINT32	ui32MaxLockWait,
+	FLMUINT32	ui32Flags)
 {
-	IF_Db *			pDb = ((IF_Db *)(FLMUINT)ui64This);
-
 	return( pDb->transBegin( (eDbTransType)ui32TransType, 
-		uiMaxLockWait, uiFlags));
+		(FLMUINT)ui32MaxLockWait, (FLMUINT)ui32Flags));
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transBeginClone(
-	FLMUINT64		ui64This,
-	FLMUINT64		ui64DbToClone)
+	IF_Db *	pDb,
+	IF_Db *	pDbToClone)
 {
-	IF_Db *			pDb = ((IF_Db *)(FLMUINT)ui64This);
-	IF_Db *			pDbToClone = ((IF_Db *)(FLMUINT)ui64DbToClone);
-
 	return( pDb->transBegin( pDbToClone));
 }
 
@@ -71,10 +64,8 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transBeginClone(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transCommit(
-	FLMUINT64		ui64This)
+	IF_Db *	pDb)
 {
-	IF_Db *			pDb = ((IF_Db *)(FLMUINT)ui64This);
-
 	return( pDb->transCommit());
 }
 
@@ -82,10 +73,8 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transCommit(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transAbort(
-	FLMUINT64		ui64This)
+	IF_Db *	pDb)
 {
-	IF_Db *			pDb = ((IF_Db *)(FLMUINT)ui64This);
-
 	return( pDb->transAbort());
 }
 
@@ -93,10 +82,8 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transAbort(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getTransType(
-	FLMUINT64		ui64This)
+	IF_Db *	pDb)
 {
-	IF_Db *			pDb = ((IF_Db *)(FLMUINT)ui64This);
-
 	return( (FLMUINT32)pDb->getTransType());
 }
 
@@ -104,11 +91,9 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getTransType(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_doCheckpoint(
-	FLMUINT64		ui64This,
-	FLMUINT32		ui32Timeout)
+	IF_Db *		pDb,
+	FLMUINT32	ui32Timeout)
 {
-	IF_Db *			pDb = ((IF_Db *)(FLMUINT)ui64This);
-
 	return( pDb->doCheckpoint( ui32Timeout));
 }
 
@@ -116,30 +101,18 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_doCheckpoint(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_backupBegin(
-	FLMUINT64		ui64This,
+	IF_Db *			pDb,
 	FLMBOOL			bFullBackup,
 	FLMBOOL			bLockDb,
 	FLMUINT32		ui32MaxLockWait,
-	FLMUINT64 *		pui64BackupRef)
+	IF_Backup **	ppBackup)
 {
-	RCODE				rc = NE_XFLM_OK;
-	IF_Db *			pDb = ((IF_Db *)(FLMUINT)ui64This);
-	IF_Backup *		pBackup = NULL;
-
-	if (RC_BAD( rc = pDb->backupBegin(
+	return( pDb->backupBegin(
 								(eDbBackupType)(bFullBackup
 														? XFLM_FULL_BACKUP
 														: XFLM_INCREMENTAL_BACKUP),
 								(eDbTransType)(bLockDb
 													? XFLM_READ_TRANS
 													: XFLM_UPDATE_TRANS),
-								(FLMUINT)ui32MaxLockWait, &pBackup)))
-	{
-		goto Exit;
-	}
-
-Exit:
-
-	*pui64BackupRef = (FLMUINT64)((FLMUINT)pBackup);
-	return( rc);
+								(FLMUINT)ui32MaxLockWait, ppBackup));
 }

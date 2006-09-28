@@ -237,7 +237,7 @@ namespace xflaim
 	/// </remarks>
 	public class Query
 	{
-		private ulong 		m_pQuery;			// Pointer to IF_Query object in unmanaged space
+		private IntPtr		m_pQuery;			// Pointer to IF_Query object in unmanaged space
 		private Db			m_db;
 
 		/// <summary>
@@ -279,7 +279,7 @@ namespace xflaim
 		/// Return the pointer to the IF_Query object.
 		/// </summary>
 		/// <returns>Returns a pointer to the IF_Query object.</returns>
-		internal ulong getQuery()
+		internal IntPtr getQuery()
 		{
 			return( m_pQuery);
 		}
@@ -291,10 +291,10 @@ namespace xflaim
 		{
 			// Release the native pQuery!
 		
-			if (m_pQuery != 0)
+			if (m_pQuery != IntPtr.Zero)
 			{
 				xflaim_Query_Release( m_pQuery);
-				m_pQuery = 0;
+				m_pQuery = IntPtr.Zero;
 			}
 		
 			// Remove our reference to the Db object so it can be released.
@@ -305,11 +305,11 @@ namespace xflaim
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_createQuery(
 			uint			uiCollection,
-			out ulong	pQuery);
+			out IntPtr	ppQuery);
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_Query_Release(
-			ulong	pQuery);
+			IntPtr	pQuery);
 
 //-----------------------------------------------------------------------------
 // setLanguage
@@ -336,7 +336,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_setLanguage(
-			ulong			pQuery,
+			IntPtr		pQuery,
 			Languages	eLanguage);
 
 //-----------------------------------------------------------------------------
@@ -362,8 +362,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_setupQueryExpr(
-			ulong			pQuery,
-			ulong			pDb,
+			IntPtr		pQuery,
+			IntPtr		pDb,
 			[MarshalAs(UnmanagedType.LPWStr), In]
 			string		sQueryExpr);
 
@@ -390,8 +390,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_copyCriteria(
-			ulong			pQuery,
-			ulong			pQueryToCopy);
+			IntPtr	pQuery,
+			IntPtr	pQueryToCopy);
 
 //-----------------------------------------------------------------------------
 // addXPathComponent
@@ -424,7 +424,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addXPathComponent(
-			ulong					pQuery,
+			IntPtr				pQuery,
 			eXPathAxisTypes	eXPathAxis,
 			eDomNodeType		eNodeType,
 			uint					uiNameId);
@@ -458,7 +458,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addOperator(
-			ulong					pQuery,
+			IntPtr				pQuery,
 			eQueryOperators	eOperator,
 			CompareFlags		eCompareFlags);
 
@@ -485,7 +485,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addStringValue(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			[MarshalAs(UnmanagedType.LPWStr), In]
 			string	sValue);
 
@@ -512,7 +512,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addBinaryValue(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			[MarshalAs(UnmanagedType.LPArray), In] 
 			byte []	pucValue,
 			int		iValueLen);
@@ -540,7 +540,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addULongValue(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			ulong		ulValue);
 
 //-----------------------------------------------------------------------------
@@ -566,7 +566,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addLongValue(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			long		lValue);
 
 //-----------------------------------------------------------------------------
@@ -592,7 +592,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addUIntValue(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			uint		uiValue);
 
 //-----------------------------------------------------------------------------
@@ -618,7 +618,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addIntValue(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			int		iValue);
 
 //-----------------------------------------------------------------------------
@@ -644,7 +644,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addBoolean(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			int		bValue);
 
 //-----------------------------------------------------------------------------
@@ -666,7 +666,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addUnknown(
-			ulong		pQuery);
+			IntPtr	pQuery);
 
 //-----------------------------------------------------------------------------
 // getFirst
@@ -694,7 +694,7 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_Query_getFirst( m_pQuery, m_db.getDb(),
 											uiTimeLimit, ref pNode)) != 0)
@@ -716,10 +716,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getFirst(
-			ulong			pQuery,
-			ulong			pDb,
+			IntPtr		pQuery,
+			IntPtr		pDb,
 			uint			uiTimeLimit,
-			ref ulong	ppNode);
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getLast
@@ -747,7 +747,7 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_Query_getLast( m_pQuery, m_db.getDb(),
 				uiTimeLimit, ref pNode)) != 0)
@@ -769,10 +769,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getLast(
-			ulong			pQuery,
-			ulong			pDb,
+			IntPtr		pQuery,
+			IntPtr		pDb,
 			uint			uiTimeLimit,
-			ref ulong	ppNode);
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getNext
@@ -800,7 +800,7 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_Query_getNext( m_pQuery, m_db.getDb(),
 				uiTimeLimit, ref pNode)) != 0)
@@ -822,10 +822,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getNext(
-			ulong			pQuery,
-			ulong			pDb,
+			IntPtr		pQuery,
+			IntPtr		pDb,
 			uint			uiTimeLimit,
-			ref ulong	ppNode);
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getPrev
@@ -853,7 +853,7 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_Query_getPrev( m_pQuery, m_db.getDb(),
 				uiTimeLimit, ref pNode)) != 0)
@@ -875,10 +875,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getPrev(
-			ulong			pQuery,
-			ulong			pDb,
+			IntPtr		pQuery,
+			IntPtr		pDb,
 			uint			uiTimeLimit,
-			ref ulong	ppNode);
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getCurrent
@@ -903,7 +903,7 @@ namespace xflaim
 		{
 			RCODE		rc = 0;
 			DOMNode	newNode;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_Query_getCurrent( m_pQuery, m_db.getDb(),
 				ref pNode)) != 0)
@@ -925,9 +925,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getCurrent(
-			ulong			pQuery,
-			ulong			pDb,
-			ref ulong	ppNode);
+			IntPtr		pQuery,
+			IntPtr		pDb,
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // resetQuery
@@ -943,7 +943,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_Query_resetQuery(
-			ulong			pQuery);
+			IntPtr		pQuery);
 
 //-----------------------------------------------------------------------------
 // getStatsAndOptInfo
@@ -977,7 +977,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getStatsAndOptInfo(
-			ulong			pQuery,
+			IntPtr		pQuery,
 			out IntPtr	pOptInfoArray,
 			out uint		puiNumOptInfos);
 
@@ -1005,7 +1005,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_Query_setDupHandling(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			int		bRemoveDups);
 
 //-----------------------------------------------------------------------------
@@ -1030,7 +1030,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_setIndex(
-			ulong		pQuery,
+			IntPtr	pQuery,
 			uint		uiIndex);
 
 //-----------------------------------------------------------------------------
@@ -1063,8 +1063,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getIndex(
-			ulong			pQuery,
-			ulong			pDb,
+			IntPtr		pQuery,
+			IntPtr		pDb,
 			out uint		uiIndex,
 			out int		bHaveMultiple);
 
@@ -1075,7 +1075,7 @@ namespace xflaim
 		/// <summary>
 		/// Add a sort key to the query.
 		/// </summary>
-		/// <param name="ulSortKeyContext">
+		/// <param name="pvSortKeyContext">
 		/// Context that the current sort key is to be added relative to - either
 		/// as a child or a sibling.  If this is the first sort key, a zero should
 		/// be passed in here.  Otherwise, the value returned from a previous call
@@ -1118,8 +1118,8 @@ namespace xflaim
 		/// Returns a value that can be passed back into subsequent calls to addSortKey
 		/// when this component needs to be used as a context for subsequent components.
 		/// </returns>
-		public ulong addSortKey(
-			ulong				ulSortKeyContext,
+		public IntPtr addSortKey(
+			IntPtr			pvSortKeyContext,
 			bool				bChildToContext,
 			bool				bElement,
 			uint				uiNameId,
@@ -1129,25 +1129,25 @@ namespace xflaim
 			bool				bSortDescending,
 			bool				bSortMissingHigh)
 		{
-			RCODE	rc;
-			ulong	ulContext;
+			RCODE		rc;
+			IntPtr	pvContext;
 
-			if ((rc = xflaim_Query_addSortKey( m_pQuery, ulSortKeyContext,
+			if ((rc = xflaim_Query_addSortKey( m_pQuery, pvSortKeyContext,
 				(int)(bChildToContext ? 1 : 0),
 				(int)(bElement ? 1 : 0),
 				uiNameId, compareFlags, uiLimit, uiKeyComponent,
 				(int)(bSortDescending ? 1 : 0),
-				(int)(bSortMissingHigh ? 1 : 0), out ulContext)) != 0)
+				(int)(bSortMissingHigh ? 1 : 0), out pvContext)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
-			return( ulContext);
+			return( pvContext);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_addSortKey(
-			ulong				pQuery,
-			ulong				ulSortKeyContext,
+			IntPtr			pQuery,
+			IntPtr			pvSortKeyContext,
 			int				bChildToContext,
 			int				bElement,
 			uint				uiNameId,
@@ -1156,7 +1156,7 @@ namespace xflaim
 			uint				uiKeyComponent,
 			int				bSortDescending,
 			int				bSortMissingHigh,
-			out ulong		pulContext);
+			out IntPtr		ppvContext);
 
 //-----------------------------------------------------------------------------
 // enablePositioning
@@ -1177,7 +1177,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_enablePositioning(
-			ulong				pQuery);
+			IntPtr	pQuery);
 
 //-----------------------------------------------------------------------------
 // positionTo
@@ -1208,7 +1208,7 @@ namespace xflaim
 		{
 			RCODE		rc;
 			DOMNode	newNode;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_Query_positionTo( m_pQuery, m_db.getDb(),
 								uiTimeLimit, uiPosition, ref pNode)) != 0)
@@ -1230,11 +1230,11 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_positionTo(
-			ulong				pQuery,
-			ulong				pDb,
+			IntPtr			pQuery,
+			IntPtr			pDb,
 			uint				uiTimeLimit,
 			uint				uiPosition,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // positionTo
@@ -1272,7 +1272,7 @@ namespace xflaim
 		{
 			RCODE		rc;
 			DOMNode	newNode;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_Query_positionToByKey( m_pQuery, m_db.getDb(),
 				uiTimeLimit, searchKey.getDataVector(),
@@ -1295,12 +1295,12 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_positionToByKey(
-			ulong				pQuery,
-			ulong				pDb,
+			IntPtr			pQuery,
+			IntPtr			pDb,
 			uint				uiTimeLimit,
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			RetrieveFlags	retrieveFlags,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getPosition
@@ -1326,8 +1326,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getPosition(
-			ulong		pQuery,
-			ulong		pDb,
+			IntPtr	pQuery,
+			IntPtr	pDb,
 			out uint	puiPosition);
 
 //-----------------------------------------------------------------------------
@@ -1355,8 +1355,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_buildResultSet(
-			ulong		pQuery,
-			ulong		pDb,
+			IntPtr	pQuery,
+			IntPtr	pDb,
 			uint		uiTimeLimit);
 
 //-----------------------------------------------------------------------------
@@ -1373,7 +1373,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_Query_stopBuildingResultSet(
-			ulong		pQuery);
+			IntPtr	pQuery);
 
 //-----------------------------------------------------------------------------
 // enableResultSetEncryption
@@ -1390,7 +1390,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_Query_enableResultSetEncryption(
-			ulong		pQuery);
+			IntPtr	pQuery);
 
 //-----------------------------------------------------------------------------
 // getCounts
@@ -1446,8 +1446,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Query_getCounts(
-			ulong		pQuery,
-			ulong		pDb,
+			IntPtr	pQuery,
+			IntPtr	pDb,
 			uint		uiTimeLimit,
 			int		bPartialCountOk,
 			out uint	uiReadCount,

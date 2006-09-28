@@ -34,7 +34,7 @@ namespace xflaim
 	/// </summary>
 	public class Backup
 	{
-		private ulong	m_pBackup;	// Pointer to IF_Backup object in unmanaged space
+		private IntPtr	m_pBackup;	// Pointer to IF_Backup object in unmanaged space
 		private Db		m_db;
 
 		/// <summary>
@@ -52,10 +52,10 @@ namespace xflaim
 		/// in the middle of a backup.
 		/// </param>
 		public Backup(
-			ulong		pBackup,
+			IntPtr	pBackup,
 			Db			db)
 		{
-			if ((m_pBackup = pBackup) == 0)
+			if ((m_pBackup = pBackup) == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid IF_Backup pointer passed into Backup constructor");
 			}
@@ -69,7 +69,7 @@ namespace xflaim
 			// m_db object gets a compiler warning on linux because
 			// it is not used anywhere.  Other than that, there is really
 			// no need to make the following call.
-			if (m_db.getDb() == 0)
+			if (m_db.getDb() == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid Db.IF_Db object");
 			}
@@ -80,10 +80,10 @@ namespace xflaim
 		/// </summary>
 		~Backup()
 		{
-			if (m_pBackup != 0)
+			if (m_pBackup != IntPtr.Zero)
 			{
 				xflaim_Backup_Release( m_pBackup);
-				m_pBackup = 0;
+				m_pBackup = IntPtr.Zero;
 			}
 			
 			m_db = null;
@@ -91,7 +91,7 @@ namespace xflaim
 	
 		[DllImport("xflaim")]
 		private static extern void xflaim_Backup_Release(
-			ulong	pBackup);
+			IntPtr	pBackup);
 
 //-----------------------------------------------------------------------------
 // getBackupTransId
@@ -108,7 +108,7 @@ namespace xflaim
 	
 		[DllImport("xflaim")]
 		private static extern ulong xflaim_Backup_getBackupTransId(
-			ulong	pBackup);
+			IntPtr	pBackup);
 
 //-----------------------------------------------------------------------------
 // getLastBackupTransId
@@ -128,7 +128,7 @@ namespace xflaim
 	
 		[DllImport("xflaim")]
 		private static extern ulong xflaim_Backup_getLastBackupTransId(
-			ulong	pBackup);
+			IntPtr	pBackup);
 
 //-----------------------------------------------------------------------------
 // backup
@@ -198,7 +198,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Backup_backup(
-			ulong						pBackup,
+			IntPtr					pBackup,
 			[MarshalAs(UnmanagedType.LPStr), In]
 			string					sBackupPath,
 			[MarshalAs(UnmanagedType.LPStr), In]
@@ -278,7 +278,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Backup_endBackup(
-			ulong	pBackup);
+			IntPtr	pBackup);
 
 	}
 }

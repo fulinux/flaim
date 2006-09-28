@@ -40,7 +40,7 @@ namespace xflaim
 	/// </summary>
 	public class IStream 
 	{
-		private ulong			m_pIStream;		// Pointer to IF_IStream object allocated in unmanaged space.
+		private IntPtr			m_pIStream;		// Pointer to IF_IStream object allocated in unmanaged space.
 		private DbSystem		m_dbSystem;
 
 		/// <summary>
@@ -53,10 +53,10 @@ namespace xflaim
 		/// Pointer to <see cref="DbSystem"/> object.
 		/// </param>
 		internal IStream(
-			ulong			pIStream,
+			IntPtr		pIStream,
 			DbSystem 	dbSystem)
 		{
-			if (pIStream == 0)
+			if (pIStream == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid IF_IStream object pointer");
 			}
@@ -74,7 +74,7 @@ namespace xflaim
 			// m_dbSystem object gets a compiler warning on linux because
 			// it is not used anywhere.  Other than that, there is really
 			// no need to make the following call.
-			if (m_dbSystem.getDbSystem() == 0)
+			if (m_dbSystem.getDbSystem() == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid DbSystem.IF_DbSystem object");
 			}
@@ -93,10 +93,10 @@ namespace xflaim
 		/// </summary>
 		public void close()
 		{
-			if (m_pIStream != 0)
+			if (m_pIStream != IntPtr.Zero)
 			{
 				xflaim_IStream_Release( m_pIStream);
-				m_pIStream = 0;
+				m_pIStream = IntPtr.Zero;
 			}
 
 			m_dbSystem = null;
@@ -104,9 +104,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_IStream_Release(
-			ulong	pIStream);
+			IntPtr	pIStream);
 
-		internal ulong getIStream()
+		internal IntPtr getIStream()
 		{
 			return( m_pIStream);
 		}

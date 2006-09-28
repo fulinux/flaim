@@ -29,10 +29,8 @@
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_Release(
-	FLMUINT64	ui64This)
+	IF_DbInfo *	pDbInfo)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
-	
 	if (pDbInfo)
 	{
 		pDbInfo->Release();
@@ -43,9 +41,8 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_Release(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumCollections(
-	FLMUINT64	ui64This)
+	IF_DbInfo *	pDbInfo)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
 	return( (FLMUINT32)pDbInfo->getNumCollections());
 }
 
@@ -53,9 +50,8 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumCollections(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumIndexes(
-	FLMUINT64	ui64This)
+	IF_DbInfo *	pDbInfo)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
 	return( (FLMUINT32)pDbInfo->getNumIndexes());
 }
 
@@ -63,9 +59,8 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumIndexes(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumLogicalFiles(
-	FLMUINT64	ui64This)
+	IF_DbInfo *	pDbInfo)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
 	return( (FLMUINT32)pDbInfo->getNumLogicalFiles());
 }
 
@@ -73,9 +68,8 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumLogicalFiles(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_DbInfo_getDatabaseSize(
-	FLMUINT64	ui64This)
+	IF_DbInfo *	pDbInfo)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
 	return( pDbInfo->getFileSize());
 }
 
@@ -83,15 +77,14 @@ FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_DbInfo_getDatabaseSize(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getAvailBlockStats(
-	FLMUINT64	ui64This,
+	IF_DbInfo *	pDbInfo,
 	FLMUINT64 *	pui64BytesUsed,
 	FLMUINT32 *	pui32BlockCount,
 	FLMINT32 *	pi32LastError,
 	FLMUINT32 *	pui32NumErrors)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
-	FLMUINT		uiBlockCount;
-	FLMUINT		uiNumErrors;
+	FLMUINT	uiBlockCount;
+	FLMUINT	uiNumErrors;
 
 	pDbInfo->getAvailBlockStats( pui64BytesUsed, &uiBlockCount,
 		pi32LastError, &uiNumErrors);
@@ -109,15 +102,14 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getAvailBlockStats(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getLFHBlockStats(
-	FLMUINT64	ui64This,
+	IF_DbInfo *	pDbInfo,
 	FLMUINT64 *	pui64BytesUsed,
 	FLMUINT32 *	pui32BlockCount,
 	FLMINT32 *	pi32LastError,
 	FLMUINT32 *	pui32NumErrors)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
-	FLMUINT		uiBlockCount;
-	FLMUINT		uiNumErrors;
+	FLMUINT	uiBlockCount;
+	FLMUINT	uiNumErrors;
 
 	pDbInfo->getLFHBlockStats( pui64BytesUsed, &uiBlockCount,
 		pi32LastError, &uiNumErrors);
@@ -136,14 +128,13 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getLFHBlockStats(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeInfo(
-	FLMUINT64		ui64This,
+	IF_DbInfo *		pDbInfo,
 	FLMUINT32		ui32NthLogicalFile,
 	FLMUINT32 *		pui32LfNum,
 	FLMINT32 *		pi32LfType,
 	FLMUINT32 *		pui32RootBlkAddress,
 	FLMUINT32 *		pui32NumLevels)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
 	FLMUINT		uiLfNum;
 	eLFileType	eLfType;
 	FLMUINT		uiRootBlkAddress;
@@ -173,7 +164,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeInfo(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeBlockStats(
-	FLMUINT64		ui64This,
+	IF_DbInfo *		pDbInfo,
 	FLMUINT32		ui32NthLogicalFile,
 	FLMUINT32		ui32Level,
 	FLMUINT64 *		pui64KeyCount,
@@ -185,7 +176,6 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeBlockStats(
 	FLMINT32 *		pi32LastError,
 	FLMUINT32 *		pui32NumErrors)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
 	FLMUINT		uiBlockCount;
 	FLMUINT		uiNumErrors;
 
@@ -206,9 +196,8 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeBlockStats(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getDbHdr(
-	FLMUINT64		ui64This,
+	IF_DbInfo *		pDbInfo,
 	XFLM_DB_HDR *	pDbHdr)
 {
-	IF_DbInfo *	pDbInfo = ((IF_DbInfo *)(FLMUINT)ui64This);
 	f_memcpy( pDbHdr, pDbInfo->getDbHdr(), sizeof( XFLM_DB_HDR));
 }

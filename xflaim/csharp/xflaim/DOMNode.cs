@@ -102,7 +102,7 @@ namespace xflaim
 	/// </remarks>
 	public class DOMNode
 	{
-		private ulong 		m_pNode;			// Pointer to IF_DOMNode object in unmanaged space
+		private IntPtr 	m_pNode;			// Pointer to IF_DOMNode object in unmanaged space
 		private Db			m_db;
 
 		/// <summary>
@@ -115,10 +115,10 @@ namespace xflaim
 		/// Db object that this DOMNode object is associated with.
 		/// </param>
 		internal DOMNode(
-			ulong		pNode,
+			IntPtr	pNode,
 			Db			db)
 		{
-			if (pNode == 0)
+			if (pNode == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid IF_DOMNode reference");
 			}
@@ -136,7 +136,7 @@ namespace xflaim
 			// m_db object gets a compiler warning on linux because
 			// it is not used anywhere.  Other than that, there is really
 			// no need to make the following call.
-			if (m_db.getDb() == 0)
+			if (m_db.getDb() == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid Db.IF_Db object");
 			}
@@ -156,7 +156,7 @@ namespace xflaim
 		/// Db object that this DOMNode object is associated with.
 		/// </param>
 		internal void setNodePtr(
-			ulong		pNode,
+			IntPtr	pNode,
 			Db			db)
 		{
 			m_pNode = pNode;
@@ -175,7 +175,7 @@ namespace xflaim
 		/// Return the pointer to the IF_DOMNode object.
 		/// </summary>
 		/// <returns>Returns a pointer to the IF_DOMNode object.</returns>
-		internal ulong getNode()
+		internal IntPtr getNode()
 		{
 			return( m_pNode);
 		}
@@ -187,10 +187,10 @@ namespace xflaim
 		{
 			// Release the native pNode!
 		
-			if (m_pNode != 0)
+			if (m_pNode != IntPtr.Zero)
 			{
 				xflaim_DOMNode_Release( m_pNode);
-				m_pNode = 0;
+				m_pNode = IntPtr.Zero;
 			}
 		
 			// Remove our reference to the db so it can be released.
@@ -200,11 +200,11 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DOMNode_Release(
-			ulong	pNode);
+			IntPtr	pNode);
 
 		private DOMNode makeNode(
 			DOMNode	nodeToReuse,
-			ulong		pNode)
+			IntPtr	pNode)
 		{
 			if (nodeToReuse == null)
 			{
@@ -253,7 +253,7 @@ namespace xflaim
 			DOMNode			nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_createNode( m_pNode, m_db.getDb(),
 				eNodeType, uiNameId, eInsertLoc, ref pNode)) != 0)
@@ -265,12 +265,12 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_createNode(
-			ulong				pNode,
-			ulong				pDb,
+			IntPtr			pNode,
+			IntPtr			pDb,
 			eDomNodeType	eNodeType,
 			uint				uiNameId,
 			eNodeInsertLoc	eInsertLoc,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // createChildElement
@@ -304,7 +304,7 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_createChildElement( m_pNode, m_db.getDb(),
 				uiChildElementNameId, (int)(bFirstChild ? 1 : 0), ref pNode)) != 0)
@@ -316,11 +316,11 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_createChildElement(
-			ulong				pNode,
-			ulong				pDb,
+			IntPtr			pNode,
+			IntPtr			pDb,
 			uint				uiChildElementNameId,
 			int				bFirstChild,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // deleteNode
@@ -341,8 +341,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_deleteNode(
-			ulong				pNode,
-			ulong				pDb);
+			IntPtr			pNode,
+			IntPtr			pDb);
 
 //-----------------------------------------------------------------------------
 // deleteChildren
@@ -363,8 +363,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_deleteChildren(
-			ulong				pNode,
-			ulong				pDb);
+			IntPtr			pNode,
+			IntPtr			pDb);
 
 //-----------------------------------------------------------------------------
 // getNodeType
@@ -381,7 +381,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern eDomNodeType xflaim_DOMNode_getNodeType(
-			ulong				pNode);
+			IntPtr	pNode);
 
 //-----------------------------------------------------------------------------
 // isDataLocalToNode
@@ -409,8 +409,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_isDataLocalToNode(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			out int	pbLocal);
 
 //-----------------------------------------------------------------------------
@@ -439,7 +439,7 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_createAttribute( m_pNode, m_db.getDb(),
 											uiAttrNameId, ref pNode)) != 0)
@@ -451,10 +451,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_createAttribute(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
-			ref ulong	ppNode);
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getFirstAttribute
@@ -474,7 +474,7 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getFirstAttribute( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -486,9 +486,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getFirstAttribute(
-			ulong			pNode,
-			ulong			pDb,
-			ref ulong	ppNode);
+			IntPtr		pNode,
+			IntPtr		pDb,
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getLastAttribute
@@ -508,7 +508,7 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getLastAttribute( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -520,9 +520,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getLastAttribute(
-			ulong			pNode,
-			ulong			pDb,
-			ref ulong	ppNode);
+			IntPtr		pNode,
+			IntPtr		pDb,
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getAttribute
@@ -549,7 +549,7 @@ namespace xflaim
 			DOMNode		nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getAttribute( m_pNode, m_db.getDb(),
 				uiAttrNameId, ref pNode)) != 0)
@@ -561,10 +561,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAttribute(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
-			ref ulong	ppNode);
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // deleteAttribute
@@ -580,7 +580,7 @@ namespace xflaim
 		/// <see cref="Db.createAttributeDef"/>.
 		/// </param>
 		public void deleteAttribute(
-			uint			uiAttrNameId)
+			uint	uiAttrNameId)
 		{
 			RCODE		rc;
 
@@ -593,8 +593,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_deleteAttribute(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId);
 
 //-----------------------------------------------------------------------------
@@ -614,7 +614,7 @@ namespace xflaim
 		/// Returns true if the attribute exists, false otherwise.
 		/// </returns>
 		public bool hasAttribute(
-			uint			uiAttrNameId)
+			uint	uiAttrNameId)
 		{
 			RCODE		rc;
 			int		bHasAttr;
@@ -629,8 +629,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_hasAttribute(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			out int		pbHasAttr);
 
@@ -659,8 +659,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_hasAttributes(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out int		pbHasAttrs);
 
 //-----------------------------------------------------------------------------
@@ -688,8 +688,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_hasNextSibling(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out int		pbHasNextSibling);
 
 //-----------------------------------------------------------------------------
@@ -717,8 +717,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_hasPreviousSibling(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out int		pbHasPreviousSibling);
 
 //-----------------------------------------------------------------------------
@@ -746,8 +746,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_hasChildren(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out int		pbHasChildren);
 
 //-----------------------------------------------------------------------------
@@ -775,8 +775,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_isNamespaceDecl(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out int		pbIsNamespaceDecl);
 
 //-----------------------------------------------------------------------------
@@ -804,8 +804,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getParentId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulParentId);
 
 //-----------------------------------------------------------------------------
@@ -833,8 +833,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getNodeId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulNodeId);
 
 //-----------------------------------------------------------------------------
@@ -862,8 +862,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getDocumentId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulDocumentId);
 
 //-----------------------------------------------------------------------------
@@ -891,8 +891,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getPrevSibId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulPrevSibId);
 
 //-----------------------------------------------------------------------------
@@ -920,8 +920,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getNextSibId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulNextSibId);
 
 //-----------------------------------------------------------------------------
@@ -949,8 +949,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getFirstChildId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulFirstChildId);
 
 //-----------------------------------------------------------------------------
@@ -978,8 +978,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getLastChildId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulLastChildId);
 
 //-----------------------------------------------------------------------------
@@ -1007,8 +1007,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getNameId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out uint		puiNameId);
 
 //-----------------------------------------------------------------------------
@@ -1059,8 +1059,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setULong(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			ulong			ulValue,
 			uint			uiEncId);
 
@@ -1120,8 +1120,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setAttributeValueULong(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			ulong			ulValue,
 			uint			uiEncId);
@@ -1174,8 +1174,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setLong(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			long			lValue,
 			uint			uiEncId);
 
@@ -1235,8 +1235,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setAttributeValueLong(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			long			lValue,
 			uint			uiEncId);
@@ -1289,8 +1289,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setUInt(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiValue,
 			uint			uiEncId);
 
@@ -1350,8 +1350,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setAttributeValueUInt(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			uint			uiValue,
 			uint			uiEncId);
@@ -1404,8 +1404,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setInt(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			int			iValue,
 			uint			uiEncId);
 
@@ -1465,8 +1465,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setAttributeValueInt(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			int			iValue,
 			uint			uiEncId);
@@ -1577,8 +1577,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setString(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			[MarshalAs(UnmanagedType.LPWStr), In]
 			string		sValue,
 			int			bLast,
@@ -1640,8 +1640,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setAttributeValueString(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			[MarshalAs(UnmanagedType.LPWStr), In]
 			string		sValue,
@@ -1753,8 +1753,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setBinary(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			[MarshalAs(UnmanagedType.LPArray), In]
 			byte []		ucValue,
 			uint			uiLen,
@@ -1819,8 +1819,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setAttributeValueBinary(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			[MarshalAs(UnmanagedType.LPWStr), In]
 			byte []		ucValue,
@@ -1850,8 +1850,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getDataLength(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out uint		puiDataLength);
 
 //-----------------------------------------------------------------------------
@@ -1877,8 +1877,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getDataType(
-			ulong					pNode,
-			ulong					pDb,
+			IntPtr				pNode,
+			IntPtr				pDb,
 			out FlmDataType	peDataType);
 
 //-----------------------------------------------------------------------------
@@ -1904,8 +1904,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getULong(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulValue);
 
 //-----------------------------------------------------------------------------
@@ -1946,8 +1946,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAttributeValueULong(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			int			bDefaultOk,
 			ulong			ulDefaultToUse,
@@ -1976,8 +1976,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getLong(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out long		plValue);
 
 //-----------------------------------------------------------------------------
@@ -2018,8 +2018,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAttributeValueLong(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			int			bDefaultOk,
 			long			lDefaultToUse,
@@ -2048,8 +2048,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getUInt(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out uint		puiValue);
 
 //-----------------------------------------------------------------------------
@@ -2090,8 +2090,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAttributeValueUInt(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			int			bDefaultOk,
 			uint			uiDefaultToUse,
@@ -2120,8 +2120,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getInt(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out int		piValue);
 
 //-----------------------------------------------------------------------------
@@ -2162,8 +2162,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAttributeValueInt(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			int			bDefaultOk,
 			int			iDefaultToUse,
@@ -2225,8 +2225,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getString(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiStartPos,
 			uint			uiNumChars,
 			out IntPtr	ppuzValue);
@@ -2261,8 +2261,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAttributeValueString(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			out IntPtr	ppuzValue);
 
@@ -2289,8 +2289,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getStringLen(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out uint		puiNumChars);
 
 //-----------------------------------------------------------------------------
@@ -2360,8 +2360,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getBinary(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiStartPos,
 			uint			uiNumBytes,
 			[MarshalAs(UnmanagedType.LPArray), Out] 
@@ -2394,8 +2394,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAttributeValueDataLength(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			out uint		puiDataLength);
 
@@ -2431,8 +2431,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAttributeValueBinary(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			uint			uiAttrNameId,
 			uint			uiLen,
 			[MarshalAs(UnmanagedType.LPArray), Out] 
@@ -2456,7 +2456,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getDocumentNode( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -2468,9 +2468,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getDocumentNode(
-			ulong			pNode,
-			ulong			pDb,
-			ref ulong	ppNode);
+			IntPtr		pNode,
+			IntPtr		pDb,
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getParentNode
@@ -2490,7 +2490,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getParentNode( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -2502,9 +2502,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getParentNode(
-			ulong			pNode,
-			ulong			pDb,
-			ref ulong	ppNode);
+			IntPtr		pNode,
+			IntPtr		pDb,
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getFirstChild
@@ -2524,7 +2524,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getFirstChild( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -2536,9 +2536,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getFirstChild(
-			ulong			pNode,
-			ulong			pDb,
-			ref ulong	ppNode);
+			IntPtr		pNode,
+			IntPtr		pDb,
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getLastChild
@@ -2558,7 +2558,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getLastChild( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -2570,9 +2570,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getLastChild(
-			ulong			pNode,
-			ulong			pDb,
-			ref ulong	ppNode);
+			IntPtr		pNode,
+			IntPtr		pDb,
+			ref IntPtr	ppNode);
 
 //-----------------------------------------------------------------------------
 // getChild
@@ -2597,7 +2597,7 @@ namespace xflaim
 			DOMNode			nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getChild( m_pNode, m_db.getDb(),
 				eNodeType, ref pNode)) != 0)
@@ -2609,10 +2609,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getChild(
-			ulong				pNode,
-			ulong				pDb,
+			IntPtr			pNode,
+			IntPtr			pDb,
 			eDomNodeType	eNodeType,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getChildElement
@@ -2637,7 +2637,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getChildElement( m_pNode, m_db.getDb(),
 				uiElementNameId, ref pNode)) != 0)
@@ -2649,10 +2649,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getChildElement(
-			ulong				pNode,
-			ulong				pDb,
+			IntPtr			pNode,
+			IntPtr			pDb,
 			uint				uiElementNameId,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getSiblingElement
@@ -2682,7 +2682,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getSiblingElement( m_pNode, m_db.getDb(),
 				uiElementNameId, (int)(bNext ? 1 : 0), ref pNode)) != 0)
@@ -2694,11 +2694,11 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getSiblingElement(
-			ulong				pNode,
-			ulong				pDb,
+			IntPtr			pNode,
+			IntPtr			pDb,
 			uint				uiElementNameId,
 			int				bNext,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getAncestorElement
@@ -2723,7 +2723,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getAncestorElement( m_pNode, m_db.getDb(),
 				uiElementNameId, ref pNode)) != 0)
@@ -2735,10 +2735,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAncestorElement(
-			ulong				pNode,
-			ulong				pDb,
+			IntPtr			pNode,
+			IntPtr			pDb,
 			uint				uiElementNameId,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getDescendantElement
@@ -2763,7 +2763,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getDescendantElement( m_pNode, m_db.getDb(),
 				uiElementNameId, ref pNode)) != 0)
@@ -2775,10 +2775,10 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getDescendantElement(
-			ulong				pNode,
-			ulong				pDb,
+			IntPtr			pNode,
+			IntPtr			pDb,
 			uint				uiElementNameId,
-			ref ulong		ppNode);
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getPreviousSibling
@@ -2798,7 +2798,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getPreviousSibling( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -2810,9 +2810,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getPreviousSibling(
-			ulong				pNode,
-			ulong				pDb,
-			ref ulong		ppNode);
+			IntPtr			pNode,
+			IntPtr			pDb,
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getNextSibling
@@ -2832,7 +2832,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getNextSibling( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -2844,9 +2844,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getNextSibling(
-			ulong				pNode,
-			ulong				pDb,
-			ref ulong		ppNode);
+			IntPtr			pNode,
+			IntPtr			pDb,
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getPreviousDocument
@@ -2867,7 +2867,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getPreviousDocument( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -2879,9 +2879,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getPreviousDocument(
-			ulong				pNode,
-			ulong				pDb,
-			ref ulong		ppNode);
+			IntPtr			pNode,
+			IntPtr			pDb,
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getNextDocument
@@ -2902,7 +2902,7 @@ namespace xflaim
 			DOMNode	nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getNextDocument( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -2914,9 +2914,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getNextDocument(
-			ulong				pNode,
-			ulong				pDb,
-			ref ulong		ppNode);
+			IntPtr			pNode,
+			IntPtr			pDb,
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getPrefix
@@ -2951,14 +2951,14 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getPrefixChars(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out uint		puiNumChars);
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getPrefix(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr		pDb,
 			uint		uiNumChars,
 			[MarshalAs(UnmanagedType.LPArray), Out]
 			char []	puzPrefix);
@@ -2988,8 +2988,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getPrefixId(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			out uint	puiPrefixId);
 
 //-----------------------------------------------------------------------------
@@ -3019,8 +3019,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getEncDefId(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			out uint	puiEncDefId);
 
 //-----------------------------------------------------------------------------
@@ -3047,8 +3047,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setPrefix(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			[MarshalAs(UnmanagedType.LPWStr), In]
 			string	sPrefix);
 
@@ -3076,8 +3076,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setPrefixId(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			uint		uiPrefixId);
 
 //-----------------------------------------------------------------------------
@@ -3113,14 +3113,14 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getNamespaceURIChars(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out uint		puiNumChars);
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getNamespaceURI(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			uint		uiNumChars,
 			[MarshalAs(UnmanagedType.LPArray), Out]
 			char []	puzNamespaceURI);
@@ -3158,14 +3158,14 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getLocalNameChars(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out uint		puiNumChars);
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getLocalName(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			uint		uiNumChars,
 			[MarshalAs(UnmanagedType.LPArray), Out]
 			char []	puzLocalName);
@@ -3204,14 +3204,14 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getQualifiedNameChars(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out uint		puiNumChars);
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getQualifiedName(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			uint		uiNumChars,
 			[MarshalAs(UnmanagedType.LPArray), Out]
 			char []	puzQualifiedName);
@@ -3241,8 +3241,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getCollection(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			out uint	puiCollection);
 
 //-----------------------------------------------------------------------------
@@ -3263,7 +3263,7 @@ namespace xflaim
 			DOMNode			nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_createAnnotation( m_pNode, m_db.getDb(),
 									ref pNode)) != 0)
@@ -3275,9 +3275,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_createAnnotation(
-			ulong				pNode,
-			ulong				pDb,
-			ref ulong		ppNode);
+			IntPtr			pNode,
+			IntPtr			pDb,
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getAnnotation
@@ -3297,7 +3297,7 @@ namespace xflaim
 			DOMNode			nodeToReuse)
 		{
 			RCODE		rc;
-			ulong		pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : 0;
+			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
 			if ((rc = xflaim_DOMNode_getAnnotation( m_pNode, m_db.getDb(),
 				ref pNode)) != 0)
@@ -3309,9 +3309,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAnnotation(
-			ulong				pNode,
-			ulong				pDb,
-			ref ulong		ppNode);
+			IntPtr			pNode,
+			IntPtr			pDb,
+			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
 // getAnnotationId
@@ -3338,8 +3338,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getAnnotationId(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulAnnotationId);
 
 //-----------------------------------------------------------------------------
@@ -3368,8 +3368,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_hasAnnotation(
-			ulong		pNode,
-			ulong		pDb,
+			IntPtr	pNode,
+			IntPtr	pDb,
 			out int	pbHasAnnotation);
 
 //-----------------------------------------------------------------------------
@@ -3397,8 +3397,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_getMetaValue(
-			ulong			pNode,
-			ulong			pDb,
+			IntPtr		pNode,
+			IntPtr		pDb,
 			out ulong	pulValue);
 
 //-----------------------------------------------------------------------------
@@ -3425,9 +3425,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DOMNode_setMetaValue(
-			ulong	pNode,
-			ulong	pDb,
-			ulong	ulValue);
+			IntPtr	pNode,
+			IntPtr	pDb,
+			ulong		ulValue);
 
 	}
 }

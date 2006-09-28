@@ -124,7 +124,7 @@ namespace xflaim
 	/// </summary>
 	public class DbInfo
 	{
-		private ulong	m_pDbInfo;		// Pointer to IF_DbInfo object in unmanaged space
+		private IntPtr	m_pDbInfo;		// Pointer to IF_DbInfo object in unmanaged space
 
 		/// <summary>
 		/// Constructor
@@ -133,9 +133,9 @@ namespace xflaim
 		/// Pointer to IF_DbInfo object allocated in unmanaged space.
 		/// </param>
 		internal DbInfo(
-			ulong	pDbInfo)
+			IntPtr	pDbInfo)
 		{
-			if (pDbInfo == 0)
+			if (pDbInfo == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid IF_DbInfo pointer");
 			}
@@ -148,16 +148,16 @@ namespace xflaim
 		/// </summary>
 		~DbInfo()
 		{
-			if (m_pDbInfo != 0)
+			if (m_pDbInfo != IntPtr.Zero)
 			{
 				xflaim_DbInfo_Release( m_pDbInfo);
-				m_pDbInfo = 0;
+				m_pDbInfo = IntPtr.Zero;
 			}
 		}
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbInfo_Release(
-			ulong	pDbInfo);
+			IntPtr	pDbInfo);
 
 //-----------------------------------------------------------------------------
 // getNumCollections
@@ -174,7 +174,7 @@ namespace xflaim
 		
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbInfo_getNumCollections(
-			ulong	pDbInfo);
+			IntPtr	pDbInfo);
 
 //-----------------------------------------------------------------------------
 // getNumIndexes
@@ -191,7 +191,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbInfo_getNumIndexes(
-			ulong	pDbInfo);
+			IntPtr	pDbInfo);
 
 //-----------------------------------------------------------------------------
 // getNumLogicalFiles
@@ -208,7 +208,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DbInfo_getNumLogicalFiles(
-			ulong	pDbInfo);
+			IntPtr	pDbInfo);
 
 //-----------------------------------------------------------------------------
 // getDatabaseSize
@@ -225,7 +225,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern ulong xflaim_DbInfo_getDatabaseSize(
-			ulong	pDbInfo);
+			IntPtr	pDbInfo);
 
 //-----------------------------------------------------------------------------
 // getDbHdr
@@ -245,7 +245,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbInfo_getDbHdr(
-			[In]  ulong			m_pDbInfo,
+			[In]  IntPtr		pDbInfo,
 			[Out] XFLM_DB_HDR	pDbHdr);
 
 //-----------------------------------------------------------------------------
@@ -280,7 +280,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbInfo_getAvailBlockStats(
-			ulong							pDbInfo,
+			IntPtr						pDbInfo,
 			out ulong					pulBytesUsed,
 			out uint						puiBlockCount,
 			out FlmCorruptionCode	peLastError,
@@ -318,7 +318,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbInfo_getLFHBlockStats(
-			ulong							pDbInfo,
+			IntPtr						pDbInfo,
 			out ulong					pulBytesUsed,
 			out uint						puiBlockCount,
 			out FlmCorruptionCode	peLastError,
@@ -364,7 +364,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbInfo_getBTreeInfo(
-			ulong					pDbInfo,
+			IntPtr				pDbInfo,
 			uint					uiNthLogicalFile,
 			out uint				puiLfNum,
 			out eLFileType		peLfType,
@@ -433,7 +433,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DbInfo_getBTreeBlockStats(
-			ulong							pDbInfo,
+			IntPtr						pDbInfo,
 			uint							uiNthLogicalFile,
 			uint							uiLevel,
 			out ulong					pulKeyCount,

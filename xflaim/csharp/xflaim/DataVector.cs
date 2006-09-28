@@ -35,7 +35,7 @@ namespace xflaim
 	/// </summary>
 	public class DataVector
 	{
-		private ulong 		m_pDataVector;			// Pointer to IF_DataVector object in unmanaged space
+		private IntPtr 	m_pDataVector;			// Pointer to IF_DataVector object in unmanaged space
 		private DbSystem 	m_dbSystem;
 
 		/// <summary>
@@ -48,10 +48,10 @@ namespace xflaim
 		/// DbSystem object that this Db object is associated with.
 		/// </param>
 		internal DataVector(
-			ulong		pDataVector,
+			IntPtr	pDataVector,
 			DbSystem	dbSystem)
 		{
-			if (pDataVector == 0)
+			if (pDataVector == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid IF_DataVector reference");
 			}
@@ -69,7 +69,7 @@ namespace xflaim
 			// m_dbSystem object gets a compiler warning on linux because
 			// it is not used anywhere.  Other than that, there is really
 			// no need to make the following call.
-			if (m_dbSystem.getDbSystem() == 0)
+			if (m_dbSystem.getDbSystem() == IntPtr.Zero)
 			{
 				throw new XFlaimException( "Invalid DbSystem.IF_DbSystem object");
 			}
@@ -87,7 +87,7 @@ namespace xflaim
 		/// Return the pointer to the IF_DataVector object.
 		/// </summary>
 		/// <returns>Returns a pointer to the IF_DataVector object.</returns>
-		internal ulong getDataVector()
+		internal IntPtr getDataVector()
 		{
 			return( m_pDataVector);
 		}
@@ -99,10 +99,10 @@ namespace xflaim
 		{
 			// Release the native pDataVector!
 		
-			if (m_pDataVector != 0)
+			if (m_pDataVector != IntPtr.Zero)
 			{
 				xflaim_DataVector_Release( m_pDataVector);
-				m_pDataVector = 0;
+				m_pDataVector = IntPtr.Zero;
 			}
 		
 			// Remove our reference to the dbSystem so it can be released.
@@ -112,7 +112,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DataVector_Release(
-			ulong	pDataVector);
+			IntPtr	pDataVector);
 
 //-----------------------------------------------------------------------------
 // setDocumentID
@@ -132,7 +132,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DataVector_setDocumentID(
-			ulong			pDataVector,
+			IntPtr		pDataVector,
 			ulong			ulDocId);
 
 //-----------------------------------------------------------------------------
@@ -161,7 +161,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_setID(
-			ulong			pDataVector,
+			IntPtr		pDataVector,
 			uint			uiElementNumber,
 			ulong			ulID);
 
@@ -194,7 +194,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_setNameId(
-			ulong			pDataVector,
+			IntPtr		pDataVector,
 			uint			uiElementNumber,
 			uint			uiNameId,
 			int			bIsAttr,
@@ -224,7 +224,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_setULong(
-			ulong			pDataVector,
+			IntPtr		pDataVector,
 			uint			uiElementNumber,
 			ulong			ulValue);
 
@@ -252,7 +252,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_setLong(
-			ulong			pDataVector,
+			IntPtr		pDataVector,
 			uint			uiElementNumber,
 			long			lValue);
 
@@ -280,7 +280,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_setUInt(
-			ulong			pDataVector,
+			IntPtr		pDataVector,
 			uint			uiElementNumber,
 			uint			uiValue);
 
@@ -308,7 +308,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_setInt(
-			ulong			pDataVector,
+			IntPtr		pDataVector,
 			uint			uiElementNumber,
 			int			iValue);
 
@@ -336,7 +336,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_setString(
-			ulong			pDataVector,
+			IntPtr		pDataVector,
 			uint			uiElementNumber,
 			[MarshalAs(UnmanagedType.LPWStr)]
 			string		sValue);
@@ -365,7 +365,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_setBinary(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber,
 			[MarshalAs(UnmanagedType.LPArray), In]
 			byte []			pvValue,
@@ -387,7 +387,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DataVector_setRightTruncated(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -406,7 +406,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DataVector_setLeftTruncated(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -425,7 +425,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DataVector_clearRightTruncated(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -444,7 +444,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern void xflaim_DataVector_clearLeftTruncated(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -466,7 +466,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DataVector_isRightTruncated(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -488,7 +488,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DataVector_isLeftTruncated(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -508,7 +508,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern ulong xflaim_DataVector_getDocumentID(
-			ulong				pDataVector);
+			IntPtr			pDataVector);
 
 //-----------------------------------------------------------------------------
 // getID
@@ -529,7 +529,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern ulong xflaim_DataVector_getID(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -551,7 +551,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DataVector_getNameId(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -573,7 +573,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DataVector_isAttr(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -595,7 +595,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DataVector_isDataComponent(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -617,7 +617,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern int xflaim_DataVector_isKeyComponent(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -639,7 +639,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern uint xflaim_DataVector_getDataLength(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -661,7 +661,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern FlmDataType xflaim_DataVector_getDataType(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber);
 
 //-----------------------------------------------------------------------------
@@ -691,7 +691,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_getULong(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber,
 			out ulong		pulValue);
 
@@ -722,7 +722,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_getLong(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber,
 			out long			plValue);
 
@@ -753,7 +753,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_getUInt(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber,
 			out uint			puiValue);
 
@@ -784,7 +784,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_getInt(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber,
 			out int			piValue);
 
@@ -818,9 +818,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_getString(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber,
-			out IntPtr		pValue);
+			out IntPtr		ppValue);
 
 //-----------------------------------------------------------------------------
 // getBinary
@@ -853,7 +853,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_getBinary(
-			ulong				pDataVector,
+			IntPtr			pDataVector,
 			uint				uiElementNumber,
 			uint				uiLen,
 			[MarshalAs(UnmanagedType.LPArray), Out] 
@@ -902,8 +902,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_outputKey(
-			ulong				pDataVector,
-			ulong				pDb,
+			IntPtr			pDataVector,
+			IntPtr			pDb,
 			uint				uiIndexNum,
 			int				bOutputIds,
 			[MarshalAs(UnmanagedType.LPArray), Out] 
@@ -966,8 +966,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_outputData(
-			ulong				pDataVector,
-			ulong				pDb,
+			IntPtr			pDataVector,
+			IntPtr			pDb,
 			uint				uiIndexNum,
 			[MarshalAs(UnmanagedType.LPArray), Out] 
 			byte []			pucData,
@@ -1009,8 +1009,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_inputKey(
-			ulong				pDataVector,
-			ulong				pDb,
+			IntPtr			pDataVector,
+			IntPtr			pDb,
 			uint				uiIndexNum,
 			[MarshalAs(UnmanagedType.LPArray), In] 
 			byte []			pucKey,
@@ -1051,8 +1051,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_inputData(
-			ulong				pDataVector,
-			ulong				pDb,
+			IntPtr			pDataVector,
+			IntPtr			pDb,
 			uint				uiIndexNum,
 			[MarshalAs(UnmanagedType.LPArray), In] 
 			byte []			pucData,
@@ -1072,7 +1072,7 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_DataVector_reset(
-			ulong				pDataVector);
+			IntPtr	pDataVector);
 
 	}
 }

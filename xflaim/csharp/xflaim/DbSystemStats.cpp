@@ -29,12 +29,9 @@
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_DbSystemStats_freeStats(
-	FLMUINT64	ui64DbSystem,
-	FLMUINT64	ui64This)
+	IF_DbSystem *	pDbSystem,
+	XFLM_STATS *	pStats)
 {
-	IF_DbSystem *	pDbSystem = (IF_DbSystem *)((FLMUINT)ui64DbSystem);
-	XFLM_STATS *	pStats = (XFLM_STATS *)((FLMUINT)ui64This);
-	
 	if (pStats)
 	{
 		pDbSystem->freeStats( pStats);
@@ -46,13 +43,11 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystemStats_freeStats(
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP void FLMAPI xflaim_DbSystemStats_getGeneralStats(
-	FLMUINT64	ui64This,
-	FLMUINT32 *	pui32NumDatabases,
-	FLMUINT32 *	pui32StartTime,
-	FLMUINT32 *	pui32StopTime)
+	XFLM_STATS *	pStats,
+	FLMUINT32 *		pui32NumDatabases,
+	FLMUINT32 *		pui32StartTime,
+	FLMUINT32 *		pui32StopTime)
 {
-	XFLM_STATS *	pStats = (XFLM_STATS *)((FLMUINT)ui64This);
-
 	*pui32NumDatabases = (FLMUINT32)pStats->uiNumDbStats;
 	*pui32StartTime = (FLMUINT32)pStats->uiStartTime;
 	*pui32StopTime = (FLMUINT32)pStats->uiStopTime;
@@ -82,12 +77,11 @@ typedef struct
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystemStats_getDbStats(
-	FLMUINT64				ui64This,
+	XFLM_STATS *			pStats,
 	FLMUINT32				ui32DatabaseNum,
 	CS_XFLM_DB_STATS *	pCSDbStats)
 {
 	RCODE					rc = NE_XFLM_OK;
-	XFLM_STATS *		pStats = (XFLM_STATS *)((FLMUINT)ui64This);
 	XFLM_DB_STATS *	pDbStat;
 
 	if ((FLMUINT)ui32DatabaseNum > pStats->uiNumDbStats - 1)
@@ -132,13 +126,12 @@ typedef struct
 Desc:
 ****************************************************************************/
 FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystemStats_getLFileStats(
-	FLMUINT64					ui64This,
+	XFLM_STATS *				pStats,
 	FLMUINT32					ui32DatabaseNum,
 	FLMUINT32					ui32LFileNum,
 	CS_XFLM_LFILE_STATS *	pCSLFileStats)
 {
 	RCODE						rc = NE_XFLM_OK;
-	XFLM_STATS *			pStats = (XFLM_STATS *)((FLMUINT)ui64This);
 	XFLM_DB_STATS *		pDbStat;
 	XFLM_LFILE_STATS *	pLFileStat;
 
