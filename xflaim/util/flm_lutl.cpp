@@ -100,8 +100,8 @@ FSTATIC RCODE ixDisplayHook(
 			(unsigned)pDispInfo->IndexStatus.ui64KeysProcessed,
 			(unsigned)pDispInfo->IndexStatus.ui64DocumentsProcessed,
 			(unsigned)(pDispInfo->bShowTime
-								? pDispInfo->IndexStatus.uiStartTime
-										? uiGMT - pDispInfo->IndexStatus.uiStartTime
+								? pDispInfo->IndexStatus.ui32StartTime
+										? uiGMT - pDispInfo->IndexStatus.ui32StartTime
 										: 0
 								: pDispInfo->IndexStatus.ui64Transactions));
 
@@ -112,8 +112,8 @@ FSTATIC RCODE ixDisplayHook(
 			"%5u %-15s %-5s                                             %-10u",
 			(unsigned)uiKey, pDispInfo->szName, pszState,
 			(unsigned)(pDispInfo->bShowTime
-								? pDispInfo->IndexStatus.uiStartTime
-										? uiGMT - pDispInfo->IndexStatus.uiStartTime
+								? pDispInfo->IndexStatus.ui32StartTime
+										? uiGMT - pDispInfo->IndexStatus.ui32StartTime
 										: 0
 								: pDispInfo->IndexStatus.ui64Transactions));
 	}
@@ -190,7 +190,7 @@ void  IX_Event::catchEvent(
 			f_mutexLock( m_pDispInfo->hScreenMutex);
 			FTXWinPrintf( m_pDispInfo->pLogWin,
 				"Index %u came on-line.  Elapsed time = %u second(s)\n",
-				uiIndexOrCollection, uiGMT - ixStatus.uiStartTime);
+				uiIndexOrCollection, uiGMT - (FLMUINT)ixStatus.ui32StartTime);
 			f_mutexUnlock( m_pDispInfo->hScreenMutex);
 		}
 	}

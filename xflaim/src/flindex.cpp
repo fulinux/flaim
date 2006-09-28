@@ -77,7 +77,7 @@ RCODE FLMAPI F_Db::indexStatus(
 			sizeof( XFLM_INDEX_STATUS));
 		f_mutexUnlock( gv_XFlmSysData.hShareMutex);
 		bMutexLocked = FALSE;
-		flmAssert( pIndexStatus->uiIndexNum == uiIndexNum);
+		flmAssert( (FLMUINT)pIndexStatus->ui32IndexNum == uiIndexNum);
 	}
 	else
 	{
@@ -94,7 +94,7 @@ RCODE FLMAPI F_Db::indexStatus(
 		// Populate the index status structure.
 
 		f_memset( pIndexStatus, 0, sizeof( XFLM_INDEX_STATUS));
-		pIndexStatus->uiIndexNum = uiIndexNum;
+		pIndexStatus->ui32IndexNum = (FLMUINT32)uiIndexNum;
 
 		if( !(pIxd->uiFlags & (IXD_SUSPENDED | IXD_OFFLINE)))
 		{
@@ -508,7 +508,7 @@ RCODE	F_Db::addToStopList(
 	{
 		pNextBackgroundIx = pBackgroundIx->pNext;
 
-		if (pBackgroundIx->indexStatus.uiIndexNum == uiIndexNum)
+		if ((FLMUINT)pBackgroundIx->indexStatus.ui32IndexNum == uiIndexNum)
 		{
 			if (pNextBackgroundIx)
 			{
@@ -536,7 +536,7 @@ RCODE	F_Db::addToStopList(
 	{
 		pNextBackgroundIx = pBackgroundIx->pNext;
 
-		if (pBackgroundIx->indexStatus.uiIndexNum == uiIndexNum)
+		if ((FLMUINT)pBackgroundIx->indexStatus.ui32IndexNum == uiIndexNum)
 		{
 			goto Exit;  // Should return NE_XFLM_OK
 		}
@@ -550,7 +550,7 @@ RCODE	F_Db::addToStopList(
 		goto Exit;
 	}
 
-	pBackgroundIx->indexStatus.uiIndexNum  = uiIndexNum;
+	pBackgroundIx->indexStatus.ui32IndexNum  = (FLMUINT32)uiIndexNum;
 	pBackgroundIx->pPrev = NULL;
 	if ((pBackgroundIx->pNext = m_pIxStopList) != NULL)
 	{
@@ -597,7 +597,7 @@ RCODE	F_Db::addToStartList(
 	{
 		pNextBackgroundIx = pBackgroundIx->pNext;
 
-		if (pBackgroundIx->indexStatus.uiIndexNum == uiIndexNum)
+		if ((FLMUINT)pBackgroundIx->indexStatus.ui32IndexNum == uiIndexNum)
 		{
 			goto Exit; // Should return NE_XFLM_OK
 		}
@@ -611,7 +611,7 @@ RCODE	F_Db::addToStartList(
 		goto Exit;
 	}
 
-	pBackgroundIx->indexStatus.uiIndexNum = uiIndexNum;
+	pBackgroundIx->indexStatus.ui32IndexNum = (FLMUINT32)uiIndexNum;
 	pBackgroundIx->pPrev = NULL;
 	if ((pBackgroundIx->pNext = m_pIxStartList) != NULL)
 	{
@@ -742,7 +742,7 @@ void F_Db::indexingAfterCommit( void)
 		bThreadsActive = FALSE;
 		for( pStopIx = m_pIxStopList; pStopIx; pStopIx = pStopIx->pNext)
 		{
-			stopBackgroundIndexThread( pStopIx->indexStatus.uiIndexNum,
+			stopBackgroundIndexThread( (FLMUINT)pStopIx->indexStatus.ui32IndexNum,
 												FALSE, &bStopped);
 			if( !bStopped)
 			{
@@ -775,7 +775,7 @@ void F_Db::indexingAfterCommit( void)
 	for (; pStartIx; pStartIx = pNextIx)
 	{
 		pNextIx = pStartIx->pNext;
-		(void)startIndexBuild( pStartIx->indexStatus.uiIndexNum);
+		(void)startIndexBuild( (FLMUINT)pStartIx->indexStatus.ui32IndexNum);
 		f_free( &pStartIx);
 	}
 }
@@ -819,8 +819,8 @@ RCODE F_Db::startIndexBuild(
 
 	pBackgroundIx->pDatabase = m_pDatabase;
 	pBackgroundIx->indexStatus.eState = XFLM_INDEX_BRINGING_ONLINE;
-	pBackgroundIx->indexStatus.uiIndexNum = uiIndexNum;
-	pBackgroundIx->indexStatus.uiStartTime = uiGMT;
+	pBackgroundIx->indexStatus.ui32IndexNum = (FLMUINT32)uiIndexNum;
+	pBackgroundIx->indexStatus.ui32StartTime = (FLMUINT32)uiGMT;
 	pBackgroundIx->indexStatus.ui64LastDocumentIndexed =
 		pIxd->ui64LastDocIndexed;
 	pBackgroundIx->indexStatus.ui64KeysProcessed = 0;
@@ -890,7 +890,7 @@ RCODE F_Db::backgroundIndexBuild(
 	flmAssert( m_eTransType == XFLM_NO_TRANS);
 
 	m_uiFlags |= FDB_BACKGROUND_INDEXING;
-	uiIndexNum = pBackgroundIx->indexStatus.uiIndexNum;
+	uiIndexNum = (FLMUINT)pBackgroundIx->indexStatus.ui32IndexNum;
 
 	for (;;)
 	{
@@ -1031,7 +1031,7 @@ FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
 Loop_Again:
 
 	rc = NE_XFLM_OK;
-	uiIndexNum = pBackgroundIx->indexStatus.uiIndexNum;
+	uiIndexNum = (FLMUINT)pBackgroundIx->indexStatus.ui32IndexNum;
 	flmAssert( pThread->getThreadAppId() == uiIndexNum);
 	pDb = NULL;
 
@@ -1165,7 +1165,7 @@ F_BKGND_IX * flmBackgroundIndexGet(
 			F_BKGND_IX *		pTmpIx = NULL;
 
 			pTmpIx = (F_BKGND_IX *)pThread->getParm1();
-			if (pTmpIx->indexStatus.uiIndexNum == uiIndexNum &&
+			if ((FLMUINT)pTmpIx->indexStatus.ui32IndexNum == uiIndexNum &&
 				 pTmpIx->pDatabase == pDatabase)
 			{
 				flmAssert( pThread->getThreadAppId() == uiIndexNum);

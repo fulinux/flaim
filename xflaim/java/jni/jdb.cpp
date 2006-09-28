@@ -784,7 +784,7 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1indexStatus(
 	
 	pEnv->SetIntField( jIndexStatus, fid_IndexStatus_iIndexNum, iIndex);
 	pEnv->SetIntField( jIndexStatus, fid_IndexStatus_iState, (jint)ixStatus.eState);
-	pEnv->SetIntField( jIndexStatus, fid_IndexStatus_iStartTime, (jint)ixStatus.uiStartTime);
+	pEnv->SetIntField( jIndexStatus, fid_IndexStatus_iStartTime, (jint)ixStatus.ui32StartTime);
 	pEnv->SetLongField( jIndexStatus, fid_IndexStatus_lLastDocumentIndexed,
 						(jlong)ixStatus.ui64LastDocumentIndexed);
 	pEnv->SetLongField( jIndexStatus, fid_IndexStatus_lKeysProcessed,
