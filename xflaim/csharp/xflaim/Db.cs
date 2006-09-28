@@ -2875,148 +2875,245 @@ namespace xflaim
 			out IntPtr sName);
 
 		//-----------------------------------------------------------------------------
-		//
+		// setNextNodeId
 		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Set the next node ID for a collection.  This will be the node ID for
-	 * the next node that is created in the collection.  NOTE: The node ID must
-	 * be greater than or equal to the current next node ID that is already
-	 * set for the collection.  Otherwise, it is ignored.
-	 * @param iCollection Collection whose next node ID is to be set.
-	 * @param lNextNodeId Next node ID for the collection.
-	 * @throws XFlaimException
-	 */
-	public void setNextNodeId(
-		int				iCollection,
-		long				lNextNodeId) throws XFlaimException
-	{
-		_setNextNodeId( m_this, iCollection, lNextNodeId);
-	}
-#endif
+		/// <summary>
+		/// Set the next node ID for a collection.  This will be the node ID for
+		/// the next node that is created in the collection.  NOTE: The node ID must
+		/// be greater than or equal to the current next node ID that is already
+		/// set for the collection.  Otherwise, it is ignored.
+		/// </summary>
+		/// <param name="uiCollection">
+		/// Collection whose next node ID is to be set
+		/// </param>
+		/// <param name="ulNextNodeId">
+		/// Next node ID value
+		/// </param>
+		public void setNextNodeId(
+			uint				uiCollection,
+			ulong				ulNextNodeId)
+		{
+			RCODE rc;
+
+			if ((rc = xflaim_Db_setNextNodeId(m_pDb, uiCollection, 
+				ulNextNodeId)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_setNextNodeId(
+			ulong pDb,
+			uint uiCollection,
+			ulong ulNextNodeId);
 
 		//-----------------------------------------------------------------------------
-		//
+		// setNextDictNum
 		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Set the next dictionary number that is to be assigned for a particular
-	 * type if dictionary definition.  The specified "next dictionary number"
-	 * must be greater than the current "next dictionary number".  Otherwise,
-	 * no action is taken.
-	 * @param iDictType  Type of dictionary definition whose "next dictionary
-	 * number" is to be changed.  Should be a valid {@link xflaim.DictType DictType}.
-	 * @param iNextDictNumber Next dictionary number.
-	 * @throws XFlaimException
-	 */
-	public void setNextDictNum(
-		int	iDictType,
-		int	iNextDictNumber) throws XFlaimException
-	{
-		_setNextDictNum( m_this, iDictType, iNextDictNumber);
-	}
-#endif
+		/// <summary>
+		/// Set the next dictionary number that is to be assigned for a particular
+		/// type if dictionary definition.  The specified "next dictionary number"	
+		/// must be greater than the current "next dictionary number".  Otherwise,
+		/// no action is taken.
+		/// </summary>
+		/// <param name="dictType">
+		/// Type of dictionary definition whose "next dictionary number" is to 
+		/// be changed.
+		/// </param>
+		/// <param name="uiDictNumber">
+		/// Next dictionary number.
+		/// </param>
+		public void setNextDictNum(
+			ReservedElmTag dictType,
+			uint uiDictNumber)
+		{
+			RCODE rc;
+
+			if ((rc = xflaim_Db_setNextDictNum(m_pDb, dictType,
+				uiDictNumber)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_setNextDictNum(
+			ulong pDb,
+			ReservedElmTag dictType,
+			ulong uiDictNumer);
 
 		//-----------------------------------------------------------------------------
-		//
+		// setRflKeepFilesFlag
 		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Specify whether the roll-forward log should keep or not keep RFL files.
-	 * @param bKeep Flag specifying whether to keep or not keep RFL files.
-	 * @throws XFlaimException
-	 */
-	public void setRflKeepFilesFlag(
-		boolean	bKeep) throws XFlaimException
-	{
-		_setRflKeepFilesFlag( m_this, bKeep);
-	}
-#endif
+		/// <summary>
+		/// Specify whether the roll-forward log should keep or not keep RFL files.
+		/// </summary>
+		/// <param name="bKeep">
+		/// Flag specifying whether to keep or not keep RFL files.
+		/// </param>
+		public void setRflKeepFilesFlag(
+			bool		bKeep)
+		{
+			RCODE rc;
+
+			if ((rc = xflaim_Db_setRflKeepFilesFlag(m_pDb, bKeep)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_setRflKeepFilesFlag(
+			ulong pDb,
+			bool bKeep);
 
 		//-----------------------------------------------------------------------------
-		//
+		// getRflKeepFlag
 		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Determine whether or not the roll-forward log files are being kept.
-	 * @return Returns true if RFL files are being kept, false otherwise.
-	 * @throws XFlaimException
-	 */
-	public boolean getRflKeepFlag() throws XFlaimException
-	{
-		return( _getRflKeepFlag( m_this));
-	}
-#endif
+		/// <summary>
+		/// Determine whether or not the roll-forward log files are being kept.
+		/// </summary>
+		/// <returns>
+		/// Returns true if RFL files are being kept, false otherwise.
+		/// </returns>
+		public bool getRflKeepFlag()
+		{
+			RCODE rc;
+			bool bKeep;
+
+			if ((rc = xflaim_Db_getRflKeepFlag(m_pDb, out bKeep)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (bKeep);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getRflKeepFlag(
+			ulong pDb,
+			out bool bKeep);
 
 		//-----------------------------------------------------------------------------
-		//
+		// setRflDir
 		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Set the RFL directory.
-	 * @param sRflDir Name of RFL directory.
-	 * @throws XFlaimException
-	 */
-	public void setRflDir(
-		String	sRflDir) throws XFlaimException
-	{
-		_setRflDir( m_this, sRflDir);
-	}
-#endif
+		/// <summary>
+		/// Set the RFL directory.
+		/// </summary>
+		/// <param name="sRflDir">
+		/// Name of RFL directory.
+		/// </param>
+		public void setRflDir(
+			string	sRflDir)
+		{
+			RCODE rc;
+
+			if ((rc = xflaim_Db_setRflDir(m_pDb, sRflDir)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_setRflDir(
+			ulong pDb,
+			[MarshalAs(UnmanagedType.LPWStr)]
+			string sRflDir);
 
 		//-----------------------------------------------------------------------------
-		//
+		// getRflDir
 		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get the current RFL directory.
-	 * @return Returns the current RFL directory name.
-	 * @throws XFlaimException
-	 */
-	public String getRflDir() throws XFlaimException
-	{
-		return( _getRflDir( m_this));
-	}
-#endif
+		/// <summary>
+		/// Get the current RFL directory.
+		/// </summary>
+		/// <returns>
+		/// Returns the current RFL directory name.
+		/// </returns>
+		public string getRflDir()
+		{
+			RCODE rc;
+			IntPtr pszRflDir;
+			string sRflDir;
+
+			if ((rc = xflaim_Db_getRflDir(m_pDb, out pszRflDir)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			sRflDir = Marshal.PtrToStringAnsi(pszRflDir);
+			m_dbSystem.freeUnmanagedMem(pszRflDir);
+			return (sRflDir);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getRflDir(
+			ulong pDb,
+			out IntPtr pszRflDir);
 
 		//-----------------------------------------------------------------------------
-		//
+		//	getRflFileNum
 		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get the current RFL file number.
-	 * @return Returns the current RFL file number.
-	 * @throws XFlaimException
-	 */
-	public int getRflFileNum() throws XFlaimException
-	{
-		return( _getRflFileNum( m_this));
-	}
-#endif
+		/// <summary>
+		/// Get the current RFL file number.
+		/// </summary>
+		/// <returns>
+		/// Returns the current RFL file number.
+		/// </returns>
+		public uint getRflFileNum()
+		{
+			RCODE rc;
+			uint uiRflFileNum;
+
+			if ((rc = xflaim_Db_getRflFileNum(m_pDb, out uiRflFileNum)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (uiRflFileNum);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getRflFileNum(
+			ulong pDb,
+			out uint uiRflFileNum);
 
 		//-----------------------------------------------------------------------------
-		//
+		// getHighestNotUsedRflFileNum
 		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get the highest RFL file number that is no longer in use by XFLAIM.
-	 * This RFL file can be removed from the system if needed.
-	 * @return Returns the highest RFL file number that is no longer in use.
-	 * @throws XFlaimException
-	 */
-	public int getHighestNotUsedRflFileNum() throws XFlaimException
-	{
-		return( _getHighestNotUsedRflFileNum( m_this));
-	}
-#endif
+		/// <summary>
+		/// Get the highest RFL file number that is no longer in use by XFLAIM.
+		/// This RFL file can be removed from the system if needed.
+		/// </summary>
+		/// <returns>
+		/// Returns the highest RFL file number that is no longer in use.
+		/// </returns>
+		public uint getHighestNotUsedRflFileNum()
+		{
+			RCODE rc;
+			uint uiRflFileNum;
+
+			if ((rc = xflaim_Db_getHighestNotUsedRflFileNum(m_pDb, 
+				out uiRflFileNum)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (uiRflFileNum);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getHighestNotUsedRflFileNum(
+			ulong pDb,
+			out uint uiRflFileNum);
 
 		//-----------------------------------------------------------------------------
 		//
@@ -3038,12 +3135,11 @@ namespace xflaim
 	 * file before iMaxRflSize is exceeded.
 	 * @throws XFlaimException
 	 */
-	public void setRflFileSizeLimits(
-		int	iMinRflSize,
-		int	iMaxRflSize) throws XFlaimException
-	{
-		_setRflFileSizeLimits( m_this, iMinRflSize, iMaxRflSize);
-	}
+		public void setRflFileSizeLimits(
+			uint		uiMinRflSize,
+			uint		uiMaxRflSize)
+		{
+		}
 #endif
 
 		//-----------------------------------------------------------------------------
