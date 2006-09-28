@@ -334,6 +334,292 @@ namespace xflaim
 	}
 
 	//-----------------------------------------------------------------------------
+	// XML parse errors
+	//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	public enum XMLParseError : uint
+	{
+		/// <summary>
+		/// No error
+		/// </summary>
+		XML_NO_ERROR = 0,
+		/// <summary>
+		/// Invalid element name - does not start with a valid 
+		/// character for element names
+		/// </summary>
+		XML_ERR_BAD_ELEMENT_NAME,
+		/// <summary>
+		/// Element names cannot be "xmlns" or have "xmlns:" as a prefix
+		/// </summary>
+		XML_ERR_XMLNS_IN_ELEMENT_NAME,
+		/// <summary>
+		/// The element begin and end tags do not match
+		/// </summary>
+		XML_ERR_ELEMENT_NAME_MISMATCH,
+		/// <summary>
+		/// The prefix for the element or attribute has not been defined with 
+		/// an "xmlns:prefix=" attribute somewhere
+		/// </summary>
+		XML_ERR_PREFIX_NOT_DEFINED,
+		/// <summary>
+		/// Expecting a right angle bracket
+		/// </summary>
+		XML_ERR_EXPECTING_GT,
+		/// <summary>
+		/// Expecting a left angle bracket to begin an element name
+		/// </summary>
+		XML_ERR_EXPECTING_ELEMENT_LT,
+		/// <summary>
+		/// Expecting a '=' after the attribute name
+		/// </summary>
+		XML_ERR_EXPECTING_EQ,
+		/// <summary>
+		/// Multiple "xmlns" default namespace declarations in an element
+		/// </summary>
+		XML_ERR_MULTIPLE_XMLNS_DECLS,
+		/// <summary>
+		/// Multiple definitions for the same prefix ("xmlns:prefix=...") in an element
+		/// </summary>
+		XML_ERR_MULTIPLE_PREFIX_DECLS,
+		/// <summary>
+		/// Invalid xml declaration terminator
+		/// </summary>
+		XML_ERR_EXPECTING_QUEST_GT,
+		/// <summary>
+		/// Invalid XML markup
+		/// </summary>
+		XML_ERR_INVALID_XML_MARKUP,
+		/// <summary>
+		/// Must have at least one attr def in an ATTRLIST markup
+		/// </summary>
+		XML_ERR_MUST_HAVE_ONE_ATT_DEF,
+		/// <summary>
+		/// Expecting "NDATA" keyword
+		/// </summary>
+		XML_ERR_EXPECTING_NDATA,
+		/// <summary>
+		/// Expecting "SYSTEM" or "PUBLIC" keyword in NOTATION declaration
+		/// </summary>
+		XML_ERR_EXPECTING_SYSTEM_OR_PUBLIC,
+		/// <summary>
+		/// Expecting "("
+		/// </summary>
+		XML_ERR_EXPECTING_LPAREN,
+		/// <summary>
+		/// Expecing ")" or "|"
+		/// </summary>
+		XML_ERR_EXPECTING_RPAREN_OR_PIPE,
+		/// <summary>
+		/// Expecting a name
+		/// </summary>
+		XML_ERR_EXPECTING_NAME,
+		/// <summary>
+		/// Invalid Attr type in ATTLIST
+		/// </summary>
+		XML_ERR_INVALID_ATT_TYPE,
+		/// <summary>
+		/// Invalid default decl, expecting #FIXED, #REQUIRED, #IMPLIED, or quoted attr value
+		/// </summary>
+		XML_ERR_INVALID_DEFAULT_DECL,
+		/// <summary>
+		/// Expecting PCDATA - only PCDATA allowed after #
+		/// </summary>
+		XML_ERR_EXPECTING_PCDATA,
+		/// <summary>
+		/// Expecting "*"
+		/// </summary>
+		XML_ERR_EXPECTING_ASTERISK,
+		/// <summary>
+		/// Empty content is invalid - must be parameters between parens
+		/// </summary>
+		XML_ERR_EMPTY_CONTENT_INVALID,
+		/// <summary>
+		/// Cannot mix choice items with sequenced items.
+		/// </summary>
+		XML_ERR_CANNOT_MIX_CHOICE_AND_SEQ,
+		/// <summary>
+		/// "XML" is not a legal name for a processing instruction
+		/// </summary>
+		XML_ERR_XML_ILLEGAL_PI_NAME,
+		/// <summary>
+		/// Illegal first character in name - must be an alphabetic letter or underscore
+		/// </summary>
+		XML_ERR_ILLEGAL_FIRST_NAME_CHAR,
+		/// <summary>
+		/// Illegal second ":" found in name.  Name already has a colon.
+		/// </summary>
+		XML_ERR_ILLEGAL_COLON_IN_NAME,
+		/// <summary>
+		/// Expecting "version"
+		/// </summary>
+		XML_ERR_EXPECTING_VERSION,
+		/// <summary>
+		/// Invalid version number - only 1.0 is supported.
+		/// </summary>
+		XML_ERR_INVALID_VERSION_NUM,
+		/// <summary>
+		/// Unsupported encoding - must be "UTF-8" or "us-ascii"
+		/// </summary>
+		XML_ERR_UNSUPPORTED_ENCODING,
+		/// <summary>
+		/// Expecting "yes" or "no"
+		/// </summary>
+		XML_ERR_EXPECTING_YES_OR_NO,
+		/// <summary>
+		/// Expecting quote character - unexpected end of line
+		/// </summary>
+		XML_ERR_EXPECTING_QUOTE_BEFORE_EOL,
+		/// <summary>
+		/// Expecting ";"
+		/// </summary>
+		XML_ERR_EXPECTING_SEMI,
+		/// <summary>
+		/// Unexpected end of line in entity reference, need proper 
+		/// terminating character - ";"
+		/// </summary>
+		XML_ERR_UNEXPECTED_EOL_IN_ENTITY,
+		/// <summary>
+		/// Invalid numeric character entity.  Number is either too large, or zero,
+		/// or illegal characters were used in the number.
+		/// </summary>
+		XML_ERR_INVALID_CHARACTER_NUMBER,
+		/// <summary>
+		/// Unsupported predefined entity reference.
+		/// </summary>
+		XML_ERR_UNSUPPORTED_ENTITY,
+		/// <summary>
+		/// Expecting single or double quote character.
+		/// </summary>
+		XML_ERR_EXPECTING_QUOTE,
+		/// <summary>
+		/// Invalid character in public id.
+		/// </summary>
+		XML_ERR_INVALID_PUBLIC_ID_CHAR,
+		/// <summary>
+		/// Whitespace required
+		/// </summary>
+		XML_ERR_EXPECTING_WHITESPACE,
+		/// <summary>
+		/// Expecting HEX digit for binary value
+		/// </summary>
+		XML_ERR_EXPECTING_HEX_DIGIT,
+		/// <summary>
+		/// Invalid binary value for attribute
+		/// </summary>
+		XML_ERR_INVALID_BINARY_ATTR_VALUE,
+		/// <summary>
+		/// Error returned from createNode in processCDATA
+		/// </summary>
+		XML_ERR_CREATING_CDATA_NODE,
+		/// <summary>
+		/// Error returned from createNode in processComment
+		/// </summary>
+		XML_ERR_CREATING_COMMENT_NODE,
+		/// <summary>
+		/// Error returned from createNode in processPI
+		/// </summary>
+		XML_ERR_CREATING_PI_NODE,
+		/// <summary>
+		/// Error returned from createNode in processPI
+		/// </summary>
+		XML_ERR_CREATING_DATA_NODE,
+		/// <summary>
+		/// Error returned from createRootElement in processSTag
+		/// </summary>
+		XML_ERR_CREATING_ROOT_ELEMENT,
+		/// <summary>
+		/// Error returned from createNode in processSTag
+		/// </summary>
+		XML_ERR_CREATING_ELEMENT_NODE
+	}
+	
+	//-----------------------------------------------------------------------------
+	// XML encoding
+	//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	public enum XMLEncoding : uint
+	{
+		/// <summary>
+		/// UTF-8 encoding
+		/// </summary>
+		XFLM_XML_UTF8_ENCODING,
+		/// <summary>
+		/// US ASCII encoding
+		/// </summary>
+		XFLM_XML_USASCII_ENCODING
+	}
+
+	//-----------------------------------------------------------------------------
+	// XML import stats
+	//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// XML import stats
+	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	public class XFLM_IMPORT_STATS
+	{
+		/// <summary>
+		/// Lines processed
+		/// </summary>
+		public uint					uiLines;
+		/// <summary>
+		/// Characters processed
+		/// </summary>
+		public uint					uiChars;
+		/// <summary>
+		/// Attributes processed
+		/// </summary>
+		public uint					uiAttributes;
+		/// <summary>
+		/// Elements processed
+		/// </summary>
+		public uint					uiElements;
+		/// <summary>
+		/// Text nodes processed
+		/// </summary>
+		public uint					uiText;
+		/// <summary>
+		/// Documents processed
+		/// </summary>
+		public uint					uiDocuments;
+		/// <summary>
+		/// Line number where the parser encountered an error
+		/// </summary>
+		public uint					uiErrLineNum;
+		/// <summary>
+		/// Offset in the line where the parser encountered an error
+		/// </summary>
+		public uint					uiErrLineOffset;
+		/// <summary>
+		/// Type of error encountered
+		/// </summary>
+		public XMLParseError		eErrorType;
+		/// <summary>
+		/// Offset in the stream where the line containing the error starts
+		/// </summary>
+		public uint					uiErrLineFilePos;
+		/// <summary>
+		/// Offset in the stream where the error starts
+		/// </summary>
+		public uint					uiErrLineBytes;
+		/// <summary>
+		/// XML encoding (UTF-8, etc.)
+		/// </summary>
+		XMLEncoding					eXMLEncoding;
+	}
+
+	//-----------------------------------------------------------------------------
 	// Database transaction types
 	//-----------------------------------------------------------------------------
 
@@ -703,7 +989,7 @@ namespace xflaim
 			uint				uiMaxLockWait,
 			DbTransFlags	uiFlags)
 		{
-			RCODE				rc = RCODE.NE_XFLM_OK;
+			RCODE				rc;
 
 			if ((rc = xflaim_Db_transBegin( m_pDb,
 				eTransType, uiMaxLockWait, uiFlags)) != 0)
@@ -735,7 +1021,7 @@ namespace xflaim
 		public void transBegin(
 			ulong				pDb)
 		{
-			RCODE				rc = RCODE.NE_XFLM_OK;
+			RCODE				rc;
 
 			if( (rc = xflaim_Db_transBeginClone( m_pDb, pDb)) != 0)
 			{
@@ -759,7 +1045,7 @@ namespace xflaim
 		/// <returns></returns>
 		public void transCommit()
 		{
-			RCODE				rc = RCODE.NE_XFLM_OK;
+			RCODE				rc;
 
 			if( (rc = xflaim_Db_transCommit( m_pDb)) != 0)
 			{
@@ -781,7 +1067,7 @@ namespace xflaim
 		/// <returns></returns>
 		public void transAbort()
 		{
-			RCODE				rc = RCODE.NE_XFLM_OK;
+			RCODE				rc;
 
 			if( (rc = xflaim_Db_transAbort( m_pDb)) != 0)
 			{
@@ -826,7 +1112,7 @@ namespace xflaim
 		public void doCheckpoint(
 			uint				uiTimeout)
 		{
-			RCODE				rc = RCODE.NE_XFLM_OK;
+			RCODE				rc;
 
 			if( (rc = xflaim_Db_doCheckpoint( m_pDb, uiTimeout)) != 0)
 			{
@@ -864,7 +1150,7 @@ namespace xflaim
 			int				iPriority,
 			uint				uiTimeout)
 		{
-			RCODE				rc = RCODE.NE_XFLM_OK;
+			RCODE				rc;
 
 			if( (rc = xflaim_Db_dbLock( m_pDb, eLckType, 
 				iPriority, uiTimeout)) != 0)
@@ -890,7 +1176,7 @@ namespace xflaim
 		/// <returns></returns>
 		public void dbUnlock()
 		{
-			RCODE			rc = RCODE.NE_XFLM_OK;
+			RCODE			rc;
 
 			if ((rc = xflaim_Db_dbUnlock( m_pDb)) != 0)
 			{
@@ -1030,7 +1316,7 @@ namespace xflaim
 		public void indexSuspend(
 			uint			uiIndex)
 		{
-			RCODE			rc = RCODE.NE_XFLM_OK;
+			RCODE			rc;
 
 			if( (rc = xflaim_Db_indexSuspend( m_pDb, uiIndex)) != 0)
 			{
@@ -1057,7 +1343,7 @@ namespace xflaim
 		public void indexResume(
 			uint			uiIndex)
 		{
-			RCODE			rc = RCODE.NE_XFLM_OK;
+			RCODE			rc;
 
 			if( (rc = xflaim_Db_indexResume( m_pDb, uiIndex)) != 0)
 			{
@@ -1090,7 +1376,7 @@ namespace xflaim
 		public uint indexGetNext(
 			uint			uiCurrIndex)
 		{
-			RCODE			rc = RCODE.NE_XFLM_OK;
+			RCODE			rc;
 			uint			uiNextIndex = 0;
 
 			if( (rc = xflaim_Db_indexGetNext( m_pDb, 
@@ -1122,7 +1408,7 @@ namespace xflaim
 		public XFLM_INDEX_STATUS indexStatus(
 			uint						uiIndex)
 		{
-			RCODE						rc = RCODE.NE_XFLM_OK;
+			RCODE						rc;
 			XFLM_INDEX_STATUS		pIndexStatus = null;
 
 			pIndexStatus = new XFLM_INDEX_STATUS();
@@ -1159,7 +1445,7 @@ namespace xflaim
 		public uint reduceSize(
 			uint			uiCount)
 		{
-			RCODE			rc = RCODE.NE_XFLM_OK;
+			RCODE			rc;
 			uint			uiNumReduced = 0;
 
 			if( (rc = xflaim_Db_reduceSize( m_pDb, 
@@ -1202,7 +1488,7 @@ namespace xflaim
 			RetrieveFlags		retrieveFlags,
 			DataVector			foundKey)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			ulong pSearchKey = (searchKey == null ? 0 : searchKey.getDataVector());
 			ulong	pFoundKey;
 
@@ -1244,7 +1530,7 @@ namespace xflaim
 		 public DOMNode createDocument(
 	 		uint			uiCollection)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			ulong pNewNode;
 
 			if ((rc = xflaim_Db_createDocument(m_pDb, uiCollection, 
@@ -1283,7 +1569,7 @@ namespace xflaim
 			uint		uiCollection,
 			uint		uiElementNameId)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			ulong pNewNode;
 
 			if ((rc = xflaim_Db_createRootElement(m_pDb, uiCollection,
@@ -1323,44 +1609,34 @@ namespace xflaim
 			uint			uiCollection,
 			DOMNode		nodeToReuse)
 		 {
-			RCODE			rc = RCODE.NE_XFLM_OK;
-			DOMNode		newNode = null;
-			ulong			pNewNode = 0;
-			ulong			pReusedNode = 0;
+			RCODE			rc;
+			ulong			pNode = 0;
 			
 			if( nodeToReuse != null)
 			{
-				pReusedNode = nodeToReuse.getNode();
+				pNode = nodeToReuse.getNode();
 			}
 			
 			if( (rc = xflaim_Db_getFirstDocument( m_pDb, uiCollection,
-				pReusedNode, out pNewNode)) != 0)
+				ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			if( pNewNode != 0)
+			if( nodeToReuse != null)
 			{
-				if( nodeToReuse != null)
-				{
-					nodeToReuse.setNodePtr( pNewNode, this);
-					newNode = nodeToReuse;
-				}
-				else
-				{
-					newNode = new DOMNode( pNewNode, this);
-				}
+				nodeToReuse.setNodePtr( pNode, this);
+				return (nodeToReuse);
 			}
-				
-			return( newNode);
+
+			return( new DOMNode( pNode, this));
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getFirstDocument(
 			ulong pDb,
 			uint uiCollection,
-			ulong pReusedNode,
-			out ulong pNewNode);
+			ref ulong pNode);
 
 		//-----------------------------------------------------------------------------
 		// getLastDocument
@@ -1383,44 +1659,34 @@ namespace xflaim
 			uint uiCollection,
 			DOMNode nodeToReuse)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
-			DOMNode newNode = null;
-			ulong pNewNode = 0;
-			ulong pReusedNode = 0;
+			RCODE rc;
+			ulong pNode = 0;
 
 			if (nodeToReuse != null)
 			{
-				pReusedNode = nodeToReuse.getNode();
+				pNode = nodeToReuse.getNode();
 			}
 
 			if ((rc = xflaim_Db_getLastDocument(m_pDb, uiCollection,
-				pReusedNode, out pNewNode)) != 0)
+				ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			if (pNewNode != 0)
+			if (nodeToReuse != null)
 			{
-				if (nodeToReuse != null)
-				{
-					nodeToReuse.setNodePtr(pNewNode, this);
-					newNode = nodeToReuse;
-				}
-				else
-				{
-					newNode = new DOMNode(pNewNode, this);
-				}
+				nodeToReuse.setNodePtr(pNode, this);
+				return (nodeToReuse);
 			}
 
-			return (newNode);
+			return (new DOMNode(pNode, this));
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getLastDocument(
 			ulong pDb,
 			uint uiCollection,
-			ulong pReusedNode,
-			out ulong pNewNode);
+			ref ulong pNewNode);
  
 		//-----------------------------------------------------------------------------
 		// getDocument
@@ -1451,36 +1717,27 @@ namespace xflaim
 			ulong ulDocumentId,
 			DOMNode nodeToReuse)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
-			DOMNode newNode = null;
-			ulong pNewNode = 0;
-			ulong pReusedNode = 0;
+			RCODE rc;
+			ulong pNode = 0;
 
 			if (nodeToReuse != null)
 			{
-				pReusedNode = nodeToReuse.getNode();
+				pNode = nodeToReuse.getNode();
 			}
 
 			if ((rc = xflaim_Db_getDocument(m_pDb, uiCollection,
-				retrieveFlags, ulDocumentId, pReusedNode, out pNewNode)) != 0)
+				retrieveFlags, ulDocumentId, ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			if (pNewNode != 0)
+			if (nodeToReuse != null)
 			{
-				if (nodeToReuse != null)
-				{
-					nodeToReuse.setNodePtr(pNewNode, this);
-					newNode = nodeToReuse;
-				}
-				else
-				{
-					newNode = new DOMNode(pNewNode, this);
-				}
+				nodeToReuse.setNodePtr(pNode, this);
+				return (nodeToReuse);
 			}
 
-			return (newNode);
+			return (new DOMNode(pNode, this));
 		}
 
 		[DllImport("xflaim")]
@@ -1489,8 +1746,7 @@ namespace xflaim
 			uint uiCollection,
 			RetrieveFlags retrieveFlags,
 			ulong ulDocumentId,
-			ulong pReusedNode,
-			out ulong pNewNode);
+			ref ulong pNode);
 
 		//-----------------------------------------------------------------------------
 		//	documentDone
@@ -1510,7 +1766,7 @@ namespace xflaim
 			uint			uiCollection,
 			ulong			ulDocumentId)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 
 			if ((rc = xflaim_Db_documentDone(m_pDb, uiCollection, ulDocumentId)) != 0)
 			{
@@ -1539,7 +1795,7 @@ namespace xflaim
 		public void documentDone(
 			DOMNode		domNode)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 
 			if ((rc = xflaim_Db_documentDone(m_pDb, domNode.getNode())) != 0)
 			{
@@ -1583,7 +1839,7 @@ namespace xflaim
 			uint			uiRequestedId)
 			
 		{
-			RCODE			rc = RCODE.NE_XFLM_OK;
+			RCODE			rc;
 			uint			uiNewId;
 
 			if( (rc = xflaim_Db_createElementDef(m_pDb, sNamespaceURI,
@@ -1634,7 +1890,7 @@ namespace xflaim
 			uint			uiRequestedId)
 			
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNewId;
 
 			if ((rc = xflaim_Db_createUniqueElmDef(m_pDb, sNamespaceURI,
@@ -1676,7 +1932,7 @@ namespace xflaim
 			string		sNamespaceURI,
 			string		sElementName)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNameId;
 
 			if ((rc = xflaim_Db_getElementNameId(m_pDb, sNamespaceURI,
@@ -1728,7 +1984,7 @@ namespace xflaim
 			uint			uiRequestedId)
 			
 		{
-			RCODE			rc = RCODE.NE_XFLM_OK;
+			RCODE			rc;
 			uint			uiNewId;
 
 			if( (rc = xflaim_Db_createAttributeDef(m_pDb, sNamespaceURI,
@@ -1771,7 +2027,7 @@ namespace xflaim
 			string sNamespaceURI,
 			string sAttributeName)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNameId;
 
 			if ((rc = xflaim_Db_getAttributeNameId(m_pDb, sNamespaceURI,
@@ -1813,7 +2069,7 @@ namespace xflaim
 			string sPrefixName,
 			uint uiRequestedId)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNewId;
 
 			if ((rc = xflaim_Db_createPrefixDef(m_pDb, sPrefixName,
@@ -1849,7 +2105,7 @@ namespace xflaim
 		public uint getPrefixId(
 			string sPrefixName)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNameId;
 
 			if ((rc = xflaim_Db_getPrefixId(m_pDb, sPrefixName,
@@ -1897,7 +2153,7 @@ namespace xflaim
 			uint uiKeySize,
 			uint uiRequestedId)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNewId;
 
 			if ((rc = xflaim_Db_createEncDef(m_pDb, sEncType, sEncName,
@@ -1936,7 +2192,7 @@ namespace xflaim
 		public uint getEncDefId(
 			string sEncName)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNameId;
 
 			if ((rc = xflaim_Db_getEncDefId(m_pDb, sEncName,
@@ -1981,7 +2237,7 @@ namespace xflaim
 			uint uiEncryptionId,
 			uint uiRequestedId)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNewId;
 
 			if ((rc = xflaim_Db_createCollectionDef(m_pDb, sCollectionName,
@@ -2018,7 +2274,7 @@ namespace xflaim
 		public uint getCollectionNumber(
 			string sCollectionName)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNameId;
 
 			if ((rc = xflaim_Db_getCollectionNumber(m_pDb, sCollectionName,
@@ -2053,7 +2309,7 @@ namespace xflaim
 		public uint getIndexNumber(
 			string sIndexName)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
+			RCODE rc;
 			uint uiNameId;
 
 			if ((rc = xflaim_Db_getIndexNumber(m_pDb, sIndexName,
@@ -2097,36 +2353,27 @@ namespace xflaim
 			uint uiDictNumber,
 			DOMNode nodeToReuse)
 		{
-			RCODE rc = RCODE.NE_XFLM_OK;
-			DOMNode newNode = null;
-			ulong pNewNode = 0;
-			ulong pReusedNode = 0;
+			RCODE rc;
+			ulong pNode = 0;
 
 			if (nodeToReuse != null)
 			{
-				pReusedNode = nodeToReuse.getNode();
+				pNode = nodeToReuse.getNode();
 			}
 
 			if ((rc = xflaim_Db_getDictionaryDef(m_pDb, dictType,
-				uiDictNumber,  pReusedNode, out pNewNode)) != 0)
+				uiDictNumber, ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			if (pNewNode != 0)
+			if (nodeToReuse != null)
 			{
-				if (nodeToReuse != null)
-				{
-					nodeToReuse.setNodePtr(pNewNode, this);
-					newNode = nodeToReuse;
-				}
-				else
-				{
-					newNode = new DOMNode(pNewNode, this);
-				}
+				nodeToReuse.setNodePtr(pNode, this);
+				return (nodeToReuse);
 			}
 
-			return (newNode);
+			return (new DOMNode(pNode, this));
 		}
 
 		[DllImport("xflaim")]
@@ -2134,201 +2381,276 @@ namespace xflaim
 			ulong pDb,
 			ReservedElmTag dictType,
 			ulong uiDictNumber,
-			ulong pReusedNode,
-			out ulong pNewNode);
-	
+			ref ulong pNode);
+
 //-----------------------------------------------------------------------------
-//
+// getDictionaryName
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get a dictionary definition's name.
-	 * @param iDictType The type of dictionary definition whose name is to be
-	 * returned.  It should be one of a {@link xflaim.DictType DictType}.
-	 * @param iDictNumber The number of the dictionary definition.
-	 * @return Returns the name of the dictionary definition.
-	 * @throws XFlaimException
-	 */
- 	public String getDictionaryName(
- 		int	iDictType,
-		int	iDictNumber) throws XFlaimException
+	/// <summary>
+	/// Get a dictionary definition's name.
+	/// </summary>
+	/// <param name="dictType">
+	/// The type of dictionary definition whose name is to be returned.
+	/// </param>
+	/// <param name="uiDictNumber">
+	/// The number of the dictionary definition.
+	/// </param>
+	/// <returns>
+	/// Name of the dictionary item.
+	/// </returns>
+ 	public string getDictionaryName(
+		ReservedElmTag dictType,
+		uint uiDictNumber)
 	{
-		return( _getDictionaryName( m_this, iDictType, iDictNumber));
+		RCODE		rc;
+		IntPtr	pszDictName;
+		string	sDictName;
+
+		if ((rc = xflaim_Db_getDictionaryName( m_pDb, dictType, 
+			uiDictNumber, out pszDictName)) != 0)
+		{
+			throw new XFlaimException( rc);
+		}
+
+		sDictName = Marshal.PtrToStringAnsi( pszDictName);
+		m_dbSystem.freeUnmanagedMem( pszDictName);
+		return( sDictName);
 	}
-#endif
- 
+
+	[DllImport("xflaim")]
+	private static extern RCODE xflaim_Db_getDictionaryName(
+		ulong pDb,
+		ReservedElmTag dictType,
+		uint uiDictNumber,
+		out IntPtr psTempDir);
+
 //-----------------------------------------------------------------------------
-//
+// getElementNamespace
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get an element definition's namespace.
-	 * @param iDictNumber The number of the element definition.
-	 * @return Returns the namespace for the element definition.
-	 * @throws XFlaimException
-	 */
-	public String getElementNamespace(
-		int	iDictNumber) throws XFlaimException
+	/// <summary>
+	/// Get an element definition's namespace.
+	/// </summary>
+	/// <param name="uiDictNumber">
+	/// The number of the element definition.
+	/// </param>
+	/// <returns>
+	/// Returns the namespace for the element definition.
+	/// </returns>
+	public string getElementNamespace(
+		uint		uiDictNumber)
 	{
-		return( _getElementNamespace( m_this, iDictNumber));
+		RCODE rc;
+		IntPtr pszElmNamespace;
+		string sElmNamespace;
+
+		if ((rc = xflaim_Db_getElementNamespace(m_pDb,
+			uiDictNumber, out pszElmNamespace)) != 0)
+		{
+			throw new XFlaimException(rc);
+		}
+
+		sElmNamespace = Marshal.PtrToStringAnsi(pszElmNamespace);
+		m_dbSystem.freeUnmanagedMem(pszElmNamespace);
+		return (sElmNamespace);
 	}
-#endif
-		
+
+	[DllImport("xflaim")]
+	private static extern RCODE xflaim_Db_getElementNamespace(
+		ulong pDb,
+		uint uiDictNumber,
+		out IntPtr pszElmNamespace);
+
 //-----------------------------------------------------------------------------
-//
+// getAttributeNamespace
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get an attribute definition's namespace.
-	 * @param iDictNumber The number of the attribute definition.
-	 * @return Returns the namespace for the attribute definition.
-	 * @throws XFlaimException
-	 */
-	public String getAttributeNamespace(
-		int	iDictNumber) throws XFlaimException
+	/// <summary>
+	/// Get an attribute definition's namespace.
+	/// </summary>
+	/// <param name="uiDictNumber">
+	/// The number of the attribute definition.
+	/// </param>
+	/// <returns>
+	/// Returns the namespace for the attribute definition.
+	/// </returns>
+	public string getAttributeNamespace(
+		uint	uiDictNumber)
 	{
-		return( _getAttributeNamespace( m_this, iDictNumber));
+		RCODE rc;
+		IntPtr pszAttrNamespace;
+		string sAttrNamespace;
+
+		if ((rc = xflaim_Db_getAttributeNamespace(m_pDb,
+			uiDictNumber, out pszAttrNamespace)) != 0)
+		{
+			throw new XFlaimException(rc);
+		}
+
+		sAttrNamespace = Marshal.PtrToStringAnsi(pszAttrNamespace);
+		m_dbSystem.freeUnmanagedMem(pszAttrNamespace);
+		return (sAttrNamespace);
 	}
-#endif
-		
+
+	[DllImport("xflaim")]
+	private static extern RCODE xflaim_Db_getAttributeNamespace(
+		ulong pDb,
+		uint uiDictNumber,
+		out IntPtr pszAttrNamespace);
+
 //-----------------------------------------------------------------------------
-//
+// getNode
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Retrieves the specified node from the specified collection.
-	 * @param iCollection The collection where the node is stored.
-	 * @param lNodeId The ID number of the node to be retrieved.
-	 * @param ReusedNode An existing instance of {@link xflaim.DOMNode DOMNode} who's
-	 * contents will be replaced with that of the new node.  If null, a
-	 * new instance will be allocated.
-	 * @return Returns a {@link xflaim.DOMNode DOMNode} representing the retrieved node.
-	 * @throws XFlaimException
-	 */
+	/// <summary>
+	/// Retrieves the specified node from the specified collection. 
+	/// </summary>
+	/// <param name="uiCollection">
+	/// The collection where the node is stored.
+	/// </param>
+	/// <param name="ulNodeId">
+	/// The ID number of the node to be retrieved.
+	/// </param>
+	/// <param name="nodeToReuse">
+	/// </param>
+	/// <returns></returns>
 	public DOMNode getNode(
-		int			iCollection,
-		long			lNodeId,
-		DOMNode		ReusedNode) throws XFlaimException
-		
+		uint			uiCollection,
+		ulong			ulNodeId,
+		DOMNode		nodeToReuse)
 	{
-		long			lReusedNodeRef = 0;
-		DOMNode		NewNode = null;
-		long			lNewNodeRef = 0;
-		
-		if (ReusedNode != null)
+		RCODE rc;
+		ulong pNode = 0;
+
+		if (nodeToReuse != null)
 		{
-			lReusedNodeRef = ReusedNode.getRef();
+			pNode = nodeToReuse.getNode();
 		}
-		
-		// See the comments in DOMNode::finalize() for an explanation
-		// of this synchronized call
-		
-		synchronized( this)
+
+		if ((rc = xflaim_Db_getNode(m_pDb, uiCollection, ulNodeId,
+			ref pNode)) != 0)
 		{
-			lNewNodeRef = _getNode( m_this, iCollection, lNodeId, lReusedNodeRef);
+			throw new XFlaimException(rc);
 		}
-		
-		if (lNewNodeRef != 0)
+
+		if (nodeToReuse != null)
 		{
-			if (ReusedNode == null)
-			{
-				NewNode = new DOMNode(lNewNodeRef, this);
-			}
-			else
-			{
-				NewNode=ReusedNode;
-				NewNode.setRef( lNewNodeRef, this);
-			}
+			nodeToReuse.setNodePtr(pNode, this);
+			return (nodeToReuse);
 		}
-		
-		return( NewNode);		
+
+		return (new DOMNode(pNode, this));
 	}
-#endif
+
+	[DllImport("xflaim")]
+	private static extern RCODE xflaim_Db_getNode(
+		ulong pDb,
+		uint uiCollection,
+		ulong ulNodeId,
+		ref ulong pNode);
 
 //-----------------------------------------------------------------------------
-//
+// getAttribute
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Retrieves the specified attribute node from the specified collection.
-	 * @param iCollection The collection where the attribute is stored.
-	 * @param lElementNodeId The ID number of the element node that contains
-	 * the attribute to be retrieved.
-	 * @param iAttrNameId The attribute id of the attribute to be retrieved.
-	 * @param ReusedNode An existing instance of {@link xflaim.DOMNode DOMNode} who's
-	 * contents will be replaced with that of the new node.  If null, a
-	 * new instance will be allocated.
-	 * @return Returns a {@link xflaim.DOMNode DOMNode} representing the retrieved node.
-	 * @throws XFlaimException
-	 */
+	/// <summary>
+	/// Retrieves the specified attribute node from the specified collection.
+	/// </summary>
+	/// <param name="uiCollection">
+	/// The collection where the attribute is stored.
+	/// </param>
+	/// <param name="ulElementNodeId">
+	/// The ID number of the element node that contains the attribute 
+	/// to be retrieved.
+	/// </param>
+	/// <param name="uiAttrNameId">
+	/// The attribute id of the attribute to be retrieved.
+	/// </param>
+	/// <param name="nodeToReuse">
+	/// An existing DOM node object can optionally be passed in.  It will
+	/// be reused rather than allocating a new object.
+	/// </param>
+	/// <returns>
+	/// Returns the attribute node <see cref="DOMNode"/>.
+	/// </returns>
 	public DOMNode getAttribute(
-		int			iCollection,
-		long			lElementNodeId,
-		int			iAttrNameId,
-		DOMNode		ReusedNode) throws XFlaimException
+		uint			uiCollection,
+		ulong			ulElementNodeId,
+		uint			uiAttrNameId,
+		DOMNode		nodeToReuse)
 	{
-		long			lReusedNodeRef = 0;
-		long			lNewNodeRef = 0;
-		DOMNode		NewNode = null;
-		
-		if (ReusedNode != null)
+		RCODE rc;
+		ulong pNode = 0;
+
+		if (nodeToReuse != null)
 		{
-			lReusedNodeRef = ReusedNode.getRef();
+			pNode = nodeToReuse.getNode();
 		}
-		
-		// See the comments in DOMNode::finalize() for an explanation
-		// of this synchronized call
-		
-		synchronized( this)
+
+		if ((rc = xflaim_Db_getAttribute(m_pDb, uiCollection, 
+			ulElementNodeId, uiAttrNameId, ref pNode)) != 0)
 		{
-			lNewNodeRef = _getAttribute( m_this, iCollection, lElementNodeId,
-										iAttrNameId, lReusedNodeRef);
+			throw new XFlaimException(rc);
 		}
-		
-		if (lNewNodeRef != 0)
+
+		if (nodeToReuse != null)
 		{
-			if (ReusedNode == null)
-			{
-				NewNode = new DOMNode(lNewNodeRef, this);
-			}
-			else
-			{
-				NewNode=ReusedNode;
-				NewNode.setRef( lNewNodeRef, this);
-			}
+			nodeToReuse.setNodePtr(pNode, this);
+			return (nodeToReuse);
 		}
-		
-		return( NewNode);		
+
+		return (new DOMNode(pNode, this));
 	}
-#endif
+
+	[DllImport("xflaim")]
+	private static extern RCODE xflaim_Db_getAttribute(
+		ulong pDb,
+		uint uiCollection,
+		ulong ulElementNodeId,
+		uint uiAttrNameId,
+		ref ulong pNode);
 
 //-----------------------------------------------------------------------------
-//
+// getDataType
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Returns the data type that was specified for a particular dictionary
-	 * definition.  NOTE: This really only applies to element and attribute
-	 * definitions.
-	 * @param iDictType The type of dictionary definition whose data type is to be
-	 * returned.  It should be one of a {@link xflaim.DictType DictType}.
-	 * @param iDictNumber The number of the dictionary definition.
-	 * @return Returns the dictionary definition's data type.
-	 * @throws XFlaimException
-	 */
-	public int getDataType(
-		int	iDictType,
-		int	iDictNumber) throws XFlaimException
+	/// <summary>
+	/// Returns the data type that was specified for a particular dictionary
+	/// definition.  NOTE: This really only applies to element and attribute
+	/// definitions.
+	/// </summary>
+	/// <param name="dictType">
+	/// The type of dictionary definition whose data type is to be returned.
+	/// </param>
+	/// <param name="uiDictNumber">
+	/// The number of the dictionary definition.
+	/// </param>
+	/// <returns>
+	/// Data type of the dictionary object.
+	/// </returns>
+	public FlmDataType getDataType(
+		ReservedElmTag dictType,
+		uint uiDictNumber)
 	{
-		return( _getDataType( m_this, iDictType, iDictNumber));
+		RCODE rc;
+		FlmDataType dataType;
+
+		if ((rc = xflaim_Db_getDataType( m_pDb,
+			dictType, uiDictNumber, out dataType)) != 0)
+		{
+			throw new XFlaimException(rc);
+		}
+
+		return (dataType);
 	}
-#endif
+
+	[DllImport("xflaim")]
+	private static extern RCODE xflaim_Db_getDataType(
+		ulong pDb,
+		ReservedElmTag dictType,
+		uint uiDictNumer,
+		out FlmDataType dataType);
 
 //-----------------------------------------------------------------------------
 // backupBegin
@@ -2359,7 +2681,7 @@ namespace xflaim
 			bool			bLockDb,
 			uint			uiMaxLockWait)
 		{
-			RCODE			rc = RCODE.NE_XFLM_OK;
+			RCODE			rc;
 			ulong			pBackup;
 
 			if( (rc = xflaim_Db_backupBegin( m_pDb, (bFullBackup ? 1 : 0),
@@ -2378,125 +2700,184 @@ namespace xflaim
 			int			bLockDb,
 			uint			uiMaxLockWait,
 			out ulong	ulBackupRef);
-	}
-}
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// importDocument
+		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Imports an XML document into the XFlaim database.  The import requires
-	 * an update transaction ({@link xflaim.TransactionType TransactionType}.UPDATE_TRANS).
-	 * If the document cannot be imported, an XFlaimEXception exception will be thrown.
-	 * @param istream Input stream for importing the document.  Could represent
-	 * a file or a buffer.
-	 * @param iCollection Collection the document is to be imported into.
-	 * @throws XFlaimException
-	 */
-	public ImportStats Import(
-		IStream		istream,
-		int			iCollection) throws XFlaimException
-	{
-		return( _import( m_this, istream.getThis(), iCollection, 0,
-						InsertLoc.XFLM_LAST_CHILD));
-	}
-#endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
-
-#if TODO
-	/**
-	 * Imports an XML document into the XFlaim database.  The import requires
-	 * an update transaction ({@link xflaim.TransactionType TransactionType}.UPDATE_TRANS).
-	 * If the document cannot be imported, an XFlaimEXception exception will be thrown.
-	 * @param istream Input stream for importing the document.  Could represent
-	 * a file or a buffer.
-	 * @param iCollection Collection the document is to be imported into.
-	 * @param nodeToLinkTo Node the imported XML should be linked to.
-	 * @param iInsertLoc Specifies how the imported document should be linked to
-	 * the nodeToLinkTo.  Should be one of the members of {@link
-	 * xflaim.InsertLoc InsertLoc}.
-	 * @return Returns an {@link xflaim.ImportStats ImportStats} object which holds
-	 * statistics about what was imported.
-	 * @throws XFlaimException
-	 */
-	public ImportStats Import(
-		IStream		istream,
-		int			iCollection,
-		DOMNode		nodeToLinkTo,
-		int			iInsertLoc) throws XFlaimException
-	{
-		if (nodeToLinkTo == null)
+		/// <summary>
+		/// Imports an XML document into the XFlaim database.  The import requires
+		/// an update transaction.
+		/// </summary>
+		/// <param name="istream">
+		/// Input stream containing the document(s) to be imported
+		/// </param>
+		/// <param name="uiCollection">
+		/// Destination collection for imported document(s).
+		/// </param>
+		/// <returns>
+		/// Returns import statistics <see cref="XFLM_IMPORT_STATS"/>.
+		/// </returns>
+		public XFLM_IMPORT_STATS importDocument(
+			IStream istream,
+			uint uiCollection)
 		{
-			return( _import( m_this, istream.getThis(), iCollection, 0, iInsertLoc));
+			RCODE rc;
+			XFLM_IMPORT_STATS importStats;
+
+			if ((rc = xflaim_Db_importDocument(m_pDb, 
+				istream, uiCollection, out importStats)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (importStats);
 		}
-		else
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_importDocument(
+			ulong pDb,
+			IStream istream,
+			uint uiCollection,
+			out XFLM_IMPORT_STATS importStatus);
+
+		//-----------------------------------------------------------------------------
+		// importDocument
+		//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Imports an XML fragment into the XFlaim database.  The import requires
+		/// an update transaction.
+		/// </summary>
+		/// <param name="istream">
+		/// Input stream containing the nodes to be imported
+		/// </param>
+		/// <param name="nodeToLinkTo">
+		/// Existing node that imported nodes will link to
+		/// </param>
+		/// <param name="insertLocation">
+		/// Relationship of imported nodes to "nodeToLinkTo"
+		/// </param>
+		/// <returns>
+		/// Returns import statistics <see cref="XFLM_IMPORT_STATS"/>.
+		/// </returns>
+		public XFLM_IMPORT_STATS importDocument(
+			IStream istream,
+			DOMNode nodeToLinkTo,
+			eNodeInsertLoc insertLocation)
 		{
-			return( _import( m_this, istream.getThis(), iCollection,
-							nodeToLinkTo.getThis(), iInsertLoc));
+			RCODE rc;
+			XFLM_IMPORT_STATS importStats;
+
+			if ((rc = xflaim_Db_importDocument(m_pDb, 
+				istream, nodeToLinkTo, insertLocation,
+				out importStats)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (importStats);
 		}
-	}
-#endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Change a dictionary definition's state.  This routine is used to determine if
-	 * the dictionary item can be deleted.  It may also be used to force the
-	 * definition to be deleted - once the database has determined that the
-	 * definition is not in use anywhere.  This should only be used for
-	 * element definitions and attribute definitions definitions.
-	 * @param iDictType Type of dictionary definition whose state is being
-	 * changed.  Should be either {@link DictType DictType}.ELEMENT_DEF or
-	 * {@link DictType DictType}.ATTRIBUTE_DEF.
-	 * @param iDictNum Number of element or attribute definition whose state
-	 * is to be changed.
-	 * @param sState State the definition is to be changed to.  Must be
-	 * "checking", "purge", or "active".
-	 * @throws XFlaimException
-	 */
-	public void changeItemState(
-		int				iDictType,
-		int				iDictNum,
-		String			sState) throws XFlaimException
-	{
-		_changeItemState( m_this, iDictType, iDictNum, sState);
-	}
-#endif
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_importDocument(
+			ulong pDb,
+			IStream istream,
+			DOMNode nodeToLinkTo,
+			eNodeInsertLoc insertLocation,
+			out XFLM_IMPORT_STATS importStatus);
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		// changeItemState
+		//-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get the name of a roll-forward log file.
-	 * @param iFileNum Roll-forward log file number whose name is to be
-	 * returned.
-	 * @param bBaseOnly If true, only the base name of the file will be returned.
-	 * Otherwise, the entire path will be returned.
-	 * @return Name of the file.
-	 * @throws XFlaimException
-	 */
-	public String getRflFileName(
-		int				iFileNum,
-		boolean			bBaseOnly) throws XFlaimException
-	{
-		return( _getRflFileName( m_this, iFileNum, bBaseOnly));
-	}
-#endif
+		/// <summary>
+		/// Change a dictionary definition's state.  This routine is used to determine if
+		/// the dictionary item can be deleted.  It may also be used to force the
+		/// definition to be deleted - once the database has determined that the
+		/// definition is not in use anywhere.  This should only be used for
+		/// element definitions and attribute definitions definitions.
+		/// </summary>
+		/// <param name="dictType">
+		/// Type of dictionary definition whose state is being changed.
+		/// </param>
+		/// <param name="uiDictNumber">
+		/// Number of element or attribute definition whose state
+		/// is to be changed
+		/// </param>
+		/// <param name="sState">
+		/// State the definition is to be changed to.  Must be
+		/// "checking", "purge", or "active".
+		/// </param>
+		public void changeItemState(
+			ReservedElmTag dictType,
+			uint uiDictNumber,
+			string sState)
+		{
+			RCODE rc;
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
-		
+			if ((rc = xflaim_Db_changeItemState(m_pDb,
+				dictType, uiDictNumber, sState)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_changeItemState(
+			ulong pDb,
+			ReservedElmTag dictType,
+			uint uiDictNumber,
+			[MarshalAs(UnmanagedType.LPWStr)]
+			string sState);
+
+		//-----------------------------------------------------------------------------
+		// getRflFileName
+		//-----------------------------------------------------------------------------
+
+		/// <summary>
+		/// Get the name of a roll-forward log file.
+		/// </summary>
+		/// <param name="uiFileNum">
+		/// Roll-forward log file number whose name is to be returned.
+		/// </param>
+		/// <param name="bBaseOnly">
+		/// If true, only the base name of the file will be returned.
+		/// Otherwise, the entire path will be returned.
+		/// </param>
+		/// <returns>
+		/// Name of the file.
+		/// </returns>
+		public string getRflFileName(
+			uint				uiFileNum,
+			bool				bBaseOnly)
+		{
+			RCODE rc;
+			IntPtr pszFileName;
+			string sFileName;
+
+			if ((rc = xflaim_Db_getRflFileName(m_pDb, uiFileNum,
+				bBaseOnly, out pszFileName)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			sFileName = Marshal.PtrToStringAnsi(pszFileName);
+			m_dbSystem.freeUnmanagedMem(pszFileName);
+			return (sFileName);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getRflFileName(
+			ulong pDb,
+			uint uiFileNum,
+			bool bBaseOnly,
+			out IntPtr sName);
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
+
 #if TODO
 	/**
 	 * Set the next node ID for a collection.  This will be the node ID for
@@ -2515,9 +2896,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2537,10 +2918,10 @@ namespace xflaim
 		_setNextDictNum( m_this, iDictType, iNextDictNumber);
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2554,10 +2935,10 @@ namespace xflaim
 		_setRflKeepFilesFlag( m_this, bKeep);
 	}
 #endif
-		
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2570,10 +2951,10 @@ namespace xflaim
 		return( _getRflKeepFlag( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2587,10 +2968,10 @@ namespace xflaim
 		_setRflDir( m_this, sRflDir);
 	}
 #endif
-		
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2603,10 +2984,10 @@ namespace xflaim
 		return( _getRflDir( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2620,9 +3001,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2637,9 +3018,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2665,9 +3046,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2681,10 +3062,10 @@ namespace xflaim
 		return( _getMinRflFileSize( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2706,9 +3087,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2721,9 +3102,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2740,9 +3121,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2757,9 +3138,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2776,9 +3157,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2794,9 +3175,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2812,9 +3193,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2827,10 +3208,10 @@ namespace xflaim
 		return( _getFileExtendSize( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2845,9 +3226,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2861,9 +3242,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2876,10 +3257,10 @@ namespace xflaim
 		return( _getDefaultLanguage( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2897,9 +3278,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2912,10 +3293,10 @@ namespace xflaim
 		return( _getDbControlFileName( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2929,9 +3310,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2946,9 +3327,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2961,10 +3342,10 @@ namespace xflaim
 		return( _getNextIncBackupSequenceNum( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2978,9 +3359,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -2993,10 +3374,10 @@ namespace xflaim
 		return( _getDiskSpaceRollbackSize( m_this));
 	}
 #endif
-		
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3009,10 +3390,10 @@ namespace xflaim
 		return( _getDiskSpaceRflSize( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3027,10 +3408,10 @@ namespace xflaim
 		return( _getDiskSpaceTotalSize( m_this));
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3045,9 +3426,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3064,9 +3445,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3086,9 +3467,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3101,9 +3482,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3122,10 +3503,10 @@ namespace xflaim
 		_wrapKey( m_this, sPassword);
 	}
 #endif
-		
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3139,9 +3520,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3156,9 +3537,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3172,10 +3553,10 @@ namespace xflaim
 		return( _getCheckpointInfo( m_this));
 	}
 #endif
-		
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3196,10 +3577,10 @@ namespace xflaim
 		_exportXML( m_this, startNode.getThis(), sFileName, iFormat);
 	}
 #endif
-			
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3217,10 +3598,10 @@ namespace xflaim
 		return( _exportXML( m_this, startNode.getThis(), iFormat));
 	}
 #endif
-			
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3237,10 +3618,10 @@ namespace xflaim
 		return( _getLockWaiters( m_this));
 	}
 #endif
-			
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3258,10 +3639,10 @@ namespace xflaim
 		_setDeleteStatusObject( m_this, deleteStatusObj);
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3279,10 +3660,10 @@ namespace xflaim
 		_setIndexingClientObject( m_this, ixClientObj);
 	}
 #endif
-		
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3300,10 +3681,10 @@ namespace xflaim
 		_setIndexingStatusObject( m_this, ixStatusObj);
 	}
 #endif
-	
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3323,9 +3704,9 @@ namespace xflaim
 	}
 #endif
 
-//-----------------------------------------------------------------------------
-//
-//-----------------------------------------------------------------------------
+		//-----------------------------------------------------------------------------
+		//
+		//-----------------------------------------------------------------------------
 
 #if TODO
 	/**
@@ -3338,3 +3719,5 @@ namespace xflaim
 	}
 #endif
 
+	}
+}
