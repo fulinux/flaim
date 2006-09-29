@@ -5347,21 +5347,21 @@
 		FLMBYTE *		pucBuffer,
 		FLMUINT			uiBit)
 	{
-		pucBuffer[ uiBit >> 3] |= (0x01 << (uiBit & 0x07));
+		pucBuffer[ uiBit >> 3] |= (FLMBYTE)(0x01 << (uiBit & 0x07));
 	}
 			
 	FINLINE void f_clearBit(
 		FLMBYTE *		pucBuffer,
 		FLMUINT			uiBit)
 	{
-		pucBuffer[ uiBit >> 3] &= ~(0x01 << (uiBit & 0x07));
+		pucBuffer[ uiBit >> 3] &= ~((FLMBYTE)(0x01 << (uiBit & 0x07)));
 	}
 	
 	FINLINE FLMBOOL f_isBitSet(
 		FLMBYTE *		pucBuffer,
 		FLMUINT			uiBit)
 	{
-		return( (pucBuffer[ uiBit >> 3] & (0x01 << (uiBit & 0x07))) 
+		return( (pucBuffer[ uiBit >> 3] & (FLMBYTE)(0x01 << (uiBit & 0x07))) 
 							? TRUE 
 							: FALSE);
 	}
