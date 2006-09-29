@@ -771,6 +771,84 @@ namespace xflaim
 		XFLM_MATCH_DOC_ID = 0x0800
 	}
 
+	/// <summary>
+	/// Reason for forcing a checkpoint
+	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	/// defines in xflaim.h.
+	/// </summary>
+	public enum eCPReason : uint
+	{
+		/// <summary>
+		/// The checkpoint interval (typically 180 seconds) has elapsed.
+		/// </summary>
+		XFLM_CP_TIME_INTERVAL_REASON = 1,
+		/// <summary>
+		/// The database is being closed.
+		/// </summary>
+		XFLM_CP_SHUTTING_DOWN_REASON = 2,
+		/// <summary>
+		/// A problem was encountered whil writing to the RFL volume.
+		/// </summary>
+		XFLM_CP_RFL_VOLUME_PROBLEM = 3
+	}
+
+	/// <summary>
+	/// Checkpoint information object
+	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
+	/// definitions in xflaim.h
+	/// </summary>
+	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	public class XFLM_CHECKPOINT_INFO
+	{
+		/// <summary>
+		/// If true, the checkpoint is currently running
+		/// </summary>
+		public bool					bRunning;
+		/// <summary>
+		/// Amount of time (seconds) that the checkpoint has been running
+		/// </summary>
+		public uint					uiRunningTime;
+		/// <summary>
+		/// If true, the checkpoint is being forced and cannot be interrupted by
+		/// a foreground update transaction.
+		/// </summary>
+		public bool					bForcingCheckpoint;
+		/// <summary>
+		/// Amount of time (seconds) that the checkpoint has been running
+		/// in "forced" mode.
+		/// </summary>
+		public uint					uiForceCheckpointRunningTime;
+		/// <summary>
+		/// Specific reason for forcing a checkpoint.
+		/// </summary>
+		public eCPReason			forceCheckpointReason;
+		/// <summary>
+		/// If true, the checkpoint thread is currently writing data blocks
+		/// </summary>
+		public bool					bWritingDataBlocks;
+		/// <summary>
+		/// Number of log blocks written to the roll-back log
+		/// </summary>
+		public uint					uiLogBlocksWritten;
+		/// <summary>
+		/// Number of data blocks written
+		/// </summary>
+		public uint					uiDataBlocksWritten;
+		/// <summary>
+		/// Amount of dirty cache
+		/// </summary>
+		public uint					uiDirtyCacheBytes;
+		/// <summary>
+		/// Database block size
+		/// </summary>
+		public uint					uiBlockSize;
+		/// <summary>
+		/// Amount of time the checkpoint has waited to truncate
+		/// the roll-back log
+		/// </summary>
+		public uint					uiWaitTruncateTime;
+	};
+
 	/// <remarks>
 	/// The Db class provides a number of methods that allow C#
 	/// applications to access an XFLAIM database.  A Db object
@@ -3762,54 +3840,79 @@ namespace xflaim
 		public void wrapKey(
 			string	sPassword)
 		{
-//			_wrapKey( m_this, sPassword);
+			RCODE rc;
+
+			if ((rc = xflaim_Db_wrapKey(m_pDb, sPassword)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
 		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_wrapKey(
+			IntPtr pDb,
+			[MarshalAs(UnmanagedType.LPWStr)]
+			string sPassword);
 
 //-----------------------------------------------------------------------------
 // rollOverDbKey
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Generate a new database key.  All encryption definition keys will be
-	 * re-wrapped in the new database key.
-	 * @throws XFlaimException
-	 */
-	public void rollOverDbKey() throws XFlaimException
-	{
-		_rollOverDbKey( m_this);
-	}
-#endif
+		/// <summary>
+		/// Generate a new database key.  All encryption definition keys will be
+		/// re-wrapped in the new database key.
+		/// </summary>
+		public void rollOverDbKey()
+		{
+			xflaim_Db_rollOverDbKey(m_pDb);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Db_rollOverDbKey(
+			IntPtr pDb);
 
 //-----------------------------------------------------------------------------
 // getSerialNumber
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get the database serial number.
-	 * @return Byte array containing the database serial number.  This number
-	 * is generated and stored in the database when the database is created.
-	 * @throws XFlaimException
-	 */
-	public byte[] getSerialNumber() throws XFlaimException
-	{
-		return( _getSerialNumber( m_this));
-	}
-#endif
+		/// <summary>
+		/// Get the database serial number. 
+		/// </summary>
+		/// <returns>
+		/// Byte array containing the database serial number.  This number
+		/// is generated and stored in the database when the database is created.
+		/// </returns>
+		public byte[] getSerialNumber()
+		{
+			RCODE rc;
+			byte[] ucValue;
+
+			ucValue = new byte[16];
+
+			if ((rc = xflaim_Db_getSerialNumber( m_pDb, ucValue)) != 0)
+			{
+				throw new XFlaimException(rc);
+			}
+
+			return (ucValue);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_getSerialNumber(
+			IntPtr pDb,
+			[MarshalAs(UnmanagedType.LPArray), Out] 
+			byte[] pucValue);
 
 //-----------------------------------------------------------------------------
-// getCheckpointInfo.
+// getCheckpointInfo
 //-----------------------------------------------------------------------------
 
 #if TODO
-	/**
-	 * Get information about the checkpoint thread's current state.
-	 * @return Checkpoint thread state information is returned in a
-	 * {@link xflaim.CheckpointInfo CheckpointInfo} object.
-	 * @throws XFlaimException
-	 */
-	public CheckpointInfo getCheckpointInfo() throws XFlaimException
+	/// <summary>
+	/// Get information about the checkpoint thread's current state. 
+	/// </summary>
+	/// <returns></returns>
+	public XFLM_CHECKPOINT_INFO getCheckpointInfo()
 	{
 		return( _getCheckpointInfo( m_this));
 	}
