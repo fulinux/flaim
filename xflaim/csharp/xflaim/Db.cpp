@@ -1410,3 +1410,81 @@ Exit:
 
 	return( rc);
 }
+
+typedef FLMBOOL (FLMAPI * LOCK_INFO_CLIENT)(
+	FLMBOOL		bSetTotalLocks,
+	FLMUINT32	ui32TotalLocks,
+	FLMUINT32	ui32LockNum,
+	FLMUINT32	ui32ThreadId,
+	FLMUINT32	ui32Time);
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class CS_LockInfoClient : public IF_LockInfoClient
+{
+public:
+
+	CS_LockInfoClient(
+		LOCK_INFO_CLIENT	fnLockInfoClient)
+	{
+		m_fnLockInfoClient = fnLockInfoClient;
+	}
+
+	virtual ~CS_LockInfoClient()
+	{
+	}
+
+	FLMBOOL FLMAPI setLockCount(
+		FLMUINT	uiTotalLocks)
+	{
+		return( m_fnLockInfoClient( TRUE, (FLMUINT32)uiTotalLocks, 0, 0, 0));
+	}
+
+	FLMBOOL FLMAPI addLockInfo(
+		FLMUINT	uiLockNum,
+		FLMUINT	uiThreadId,
+		FLMUINT	uiTime)
+	{
+		return( m_fnLockInfoClient( FALSE, 0, (FLMUINT32)uiLockNum, (FLMUINT32)uiThreadId,
+						(FLMUINT32)uiTime));
+	}
+
+private:
+
+	LOCK_INFO_CLIENT	m_fnLockInfoClient;
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLockUsers(
+	IF_Db *				pDb,
+	LOCK_INFO_CLIENT	fnLockInfoClient)
+{
+	RCODE						rc = NE_XFLM_OK;
+	IF_LockInfoClient *	pLockInfoClient = NULL;
+
+	if (fnLockInfoClient)
+	{
+		if ((pLockInfoClient = f_new CS_LockInfoClient( fnLockInfoClient)) == NULL)
+		{
+			rc = RC_SET( NE_XFLM_MEM);
+			goto Exit;
+		}
+	}
+ 
+	if (RC_BAD( rc = pDb->getLockWaiters( pLockInfoClient)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if (pLockInfoClient)
+	{
+		pLockInfoClient->Release();
+	}
+
+	return( rc);
+}

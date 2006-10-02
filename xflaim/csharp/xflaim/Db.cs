@@ -746,6 +746,24 @@ namespace xflaim
 	}
 
 	/// <summary>
+	/// This object contains information about a lock holder or lock waiter.
+	/// </summary>
+	public class LockUser
+	{
+		/// <summary>
+		/// Thread ID that is either holding the lock or waiting for it.
+		/// </summary>
+		public uint	uiThreadId;
+		/// <summary>
+		/// If this represents the lock holder, this is the amount of time
+		/// that the thread has been holding the lock.  If it represents
+		/// the lock waiter, it is the amount of time the thread has been
+		/// waiting to obtain the lock.  Time is in milliseconds.
+		/// </summary>
+		public uint	uiTime;
+	}
+
+	/// <summary>
 	/// Types of locks that may be requested.
 	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
 	/// definitions in xflaim.h
@@ -3933,124 +3951,78 @@ namespace xflaim
 			out IntPtr			ppszStr);
 
 //-----------------------------------------------------------------------------
-// getLockWaiters
+// getLockUsers
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Get the list of threads that are holding the database lock as well as
-	 * the threads that are waiting to obtain the database lock.
-	 * @return Returns an array of {@link xflaim.LockUser LockUser} objects.  The
-	 * zeroeth element in the array is the current holder of the database lock.
-	 * All other elements of the array are threads that are waiting to obtain
-	 * the lock.
-	 * @throws XFlaimException
-	 */
-	public LockUser[] getLockWaiters() throws XFlaimException
-	{
-		return( _getLockWaiters( m_this));
-	}
-#endif
+		/// <summary>
+		/// Returns an array representing all of the threads that are either
+		/// holding the database lock (this is always the zeroeth entry in the array)
+		/// as well as threads waiting to obtain the database lock (entries
+		/// 1 through N).
+		/// </summary>
+		/// <returns>Array of database lock holder and waiters.</returns>
+		public LockUser [] getLockUsers()
+		{
+			RCODE							rc;
+			LockInfoClientDelegate	lockInfoClientDelegate = new LockInfoClientDelegate();
+			LockInfoClientCallback	fnLockInfoClient = new LockInfoClientCallback( lockInfoClientDelegate.funcLockInfoClient);
 
-//-----------------------------------------------------------------------------
-// setDeleteStatusObject
-//-----------------------------------------------------------------------------
+			if ((rc = xflaim_Db_getLockUsers( m_pDb, fnLockInfoClient)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			return( lockInfoClientDelegate.getLockUsers());
+		}
 
-#if TODO
-	/**
-	 * Set a callback object that will report the progress of an index or
-	 * collection deletion operation.  This object's methods are called only if
-	 * the index or collection is deleted in the foreground.  The delete operation
-	 * must be performed in the same thread where this method is called.
-	 * @param deleteStatusObj An object that implements the {@link xflaim.DeleteStatus
-	 * DeleteStatus} interface.
-	 * @throws XFlaimException
-	 */
-	public void setDeleteStatusObject(
-		DeleteStatus	deleteStatusObj) throws XFlaimException
-	{
-		_setDeleteStatusObject( m_this, deleteStatusObj);
-	}
-#endif
+		[DllImport("xflaim",CharSet=CharSet.Ansi)]
+		private static extern RCODE xflaim_Db_getLockUsers(
+			IntPtr						pDb,
+			LockInfoClientCallback	fnLockInfoClient);
 
-//-----------------------------------------------------------------------------
-// setIndexingClientObject
-//-----------------------------------------------------------------------------
+		private delegate int LockInfoClientCallback(
+			int	bSetTotalLocks,
+			uint	uiTotalLocks,
+			uint	uiLockNum,
+			uint	uiThreadId,
+			uint	uiTime);
+			
+		private class LockInfoClientDelegate
+		{
+			LockUser []	m_lockUsers;
 
-#if TODO
-	/**
-	 * Set a callback object that will report each document that is being indexed when
-	 * an index definition object is added.  This object's methods are called only if
-	 * the index is added in the foreground.  The index definition must be added
-	 * in the same thread that sets this object.
-	 * @param ixClientObj An object that implements the {@link xflaim.IxClient
-	 * IxClient} interface.
-	 * @throws XFlaimException
-	 */
-	public void setIndexingClientObject(
-		IxClient			ixClientObj) throws XFlaimException
-	{
-		_setIndexingClientObject( m_this, ixClientObj);
-	}
-#endif
+			public LockInfoClientDelegate()
+			{
+				m_lockUsers = null;
+			}
+			
+			~LockInfoClientDelegate()
+			{
+			}
 
-//-----------------------------------------------------------------------------
-// setIndexingStatusObject
-//-----------------------------------------------------------------------------
-
-#if TODO
-	/**
-	 * Set a callback object that will report indexing progress when
-	 * an index definition object is added.  This object's methods are called only if
-	 * the index is added in the foreground.  The index definition must be added
-	 * in the same thread that sets this object.
-	 * @param ixStatusObj An object that implements the {@link xflaim.IxStatus
-	 * IxStatus} interface.
-	 * @throws XFlaimException
-	 */
-	public void setIndexingStatusObject(
-		IxStatus			ixStatusObj) throws XFlaimException
-	{
-		_setIndexingStatusObject( m_this, ixStatusObj);
-	}
-#endif
-
-//-----------------------------------------------------------------------------
-// setCommitClientObject
-//-----------------------------------------------------------------------------
-
-#if TODO
-	/**
-	 * Set a callback object that will be called after a transaction commit
-	 * has safely saved all transaction data to disk, but before the database
-	 * is unlocked.  This allows an application to do anything it may need to do
-	 * after a commit but before the database is unlocked.  The thread that
-	 * performs the commit must be the thread that sets this object.
-	 * @param commitClientObj An object that implements the {@link xflaim.CommitClient
-	 * CommitClient} interface.
-	 * @throws XFlaimException
-	 */
-	public void setCommitClientObject(
-		CommitClient	commitClientObj) throws XFlaimException
-	{
-		_setCommitClientObject( m_this, commitClientObj);
-	}
-#endif
-
-//-----------------------------------------------------------------------------
-// upgrade
-//-----------------------------------------------------------------------------
-
-#if TODO
-	/**
-	 * Upgrade the database to the most current database version.
-	 * @throws XFlaimException
-	 */
-	public void upgrade() throws XFlaimException
-	{
-		_upgrade( m_this);
-	}
-#endif
-
+			public LockUser [] getLockUsers()
+			{
+				return( m_lockUsers);
+			}
+			
+			public int funcLockInfoClient(
+				int	bSetTotalLocks,
+				uint	uiTotalLocks,
+				uint	uiLockNum,
+				uint	uiThreadId,
+				uint	uiTime)
+			{
+				if (bSetTotalLocks != 0)
+				{
+					m_lockUsers = new LockUser [uiTotalLocks];
+				}
+				else
+				{
+					LockUser	lockUser = m_lockUsers [uiLockNum] = new LockUser();
+					lockUser.uiThreadId = uiThreadId;
+					lockUser.uiTime = uiTime;
+				}
+				return( 1);
+			}
+		}
 	}
 }
