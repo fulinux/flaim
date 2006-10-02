@@ -4638,12 +4638,8 @@ RCODE F_NodeVerifier::checkForIndexes(
 
 	switch( m_nodeInfo.eNodeType)
 	{
-		case DOCUMENT_NODE:
 		case ELEMENT_NODE:
 		case DATA_NODE:
-		case COMMENT_NODE:
-		case CDATA_SECTION_NODE:
-		case ANNOTATION_NODE:
 		{
 			if( RC_BAD( rc = pDict->getElement( pDb, 
 				m_nodeInfo.uiNameId, &defInfo)))
