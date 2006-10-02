@@ -27,6 +27,41 @@ using System.Runtime.InteropServices;
 
 namespace xflaim
 {
+
+	/// <summary>
+	/// Predefined collections found in all XFLAIM databases.
+	/// </summary>
+	public enum PredefinedXFlaimCollections : uint
+	{
+		/// <summary>
+		/// Maintenance collection
+		/// </summary>
+		XFLM_MAINT_COLLECTION		= 65533,
+		/// <summary>
+		/// Default data collection.
+		/// </summary>
+		XFLM_DATA_COLLECTION			= 65534,
+		/// <summary>
+		/// Dictionary collection.
+		/// </summary>
+		XFLM_DICT_COLLECTION			= 65535
+	}
+
+	/// <summary>
+	/// Predefined indexes found in all XFLAIM databases.
+	/// </summary>
+	public enum PredefinedXFlaimIndexes : uint
+	{
+		/// <summary>
+		/// Index on dictionary numbers
+		/// </summary>
+		XFLM_DICT_NUMBER_INDEX		= 65534,
+		/// <summary>
+		/// Index in dictionary names.
+		/// </summary>
+		XFLM_DICT_NAME_INDEX			= 65535
+	}
+
 //-----------------------------------------------------------------------------
 // Element tags
 //-----------------------------------------------------------------------------
@@ -38,6 +73,10 @@ namespace xflaim
 	/// </summary>
 	public enum ReservedElmTag : uint
 	{
+		/// <summary>
+		/// First reserved element number.
+		/// </summary>
+		XFLM_FIRST_RESERVED_ELEMENT_TAG = 0xFFFFFE00,
 		/// <summary>
 		/// "element"
 		/// </summary>
@@ -137,8 +176,12 @@ namespace xflaim
 		/// <summary>
 		/// "Sweep"
 		/// </summary>
-		ELM_SWEEP_TAG = 0xFFFFFE19
-	}
+		ELM_SWEEP_TAG = 0xFFFFFE19,
+		/// <summary>
+		/// Last reserved element number
+		/// </summary>
+		XFLM_LAST_RESERVED_ELEMENT_TAG = 0xFFFFFE19
+}
 
 //-----------------------------------------------------------------------------
 // Attribute tags
@@ -151,6 +194,10 @@ namespace xflaim
 	/// </summary>
 	public enum ReservedAttrTag : uint
 	{
+		/// <summary>
+		/// First reserved attribute number.
+		/// </summary>
+		XFLM_FIRST_RESERVED_ATTRIBUTE_TAG = 0xFFFFFE00,
 		/// <summary>
 		/// "DictNumber"
 		/// </summary>
@@ -330,7 +377,11 @@ namespace xflaim
 		/// <summary>
 		/// "UniqueSubElements"
 		/// </summary>
-		ATTR_UNIQUE_SUB_ELEMENTS_TAG = 0xFFFFFE2C
+		ATTR_UNIQUE_SUB_ELEMENTS_TAG = 0xFFFFFE2C,
+		/// <summary>
+		/// Last reserved attribute number
+		/// </summary>
+		XFLM_LAST_RESERVED_ATTRIBUTE_TAG = 0xFFFFFE2C
 	}
 
 //-----------------------------------------------------------------------------
