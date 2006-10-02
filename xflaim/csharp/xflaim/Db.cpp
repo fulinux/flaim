@@ -785,8 +785,8 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_backupBegin(
 														? XFLM_FULL_BACKUP
 														: XFLM_INCREMENTAL_BACKUP),
 								(eDbTransType)(bLockDb
-													? XFLM_READ_TRANS
-													: XFLM_UPDATE_TRANS),
+													? XFLM_UPDATE_TRANS
+													: XFLM_READ_TRANS),
 								(FLMUINT)ui32MaxLockWait, ppBackup));
 }
 
