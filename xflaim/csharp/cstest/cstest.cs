@@ -155,6 +155,7 @@ namespace cstest
 		private const string RESTORE_DB_NAME = "restore.db";
 		private const string BACKUP_PATH = "backup";
 		private const string REBUILD_DB_NAME = "rebuild.db";
+		private const string TEST_DB_NAME = "test.db";
 
 		static void Main()
 		{
@@ -177,6 +178,14 @@ namespace cstest
 				return;
 			}
 
+			// DOM Nodes test
+
+			DOMNodesTest domNodes = new DOMNodesTest();
+			if (!domNodes.domNodesTest( TEST_DB_NAME, dbSystem))
+			{
+				return;
+			}
+
 			// Statistics test
 
 			StatsTests statsTests = new StatsTests();
@@ -192,7 +201,7 @@ namespace cstest
 			{
 				return;
 			}
-			if (!copyDb.copyDbTest( CREATE_DB_NAME, COPY2_DB_NAME, dbSystem))
+			if (!copyDb.copyDbTest( TEST_DB_NAME, COPY2_DB_NAME, dbSystem))
 			{
 				return;
 			}
@@ -208,7 +217,7 @@ namespace cstest
 			// Database backup test
 
 			BackupDbTest backupDb = new BackupDbTest();
-			if (!backupDb.backupDbTest( COPY_DB_NAME, BACKUP_PATH, dbSystem))
+			if (!backupDb.backupDbTest( RENAME_DB_NAME, BACKUP_PATH, dbSystem))
 			{
 				return;
 			}
