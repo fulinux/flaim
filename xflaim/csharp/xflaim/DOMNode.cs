@@ -337,6 +337,8 @@ namespace xflaim
 			{
 				throw new XFlaimException( rc);
 			}
+			xflaim_DOMNode_Release( m_pNode);
+			m_pNode = IntPtr.Zero;
 		}
 
 		[DllImport("xflaim")]
