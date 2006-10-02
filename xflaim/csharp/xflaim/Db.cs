@@ -985,12 +985,12 @@ namespace xflaim
 		public uint					uiWaitTruncateTime;
 	};
 
-	/// <remarks>
+	/// <summary>
 	/// The Db class provides a number of methods that allow C#
 	/// applications to access an XFLAIM database.  A Db object
 	/// is obtained by calling <see cref="DbSystem.dbCreate"/> or
 	/// <see cref="DbSystem.dbOpen"/>
-	/// </remarks>
+	/// </summary>
 	public class Db
 	{
 		private IntPtr		m_pDb;			// Pointer to IF_Db object in unmanaged space

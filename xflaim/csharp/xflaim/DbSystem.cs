@@ -188,9 +188,9 @@ namespace xflaim
 		public Languages	eDefaultLanguage;
 	}
 
-	/// <remarks>
+	/// <summary>
 	/// XFLAIM Exception class.
-	/// </remarks>
+	/// </summary>
 	public class XFlaimException : Exception 
 	{
 		/// <summary>
@@ -248,10 +248,10 @@ namespace xflaim
 		private RCODE		m_rc;
 	}
 
-	/// <remarks>
+	/// <summary>
 	/// The DbSystem class provides a number of methods that allow C#
 	/// applications to access the XFlaim development environment.
-	/// </remarks>
+	/// </summary>
 	public class DbSystem
 	{
 		private IntPtr	m_pDbSystem;	// Pointer to IF_DbSystem object in unmanaged space

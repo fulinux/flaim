@@ -231,10 +231,10 @@ namespace xflaim
 		public ulong		ulDocsPassed;
 	}
 
-	/// <remarks>
+	/// <summary>
 	/// The Query class provides a number of methods that allow C#
 	/// applications to query an XFLAIM database.
-	/// </remarks>
+	/// </summary>
 	public class Query
 	{
 		private IntPtr		m_pQuery;			// Pointer to IF_Query object in unmanaged space

@@ -96,10 +96,10 @@ namespace xflaim
 		XFLM_ATTRIBUTE
 	}
 
-	/// <remarks>
+	/// <summary>
 	/// The DOMNode class provides a number of methods that allow C#
 	/// applications to access DOM nodes in XML documents.
-	/// </remarks>
+	/// </summary>
 	public class DOMNode
 	{
 		private IntPtr 	m_pNode;			// Pointer to IF_DOMNode object in unmanaged space

@@ -191,11 +191,11 @@ namespace xflaim
 		public F_LOCK_STATS				LockStats;
 	}
 
-	/// <remarks>
+	/// <summary>
 	/// The DbSystemStats class provides a number of methods that allow C#
 	/// applications to access statistics that have been requested.  A
 	/// DbSystemStats object is obtained by calling <see cref="DbSystem.getStats"/>.
-	/// </remarks>
+	/// </summary>
 	public class DbSystemStats
 	{
 		private IntPtr		m_pStats;			// Pointer to XFLM_STATS object in unmanaged space
