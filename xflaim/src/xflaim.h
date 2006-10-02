@@ -158,7 +158,6 @@
 		XML_NUM_ERRORS
 	} XMLParseError;
 	
-
 	/****************************************************************************
 	Desc:	 	XML import statistics
 	****************************************************************************/
@@ -169,6 +168,10 @@
 		XFLM_XML_USASCII_ENCODING
 	} XMLEncoding;
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding types in java and C#.  In C# it is the
+	// CS_XFLM_IMPORT_STATS, because we cannot guarantee the sizes
+	// of enums in C++.
 	typedef struct
 	{
 		FLMUINT			uiLines;
@@ -431,7 +434,7 @@
 	#define FLM_NICI_AES				0
 	#define FLM_NICI_DES3			1
 	#define FLM_NICI_UNDEFINED		0xFF
-	
+
 	#define XFLM_NICI_AES128		128
 	#define XFLM_NICI_AES192		192
 	#define XFLM_NICI_AES256		256
@@ -539,19 +542,19 @@
 	typedef struct
 	{
 		FLMBOOL		bRunning;
-		FLMUINT		uiRunningTime;
+		FLMUINT32	ui32RunningTime;
 		FLMBOOL		bForcingCheckpoint;
-		FLMUINT		uiForceCheckpointRunningTime;
-		FLMINT		iForceCheckpointReason;
+		FLMUINT32	ui32ForceCheckpointRunningTime;
+		FLMUINT32	ui32ForceCheckpointReason;
 			#define			XFLM_CP_TIME_INTERVAL_REASON			1
 			#define			XFLM_CP_SHUTTING_DOWN_REASON			2
 			#define			XFLM_CP_RFL_VOLUME_PROBLEM				3
 		FLMBOOL		bWritingDataBlocks;
-		FLMUINT		uiLogBlocksWritten;
-		FLMUINT		uiDataBlocksWritten;
-		FLMUINT		uiDirtyCacheBytes;
-		FLMUINT		uiBlockSize;
-		FLMUINT		uiWaitTruncateTime;
+		FLMUINT32	ui32LogBlocksWritten;
+		FLMUINT32	ui32DataBlocksWritten;
+		FLMUINT32	ui32DirtyCacheBytes;
+		FLMUINT32	ui32BlockSize;
+		FLMUINT32	ui32WaitTruncateTime;
 	} XFLM_CHECKPOINT_INFO;
 
 	typedef struct
@@ -2524,6 +2527,8 @@
 			IF_Db *					pDb) = 0;
 	};
 
+	// IMPORTANT NOTE: Changes to these enums need to be synced with the
+	// corresponding definitions in java and C# code.
 	typedef enum
 	{
 		XFLM_EXPORT_NO_FORMAT =			0x00, 	// No Formatting

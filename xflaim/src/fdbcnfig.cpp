@@ -456,11 +456,11 @@ void F_Database::getCPInfo(
 
 				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 							m_pCPInfo->uiStartTime);
-				pCheckpointInfo->uiRunningTime = FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
+				pCheckpointInfo->ui32RunningTime = (FLMUINT32)FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 			}
 			else
 			{
-				pCheckpointInfo->uiRunningTime = 0;
+				pCheckpointInfo->ui32RunningTime = 0;
 			}
 			pCheckpointInfo->bForcingCheckpoint =
 				m_pCPInfo->bForcingCheckpoint;
@@ -469,37 +469,37 @@ void F_Database::getCPInfo(
 				uiCurrTime = FLM_GET_TIMER();
 				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 							m_pCPInfo->uiForceCheckpointStartTime);
-				pCheckpointInfo->uiForceCheckpointRunningTime = 
-					FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
+				pCheckpointInfo->ui32ForceCheckpointRunningTime = 
+					(FLMUINT32)FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 			}
 			else
 			{
-				pCheckpointInfo->uiForceCheckpointRunningTime = 0;
+				pCheckpointInfo->ui32ForceCheckpointRunningTime = 0;
 			}
-			pCheckpointInfo->iForceCheckpointReason =
-				m_pCPInfo->iForceCheckpointReason;
+			pCheckpointInfo->ui32ForceCheckpointReason =
+				(FLMUINT32)m_pCPInfo->iForceCheckpointReason;
 			pCheckpointInfo->bWritingDataBlocks =
 				m_pCPInfo->bWritingDataBlocks;
-			pCheckpointInfo->uiLogBlocksWritten =
-				m_pCPInfo->uiLogBlocksWritten;
-			pCheckpointInfo->uiDataBlocksWritten =
-				m_pCPInfo->uiDataBlocksWritten;
+			pCheckpointInfo->ui32LogBlocksWritten =
+				(FLMUINT32)m_pCPInfo->uiLogBlocksWritten;
+			pCheckpointInfo->ui32DataBlocksWritten =
+				(FLMUINT32)m_pCPInfo->uiDataBlocksWritten;
 		}
-		pCheckpointInfo->uiBlockSize = m_uiBlockSize;
-		pCheckpointInfo->uiDirtyCacheBytes =
-			m_uiDirtyCacheCount * m_uiBlockSize;
+		pCheckpointInfo->ui32BlockSize = (FLMUINT32)m_uiBlockSize;
+		pCheckpointInfo->ui32DirtyCacheBytes =
+			(FLMUINT32)(m_uiDirtyCacheCount * m_uiBlockSize);
 		if (m_pCPInfo->uiStartWaitTruncateTime)
 		{
 			uiCurrTime = FLM_GET_TIMER();
 
 			uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
 						m_pCPInfo->uiStartWaitTruncateTime);
-			pCheckpointInfo->uiWaitTruncateTime = 
-				FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
+			pCheckpointInfo->ui32WaitTruncateTime = 
+				(FLMUINT32)FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
 		}
 		else
 		{
-			pCheckpointInfo->uiWaitTruncateTime = 0;
+			pCheckpointInfo->ui32WaitTruncateTime = 0;
 		}
 	}
 }

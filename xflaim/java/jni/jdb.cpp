@@ -2854,25 +2854,25 @@ JNIEXPORT jobject JNICALL Java_xflaim_Db__1getCheckpointInfo(
 	pEnv->SetBooleanField( jCheckpointInfo, fid_CheckpointInfo_bRunning,
 		(jboolean)(checkpointInfo.bRunning ? JNI_TRUE : JNI_FALSE));
 	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iRunningTime,
-		(jint)checkpointInfo.uiRunningTime);
+		(jint)checkpointInfo.ui32RunningTime);
 	pEnv->SetBooleanField( jCheckpointInfo, fid_CheckpointInfo_bForcingCheckpoint,
 		(jboolean)(checkpointInfo.bForcingCheckpoint ? JNI_TRUE : JNI_FALSE));
 	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iForceCheckpointRunningTime,
-		(jint)checkpointInfo.uiForceCheckpointRunningTime);
+		(jint)checkpointInfo.ui32ForceCheckpointRunningTime);
 	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iForceCheckpointReason,
-		(jint)checkpointInfo.iForceCheckpointReason);
+		(jint)checkpointInfo.ui32ForceCheckpointReason);
 	pEnv->SetBooleanField( jCheckpointInfo, fid_CheckpointInfo_bWritingDataBlocks,
 		(jboolean)(checkpointInfo.bWritingDataBlocks ? JNI_TRUE : JNI_FALSE));
 	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iLogBlocksWritten,
-		(jint)checkpointInfo.uiLogBlocksWritten);
+		(jint)checkpointInfo.ui32LogBlocksWritten);
 	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iDataBlocksWritten,
-		(jint)checkpointInfo.uiDataBlocksWritten);
+		(jint)checkpointInfo.ui32DataBlocksWritten);
 	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iDirtyCacheBytes,
-		(jint)checkpointInfo.uiDirtyCacheBytes);
+		(jint)checkpointInfo.ui32DirtyCacheBytes);
 	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iBlockSize,
-		(jint)checkpointInfo.uiBlockSize);
+		(jint)checkpointInfo.ui32BlockSize);
 	pEnv->SetIntField( jCheckpointInfo, fid_CheckpointInfo_iWaitTruncateTime,
-		(jint)checkpointInfo.uiWaitTruncateTime);
+		(jint)checkpointInfo.ui32WaitTruncateTime);
 	
 Exit:
 
