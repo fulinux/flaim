@@ -334,6 +334,68 @@ namespace xflaim
 	}
 
 //-----------------------------------------------------------------------------
+// Encryption schemes
+//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// Encryption schemes.
+	/// </summary>
+	public enum EncryptionScheme
+	{
+		/// <summary>AES 128 bit</summary>
+		ENC_AES128	= 1,
+		/// <summary>AES 192 bit</summary>
+		ENC_AES192	= 2,
+		/// <summary>AES 256 bit</summary>
+		ENC_AES256	= 3,
+		/// <summary>DES3 (168 bi)t</summary>
+		ENC_DES3		= 4
+	}
+
+//-----------------------------------------------------------------------------
+// Export format types.
+//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// Format types for exporting XML from an XFLAIM database.
+	/// </summary>
+	public enum eExportFormatType : uint
+	{
+		/// <summary>No special formatting</summary>
+		XFLM_EXPORT_NO_FORMAT =			0x00,
+		/// <summary>Output a new line for each element</summary>
+		XFLM_EXPORT_NEW_LINE =			0x01,
+		/// <summary>
+		/// Output a new line for each element and indent
+		/// elements according to nesting level
+		/// </summary>
+		XFLM_EXPORT_INDENT =				0x02,
+		/// <summary>
+		/// Output a new line for each element and indent
+		/// elements according to nesting level.  Also indent
+		/// data for elements.
+		/// </summary>
+		XFLM_EXPORT_INDENT_DATA =		0x03
+	}
+
+//-----------------------------------------------------------------------------
+// Change states
+//-----------------------------------------------------------------------------
+
+	/// <summary>
+	/// Change states for definitions in the dictionary.
+	/// </summary>
+	public enum ChangeState
+	{
+		/// <summary>Check the definition to see if it is in use</summary>
+		STATE_CHECKING = 1,
+		/// <summary>Purge the definition after purging all uses of it</summary>
+		STATE_PURGE		= 2,
+		/// <summary>Definition is in use.</summary>
+		STATE_ACTIVE	= 3
+	}
+
+//-----------------------------------------------------------------------------
 // XML parse errors
 //-----------------------------------------------------------------------------
 
@@ -564,10 +626,12 @@ namespace xflaim
 	/// <summary>
 	/// XML import stats
 	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
-	/// definitions in xflaim.h
+	/// definitions in Db.cpp - CS_XFLM_IMPORT_STATS.  CS_XFLM_IMPORT_STATS is
+	/// designed to correspond to XFLM_IMPORT_STATS in xflaim.h, but it cannot be
+	/// exactly the same because the enums will be a different size in C++ code.
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-	public class XFLM_IMPORT_STATS
+	public class CS_XFLM_IMPORT_STATS
 	{
 		/// <summary>
 		/// Lines processed
@@ -699,10 +763,13 @@ namespace xflaim
 	/// <summary>
 	/// Index status object
 	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
-	/// definitions in xflaim.h
+	/// definitions in xflaim.h.  It is almost exactly the same as the XFLM_INDEX_STATUS
+	/// structure, except that we cannot guarantee the size of eState.  In C# it is always
+	/// a 32 bit number.  It may not be that in C++.  That is the reason we have a
+	/// different structure in C# than we have in C++.
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-	public class XFLM_INDEX_STATUS
+	public class CS_XFLM_INDEX_STATUS
 	{
 		/// <summary>
 		/// If ~0 then index is online, otherwise this is the value of the 
@@ -797,13 +864,13 @@ namespace xflaim
 	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
 	/// definitions in xflaim.h
 	/// </summary>
-	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
+	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_CHECKPOINT_INFO
 	{
 		/// <summary>
 		/// If true, the checkpoint is currently running
 		/// </summary>
-		public bool					bRunning;
+		public int					bRunning;
 		/// <summary>
 		/// Amount of time (seconds) that the checkpoint has been running
 		/// </summary>
@@ -812,7 +879,7 @@ namespace xflaim
 		/// If true, the checkpoint is being forced and cannot be interrupted by
 		/// a foreground update transaction.
 		/// </summary>
-		public bool					bForcingCheckpoint;
+		public int					bForcingCheckpoint;
 		/// <summary>
 		/// Amount of time (seconds) that the checkpoint has been running
 		/// in "forced" mode.
@@ -825,7 +892,7 @@ namespace xflaim
 		/// <summary>
 		/// If true, the checkpoint thread is currently writing data blocks
 		/// </summary>
-		public bool					bWritingDataBlocks;
+		public int					bWritingDataBlocks;
 		/// <summary>
 		/// Number of log blocks written to the roll-back log
 		/// </summary>
@@ -1025,7 +1092,7 @@ namespace xflaim
 		{
 			RCODE	rc;
 
-			if( (rc = xflaim_Db_transBeginClone( m_pDb, db.getDb())) != 0)
+			if ((rc = xflaim_Db_transBeginClone( m_pDb, db.getDb())) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1049,7 +1116,7 @@ namespace xflaim
 		{
 			RCODE				rc;
 
-			if( (rc = xflaim_Db_transCommit( m_pDb)) != 0)
+			if ((rc = xflaim_Db_transCommit( m_pDb)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1071,7 +1138,7 @@ namespace xflaim
 		{
 			RCODE				rc;
 
-			if( (rc = xflaim_Db_transAbort( m_pDb)) != 0)
+			if ((rc = xflaim_Db_transAbort( m_pDb)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1116,7 +1183,7 @@ namespace xflaim
 		{
 			RCODE				rc;
 
-			if( (rc = xflaim_Db_doCheckpoint( m_pDb, uiTimeout)) != 0)
+			if ((rc = xflaim_Db_doCheckpoint( m_pDb, uiTimeout)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1154,7 +1221,7 @@ namespace xflaim
 		{
 			RCODE	rc;
 
-			if( (rc = xflaim_Db_dbLock( m_pDb, eLckType, 
+			if ((rc = xflaim_Db_dbLock( m_pDb, eLckType, 
 				iPriority, uiTimeout)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -1197,112 +1264,95 @@ namespace xflaim
 		/// <summary>
 		/// Get the type of database lock current held.
 		/// </summary>
-		/// <returns></returns>
-		public eLockType getLockType()
+		/// <param name="eLckTyp">
+		/// Type of lock is returned here.
+		/// </param>
+		/// <param name="bImplicit">
+		/// Flag indicating whether the database was implicitly locked is 
+		/// returned here.  Returns true if implicitly locked, false if
+		/// explicitly locked.  Implicit lock means that the database was
+		/// locked at the time the transaction was started.  Explicit lock
+		/// means that the application called <see cref="dbLock"/> to
+		/// obtain the lock.
+		/// </param>
+		public void getLockType(
+			out eLockType	eLckTyp,
+			out bool			bImplicit)
 		{
-			return( xflaim_Db_getLockType( m_pDb));
+			RCODE	rc;
+			int	bImpl;
+
+			if ((rc = xflaim_Db_getLockType( m_pDb, out eLckTyp, out bImpl)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			bImplicit = bImpl != 0 ? true : false;
 		}
 
 		[DllImport("xflaim")]
-		private static extern eLockType xflaim_Db_getLockType(
-			IntPtr	pDb);
+		private static extern RCODE xflaim_Db_getLockType(
+			IntPtr			pDb,
+			out eLockType	peLockType,
+			out int			pbImplicit);
 
 //-----------------------------------------------------------------------------
-// getLockImplicit
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Determine if the database lock was implicitly obtained 
-		/// (i.e., obtained when transBegin was called as opposed to dbLock).
-		/// </summary>
-		/// <returns></returns>
-		public bool getLockImplicit()
-		{
-			return( xflaim_Db_getLockImplicit( m_pDb));
-		}
-
-		[DllImport("xflaim")]
-		private static extern bool xflaim_Db_getLockImplicit(
-			IntPtr	pDb);
-
-//-----------------------------------------------------------------------------
-// getLockThreadId
+// getLockInfo
 //-----------------------------------------------------------------------------
 
 		/// <summary>
-		/// Returns the thread id of the thread that currently holds the 
-		/// database lock.
-		/// </summary>
-		/// <returns></returns>
-		public uint getLockThreadId()
-		{
-			return( xflaim_Db_getLockThreadId( m_pDb));
-		}
-
-		[DllImport("xflaim")]
-		private static extern uint xflaim_Db_getLockThreadId(
-			IntPtr	pDb);
-
-//-----------------------------------------------------------------------------
-//	getLockNumExclQueued
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Returns the number of threads that are currently waiting to obtain
-		/// an exclusive database lock.
-		/// </summary>
-		/// <returns></returns>
-		public uint getLockNumExclQueued()
-		{
-			return( xflaim_Db_getLockNumExclQueued( m_pDb));
-		}
-
-		[DllImport("xflaim")]
-		private static extern uint xflaim_Db_getLockNumExclQueued(
-			IntPtr	pDb);
-
-//-----------------------------------------------------------------------------
-//	getLockNumSharedQueued
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Returns the number of threads that are currently waiting to obtain
-		/// a shared database lock.
-		/// </summary>
-		/// <returns></returns>
-		public uint getLockNumSharedQueued()
-		{
-			return( xflaim_Db_getLockNumSharedQueued(m_pDb));
-		}
-
-		[DllImport("xflaim")]
-		private static extern uint xflaim_Db_getLockNumSharedQueued(
-			IntPtr	pDb);
-	
-//-----------------------------------------------------------------------------
-// getLockPriorityCount
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Returns the number of threads that are currently waiting to obtain
-		/// a database lock whose priority is >= iPriority.
+		/// Return various pieces of lock information.
 		/// </summary>
 		/// <param name="iPriority">
-		/// Priority to look for - a count of all waiting threads with a
-		/// lock priority greater than or equal to this will be returned.
+		/// Priority to look for.  The uiPriorityCount parameter returns a count
+		/// of all waiting threads with a lock priority greater than or equal to
+		/// this.
 		/// </param>
-		/// <returns>Returns number of threads waiting for a database lock whose
-		/// priority is >= iPriority.</returns>
-		public uint getLockPriorityCount(
-			int	iPriority)
+		/// <param name="eLckType">
+		/// Returns the type of database lock current held.
+		/// </param>
+		/// <param name="uiThreadId">
+		/// Returns the thread id of the thread that currently holds the database lock.
+		/// </param>
+		/// <param name="uiNumExclQueued">
+		/// Returns the number of threads that are currently waiting to obtain
+		/// an exclusive database lock.
+		/// </param>
+		/// <param name="uiNumSharedQueued">
+		/// Returns the number of threads that are currently waiting to obtain
+		/// a shared database lock.
+		/// </param>
+		/// <param name="uiPriorityCount">
+		/// Returns the number of threads that are currently waiting to obtain
+		/// a database lock whose priority is >= iPriority.
+		/// </param>
+		public void getLockInfo(
+			int				iPriority,
+			out eLockType	eLckType,
+			out uint			uiThreadId,
+			out uint			uiNumExclQueued,
+			out uint			uiNumSharedQueued,
+			out uint			uiPriorityCount)
+
 		{
-			return( xflaim_Db_getLockPriorityCount( m_pDb, iPriority));
+			RCODE	rc;
+			
+			if ((rc = xflaim_Db_getLockInfo( m_pDb, iPriority, out eLckType,
+				out uiThreadId, out uiNumExclQueued,
+				out uiNumSharedQueued, out uiPriorityCount)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
 		}
 
 		[DllImport("xflaim")]
-		private static extern uint xflaim_Db_getLockPriorityCount(
-			IntPtr	pDb,
-			int		iPriority);
+		private static extern RCODE xflaim_Db_getLockInfo(
+			IntPtr			pDb,
+			int				iPriority,
+			out eLockType	eLckType,
+			out uint			uiThreadId,
+			out uint			uiNumExclQueued,
+			out uint			uiNumSharedQueued,
+			out uint			uiPriorityCount);
 
 //-----------------------------------------------------------------------------
 // indexSuspend
@@ -1314,13 +1364,12 @@ namespace xflaim
 		/// <param name="uiIndex">
 		/// Index to be suspended.
 		/// </param>
-		/// <returns></returns>
 		public void indexSuspend(
-			uint			uiIndex)
+			uint	uiIndex)
 		{
 			RCODE			rc;
 
-			if( (rc = xflaim_Db_indexSuspend( m_pDb, uiIndex)) != 0)
+			if ((rc = xflaim_Db_indexSuspend( m_pDb, uiIndex)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -1341,13 +1390,12 @@ namespace xflaim
 		/// <param name="uiIndex">
 		/// Index to be resumed.
 		/// </param>
-		/// <returns></returns>
 		public void indexResume(
 			uint	uiIndex)
 		{
 			RCODE			rc;
 
-			if( (rc = xflaim_Db_indexResume( m_pDb, uiIndex)) != 0)
+			if ((rc = xflaim_Db_indexResume( m_pDb, uiIndex)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1379,22 +1427,19 @@ namespace xflaim
 			uint	uiCurrIndex)
 		{
 			RCODE	rc;
-			uint	uiNextIndex = 0;
 
-			if( (rc = xflaim_Db_indexGetNext( m_pDb, 
-				uiCurrIndex, out uiNextIndex)) != 0)
+			if ((rc = xflaim_Db_indexGetNext( m_pDb, ref uiCurrIndex)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return( uiNextIndex);
+			return( uiCurrIndex);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_indexGetNext(
 			IntPtr		pDb,
-			uint			uiCurrIndex,
-			out uint		puiNextIndex);
+			ref uint		puiCurrIndex);
 
 //-----------------------------------------------------------------------------
 //	indexStatus
@@ -1406,15 +1451,14 @@ namespace xflaim
 		/// <param name="uiIndex">
 		/// Index whose status is to be returned
 		/// </param>
-		/// <returns>An instance of a <see cref="XFLM_INDEX_STATUS"/> object.</returns>
-		public XFLM_INDEX_STATUS indexStatus(
-			uint						uiIndex)
+		/// <returns>An instance of a <see cref="CS_XFLM_INDEX_STATUS"/> object.</returns>
+		public CS_XFLM_INDEX_STATUS indexStatus(
+			uint	uiIndex)
 		{
-			RCODE						rc;
-			XFLM_INDEX_STATUS		indexStatus = new XFLM_INDEX_STATUS();
+			RCODE							rc;
+			CS_XFLM_INDEX_STATUS		indexStatus = new CS_XFLM_INDEX_STATUS();
 
-			if( (rc = xflaim_Db_indexStatus( m_pDb, 
-				uiIndex, indexStatus)) != 0)
+			if ((rc = xflaim_Db_indexStatus( m_pDb, uiIndex, indexStatus)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1424,9 +1468,9 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_indexStatus(
-			IntPtr				pDb,
-			uint					uiCurrIndex,
-			XFLM_INDEX_STATUS	pIndexStatus);
+			IntPtr					pDb,
+			uint						uiIndex,
+			CS_XFLM_INDEX_STATUS	pIndexStatus);
 
 //-----------------------------------------------------------------------------
 // reduceSize
@@ -1445,11 +1489,10 @@ namespace xflaim
 		public uint reduceSize(
 			uint	uiCount)
 		{
-			RCODE			rc;
-			uint			uiNumReduced = 0;
+			RCODE		rc;
+			uint		uiNumReduced;
 
-			if( (rc = xflaim_Db_reduceSize( m_pDb, 
-				uiCount, out uiNumReduced)) != 0)
+			if ((rc = xflaim_Db_reduceSize( m_pDb, uiCount, out uiNumReduced)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1474,15 +1517,19 @@ namespace xflaim
 		/// The index that is being searched.
 		/// </param>
 		/// <param name="searchKey">
-		/// The "from" key use for the search.
+		/// The search key use for the search.
 		/// </param>
 		/// <param name="retrieveFlags">
 		/// Search flags <see cref="RetrieveFlags"/>.
 		/// </param>
 		/// <param name="foundKey">
-		/// Found key.
+		/// Data vector where found key will be returned.  If null is passed in
+		/// a new data vector will be created.
 		/// </param>
-		public void keyRetrieve(
+		/// <returns>
+		/// Key that was retrieved from the index.
+		/// </returns>
+		public DataVector keyRetrieve(
 			uint					uiIndex,
 			DataVector			searchKey,
 			RetrieveFlags		retrieveFlags,
@@ -1499,11 +1546,12 @@ namespace xflaim
 
 			pFoundKey = foundKey.getDataVector();
 
-			if( (rc = xflaim_Db_keyRetrieve( m_pDb,
+			if ((rc = xflaim_Db_keyRetrieve( m_pDb,
 				uiIndex, pSearchKey, retrieveFlags, pFoundKey)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
+			return( foundKey);
 		}
 
 		[DllImport("xflaim")]
@@ -1533,7 +1581,7 @@ namespace xflaim
 			RCODE		rc;
 			IntPtr	pNewNode = IntPtr.Zero;
 
-			if ((rc = xflaim_Db_createDocument(m_pDb, uiCollection, 
+			if ((rc = xflaim_Db_createDocument( m_pDb, uiCollection, 
 				out pNewNode)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -1560,7 +1608,7 @@ namespace xflaim
 		/// The collection to store the new node in.
 		/// </param>
 		/// <param name="uiElementNameId">
-		/// Name of the element to be created.
+		/// Name id of the element to be created.
 		/// </param>
 		/// <returns>
 		/// An instance of a <see cref="DOMNode"/> object.
@@ -1572,7 +1620,7 @@ namespace xflaim
 			RCODE		rc;
 			IntPtr	pNewNode = IntPtr.Zero;
 
-			if ((rc = xflaim_Db_createRootElement(m_pDb, uiCollection,
+			if ((rc = xflaim_Db_createRootElement( m_pDb, uiCollection,
 				uiElementNameId, out pNewNode)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -1612,7 +1660,7 @@ namespace xflaim
 			RCODE		rc;
 			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 			
-			if( (rc = xflaim_Db_getFirstDocument( m_pDb, uiCollection, ref pNode)) != 0)
+			if ((rc = xflaim_Db_getFirstDocument( m_pDb, uiCollection, ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1656,7 +1704,7 @@ namespace xflaim
 			RCODE		rc;
 			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
-			if ((rc = xflaim_Db_getLastDocument(m_pDb, uiCollection, ref pNode)) != 0)
+			if ((rc = xflaim_Db_getLastDocument( m_pDb, uiCollection, ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1708,7 +1756,7 @@ namespace xflaim
 			RCODE		rc;
 			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
-			if ((rc = xflaim_Db_getDocument(m_pDb, uiCollection,
+			if ((rc = xflaim_Db_getDocument( m_pDb, uiCollection,
 				retrieveFlags, ulDocumentId, ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -1751,7 +1799,7 @@ namespace xflaim
 		{
 			RCODE rc;
 
-			if ((rc = xflaim_Db_documentDone(m_pDb, uiCollection, ulDocumentId)) != 0)
+			if ((rc = xflaim_Db_documentDone( m_pDb, uiCollection, ulDocumentId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -1780,14 +1828,14 @@ namespace xflaim
 		{
 			RCODE rc;
 
-			if ((rc = xflaim_Db_documentDone( m_pDb, domNode.getNode())) != 0)
+			if ((rc = xflaim_Db_documentDone2( m_pDb, domNode.getNode())) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_documentDone(
+		private static extern RCODE xflaim_Db_documentDone2(
 			IntPtr	pDb,
 			IntPtr	pNode);
 
@@ -1822,16 +1870,15 @@ namespace xflaim
 			uint			uiRequestedId)
 			
 		{
-			RCODE			rc;
-			uint			uiNewId;
+			RCODE	rc;
 
-			if( (rc = xflaim_Db_createElementDef(m_pDb, sNamespaceURI,
-				sElementName, dataType, uiRequestedId, out uiNewId)) != 0)
+			if ((rc = xflaim_Db_createElementDef( m_pDb, sNamespaceURI,
+				sElementName, dataType, ref uiRequestedId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 			
-			return( uiNewId);
+			return( uiRequestedId);
 		}
 
 		[DllImport("xflaim")]
@@ -1842,8 +1889,7 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPWStr)]
 			string		sElementName,
 			FlmDataType	dataType,
-			uint			uiRequestedId,
-			out uint		uiNewId);
+			ref uint		puiRequestedId);
 
 //-----------------------------------------------------------------------------
 // createUniqueElmDef
@@ -1873,16 +1919,15 @@ namespace xflaim
 			uint		uiRequestedId)
 			
 		{
-			RCODE rc;
-			uint uiNewId;
+			RCODE	rc;
 
-			if ((rc = xflaim_Db_createUniqueElmDef(m_pDb, sNamespaceURI,
-				sElementName, uiRequestedId, out uiNewId)) != 0)
+			if ((rc = xflaim_Db_createUniqueElmDef( m_pDb, sNamespaceURI,
+				sElementName, ref uiRequestedId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return( uiNewId);
+			return( uiRequestedId);
 		}
 
 		[DllImport("xflaim")]
@@ -1892,8 +1937,7 @@ namespace xflaim
 			string		sNamespaceURI,
 			[MarshalAs(UnmanagedType.LPWStr)]
 			string		sElementName,
-			uint			uiRequestedId,
-			out uint		uiNewId);
+			ref uint		puiRequestedId);
 
 //-----------------------------------------------------------------------------
 // getElementNameId
@@ -1915,10 +1959,10 @@ namespace xflaim
 			string	sNamespaceURI,
 			string	sElementName)
 		{
-			RCODE rc;
-			uint uiNameId;
+			RCODE	rc;
+			uint	uiNameId;
 
-			if ((rc = xflaim_Db_getElementNameId(m_pDb, sNamespaceURI,
+			if ((rc = xflaim_Db_getElementNameId( m_pDb, sNamespaceURI,
 				sElementName, out uiNameId)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -1967,28 +2011,26 @@ namespace xflaim
 			uint			uiRequestedId)
 			
 		{
-			RCODE			rc;
-			uint			uiNewId;
+			RCODE	rc;
 
-			if( (rc = xflaim_Db_createAttributeDef(m_pDb, sNamespaceURI,
-				sAttributeName, dataType, uiRequestedId, out uiNewId)) != 0)
+			if ((rc = xflaim_Db_createAttributeDef( m_pDb, sNamespaceURI,
+				sAttributeName, dataType, ref uiRequestedId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 			
-			return( uiNewId);
+			return( uiRequestedId);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_createAttributeDef(
-			IntPtr	pDb,
+			IntPtr		pDb,
 			[MarshalAs(UnmanagedType.LPWStr)]
-			string	sNamespaceURI,
+			string		sNamespaceURI,
 			[MarshalAs(UnmanagedType.LPWStr)]
-			string	sAttributeName,
-			FlmDataType dataType,
-			uint		uiRequestedId,
-			out uint uiNewId);
+			string		sAttributeName,
+			FlmDataType	dataType,
+			ref uint		puiRequestedId);
 
 //-----------------------------------------------------------------------------
 // getAttributeNameId
@@ -2010,10 +2052,10 @@ namespace xflaim
 			string sNamespaceURI,
 			string sAttributeName)
 		{
-			RCODE rc;
-			uint uiNameId;
+			RCODE	rc;
+			uint	uiNameId;
 
-			if ((rc = xflaim_Db_getAttributeNameId(m_pDb, sNamespaceURI,
+			if ((rc = xflaim_Db_getAttributeNameId( m_pDb, sNamespaceURI,
 				sAttributeName, out uiNameId)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2029,7 +2071,7 @@ namespace xflaim
 			string	sNamespaceURI,
 			[MarshalAs(UnmanagedType.LPWStr)]
 			string	sAttributeName,
-			out uint	uiNameId);
+			out uint	puiNameId);
 
 //-----------------------------------------------------------------------------
 // createPrefixDef
@@ -2052,16 +2094,15 @@ namespace xflaim
 			string	sPrefixName,
 			uint		uiRequestedId)
 		{
-			RCODE rc;
-			uint uiNewId;
+			RCODE	rc;
 
-			if ((rc = xflaim_Db_createPrefixDef(m_pDb, sPrefixName,
-				uiRequestedId, out uiNewId)) != 0)
+			if ((rc = xflaim_Db_createPrefixDef( m_pDb, sPrefixName,
+				ref uiRequestedId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return( uiNewId);
+			return( uiRequestedId);
 		}
 
 		[DllImport("xflaim")]
@@ -2069,8 +2110,7 @@ namespace xflaim
 			IntPtr	pDb,
 			[MarshalAs(UnmanagedType.LPWStr)]
 			string	sPrefixName,
-			uint		uiRequestedId,
-			out uint	uiNewId);
+			ref uint	puiRequestedId);
 
 //-----------------------------------------------------------------------------
 // getPrefixId
@@ -2088,10 +2128,10 @@ namespace xflaim
 		public uint getPrefixId(
 			string sPrefixName)
 		{
-			RCODE rc;
-			uint uiNameId;
+			RCODE	rc;
+			uint	uiNameId;
 
-			if ((rc = xflaim_Db_getPrefixId(m_pDb, sPrefixName,
+			if ((rc = xflaim_Db_getPrefixId( m_pDb, sPrefixName,
 				out uiNameId)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2114,50 +2154,68 @@ namespace xflaim
 		/// <summary>
 		/// Creates a new prefix definition in the dictionary. 
 		/// </summary>
-		/// <param name="sEncType">
-		/// Encryption type.
-		/// </param>
 		/// <param name="sEncName">
 		/// Encryption definition name.
 		/// </param>
-		/// <param name="uiKeySize">
-		/// Size of the encryption key.
+		/// <param name="eEncType">
+		/// Encryption type.
 		/// </param>
 		/// <param name="uiRequestedId">
-		/// if non-zero, then XFLAIM will try to use this
+		/// If non-zero, then XFLAIM will try to use this
 		/// number as the name ID of the new definition.
 		/// </param>
 		/// <returns>
 		/// Returns the name ID of the new definition.
 		/// </returns>
 		public uint createEncDef(
-			string	sEncType,
-			string	sEncName,
-			uint		uiKeySize,
-			uint		uiRequestedId)
+			string				sEncName,
+			EncryptionScheme	eEncType,
+			uint					uiRequestedId)
 		{
-			RCODE rc;
-			uint uiNewId;
+			RCODE		rc;
+			uint		uiKeySize = 128;
+			string	sEncType = "aes";
 
-			if ((rc = xflaim_Db_createEncDef(m_pDb, sEncType, sEncName,
-				uiKeySize, uiRequestedId, out uiNewId)) != 0)
+			switch (eEncType)
+			{
+				case EncryptionScheme.ENC_AES128:
+					uiKeySize = 128;
+					sEncType = "aes";
+					break;
+				case EncryptionScheme.ENC_AES192:
+					uiKeySize = 192;
+					sEncType = "aes";
+					break;
+				case EncryptionScheme.ENC_AES256:
+					uiKeySize = 256;
+					sEncType = "aes";
+					break;
+				case EncryptionScheme.ENC_DES3:
+					uiKeySize = 168;
+					sEncType = "des3";
+					break;
+				default:
+					throw new XFlaimException( RCODE.NE_XFLM_INVALID_PARM);
+			}
+
+			if ((rc = xflaim_Db_createEncDef( m_pDb, sEncType, sEncName,
+				uiKeySize, ref uiRequestedId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return( uiNewId);
+			return( uiRequestedId);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_createEncDef(
 			IntPtr	pDb,
 			[MarshalAs(UnmanagedType.LPWStr)]
-			string	sEncType,
-			[MarshalAs(UnmanagedType.LPWStr)]
 			string	sEncName,
+			[MarshalAs(UnmanagedType.LPWStr)]
+			string	sEncType,
 			uint		uiKeySize,
-			uint		uiRequestedId,
-			out uint	uiNewId);
+			ref uint	uiRequestedId);
 
 //-----------------------------------------------------------------------------
 // getEncDefId
@@ -2175,11 +2233,10 @@ namespace xflaim
 		public uint getEncDefId(
 			string	sEncName)
 		{
-			RCODE rc;
-			uint uiNameId;
+			RCODE	rc;
+			uint	uiNameId;
 
-			if ((rc = xflaim_Db_getEncDefId(m_pDb, sEncName,
-				out uiNameId)) != 0)
+			if ((rc = xflaim_Db_getEncDefId( m_pDb, sEncName, out uiNameId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -2216,20 +2273,19 @@ namespace xflaim
 		/// Returns the name ID of the new definition.
 		/// </returns>
 		public uint createCollectionDef(
-			string sCollectionName,
-			uint uiEncryptionId,
-			uint uiRequestedId)
+			string	sCollectionName,
+			uint		uiEncryptionId,
+			uint		uiRequestedId)
 		{
 			RCODE	rc;
-			uint	uiNewId;
 
-			if ((rc = xflaim_Db_createCollectionDef(m_pDb, sCollectionName,
-				uiEncryptionId, uiRequestedId, out uiNewId)) != 0)
+			if ((rc = xflaim_Db_createCollectionDef( m_pDb, sCollectionName,
+				uiEncryptionId, ref uiRequestedId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return( uiNewId);
+			return( uiRequestedId);
 		}
 
 		[DllImport("xflaim")]
@@ -2238,8 +2294,7 @@ namespace xflaim
 			[MarshalAs(UnmanagedType.LPWStr)]
 			string	sCollectionName,
 			uint		uiEncryptionId,
-			uint		uiRequestedId,
-			out uint	uiNewId);
+			ref uint	puiRequestedId);
 
 //-----------------------------------------------------------------------------
 // getCollectionNumber
@@ -2260,7 +2315,7 @@ namespace xflaim
 			RCODE rc;
 			uint uiNameId;
 
-			if ((rc = xflaim_Db_getCollectionNumber(m_pDb, sCollectionName,
+			if ((rc = xflaim_Db_getCollectionNumber( m_pDb, sCollectionName,
 				out uiNameId)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2295,7 +2350,7 @@ namespace xflaim
 			RCODE rc;
 			uint uiNameId;
 
-			if ((rc = xflaim_Db_getIndexNumber(m_pDb, sIndexName,
+			if ((rc = xflaim_Db_getIndexNumber( m_pDb, sIndexName,
 				out uiNameId)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2334,12 +2389,12 @@ namespace xflaim
 		public DOMNode getDictionaryDef(
 			ReservedElmTag	dictType,
 			uint				uiDictNumber,
-			DOMNode		nodeToReuse)
+			DOMNode			nodeToReuse)
 		{
 			RCODE		rc;
 			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
-			if ((rc = xflaim_Db_getDictionaryDef(m_pDb, dictType,
+			if ((rc = xflaim_Db_getDictionaryDef( m_pDb, dictType,
 				uiDictNumber, ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2358,7 +2413,7 @@ namespace xflaim
 		private static extern RCODE xflaim_Db_getDictionaryDef(
 			IntPtr			pDb,
 			ReservedElmTag	dictType,
-			ulong				uiDictNumber,
+			uint				uiDictNumber,
 			ref IntPtr		ppNode);
 
 //-----------------------------------------------------------------------------
@@ -2382,17 +2437,17 @@ namespace xflaim
 			uint				uiDictNumber)
 		{
 			RCODE		rc;
-			IntPtr	pszDictName;
+			IntPtr	puzDictName;
 			string	sDictName;
 
 			if ((rc = xflaim_Db_getDictionaryName( m_pDb, dictType, 
-				uiDictNumber, out pszDictName)) != 0)
+				uiDictNumber, out puzDictName)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
 
-			sDictName = Marshal.PtrToStringAnsi( pszDictName);
-			m_dbSystem.freeUnmanagedMem( pszDictName);
+			sDictName = Marshal.PtrToStringUni( puzDictName);
+			m_dbSystem.freeUnmanagedMem( puzDictName);
 			return( sDictName);
 		}
 
@@ -2401,7 +2456,7 @@ namespace xflaim
 			IntPtr			pDb,
 			ReservedElmTag	dictType,
 			uint				uiDictNumber,
-			out IntPtr		ppsTempDir);
+			out IntPtr		ppuzDictName);
 
 //-----------------------------------------------------------------------------
 // getElementNamespace
@@ -2419,18 +2474,18 @@ namespace xflaim
 		public string getElementNamespace(
 			uint		uiDictNumber)
 		{
-			RCODE rc;
-			IntPtr pszElmNamespace;
-			string sElmNamespace;
+			RCODE		rc;
+			IntPtr	puzElmNamespace;
+			string	sElmNamespace;
 
-			if ((rc = xflaim_Db_getElementNamespace(m_pDb,
-				uiDictNumber, out pszElmNamespace)) != 0)
+			if ((rc = xflaim_Db_getElementNamespace( m_pDb,
+				uiDictNumber, out puzElmNamespace)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			sElmNamespace = Marshal.PtrToStringAnsi(pszElmNamespace);
-			m_dbSystem.freeUnmanagedMem(pszElmNamespace);
+			sElmNamespace = Marshal.PtrToStringUni( puzElmNamespace);
+			m_dbSystem.freeUnmanagedMem( puzElmNamespace);
 			return( sElmNamespace);
 		}
 
@@ -2438,7 +2493,7 @@ namespace xflaim
 		private static extern RCODE xflaim_Db_getElementNamespace(
 			IntPtr		pDb,
 			uint			uiDictNumber,
-			out IntPtr	ppszElmNamespace);
+			out IntPtr	ppuzElmNamespace);
 
 //-----------------------------------------------------------------------------
 // getAttributeNamespace
@@ -2457,17 +2512,17 @@ namespace xflaim
 			uint	uiDictNumber)
 		{
 			RCODE		rc;
-			IntPtr	pszAttrNamespace;
+			IntPtr	puzAttrNamespace;
 			string	sAttrNamespace;
 
-			if ((rc = xflaim_Db_getAttributeNamespace(m_pDb,
-				uiDictNumber, out pszAttrNamespace)) != 0)
+			if ((rc = xflaim_Db_getAttributeNamespace( m_pDb,
+				uiDictNumber, out puzAttrNamespace)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			sAttrNamespace = Marshal.PtrToStringAnsi(pszAttrNamespace);
-			m_dbSystem.freeUnmanagedMem(pszAttrNamespace);
+			sAttrNamespace = Marshal.PtrToStringUni( puzAttrNamespace);
+			m_dbSystem.freeUnmanagedMem( puzAttrNamespace);
 			return( sAttrNamespace);
 		}
 
@@ -2475,7 +2530,7 @@ namespace xflaim
 		private static extern RCODE xflaim_Db_getAttributeNamespace(
 			IntPtr		pDb,
 			uint			uiDictNumber,
-			out IntPtr	ppszAttrNamespace);
+			out IntPtr	ppuzAttrNamespace);
 
 //-----------------------------------------------------------------------------
 // getNode
@@ -2501,7 +2556,7 @@ namespace xflaim
 			RCODE		rc;
 			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
-			if ((rc = xflaim_Db_getNode(m_pDb, uiCollection, ulNodeId,
+			if ((rc = xflaim_Db_getNode( m_pDb, uiCollection, ulNodeId,
 				ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2556,7 +2611,7 @@ namespace xflaim
 			RCODE		rc;
 			IntPtr	pNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
-			if ((rc = xflaim_Db_getAttribute(m_pDb, uiCollection, 
+			if ((rc = xflaim_Db_getAttribute( m_pDb, uiCollection, 
 				ulElementNodeId, uiAttrNameId, ref pNode)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2652,7 +2707,7 @@ namespace xflaim
 			RCODE		rc;
 			IntPtr	pBackup;
 
-			if( (rc = xflaim_Db_backupBegin( m_pDb, (bFullBackup ? 1 : 0),
+			if ((rc = xflaim_Db_backupBegin( m_pDb, (bFullBackup ? 1 : 0),
 				(bLockDb ? 1 : 0), uiMaxLockWait, out pBackup)) != 0)
 			{
 				throw new XFlaimException( rc);
@@ -2683,61 +2738,83 @@ namespace xflaim
 		/// <param name="uiCollection">
 		/// Destination collection for imported document(s).
 		/// </param>
+		/// <param name="nodeToReuse">
+		/// An existing DOM node object can optionally be passed in.  It will
+		/// be reused rather than allocating a new object.
+		/// </param>
+		/// <param name="importStats">
+		/// Import statistics is returned here if a non-null value is passed in.
+		/// </param>
 		/// <returns>
-		/// Returns import statistics <see cref="XFLM_IMPORT_STATS"/>.
+		/// Returns a <see cref="DOMNode"/> that is the root of the imported document.
 		/// </returns>
-		public XFLM_IMPORT_STATS importDocument(
-			IStream	istream,
-			uint		uiCollection)
+		public DOMNode importDocument(
+			IStream					istream,
+			uint						uiCollection,
+			DOMNode					nodeToReuse,
+			CS_XFLM_IMPORT_STATS	importStats)
 		{
-			RCODE					rc;
-			XFLM_IMPORT_STATS	importStats = new XFLM_IMPORT_STATS();
+			RCODE		rc;
+			IntPtr	pDocumentNode = (nodeToReuse != null) ? nodeToReuse.getNode() : IntPtr.Zero;
 
-			if ((rc = xflaim_Db_importDocument(m_pDb, 
-				istream.getIStream(), uiCollection, importStats)) != 0)
+			if (importStats == null)
+			{
+				importStats = new CS_XFLM_IMPORT_STATS();
+			}
+
+			if ((rc = xflaim_Db_importDocument( m_pDb, istream.getIStream(),
+							uiCollection, ref pDocumentNode, importStats)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return( importStats);
+			if( nodeToReuse != null)
+			{
+				nodeToReuse.setNodePtr( pDocumentNode, this);
+				return( nodeToReuse);
+			}
+
+			return( new DOMNode( pDocumentNode, this));
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_importDocument(
-			IntPtr				pDb,
-			IntPtr				pIStream,
-			uint					uiCollection,
-			XFLM_IMPORT_STATS	pImportStats);
+			IntPtr					pDb,
+			IntPtr					pIStream,
+			uint						uiCollection,
+			ref IntPtr				ppDocumentNode,
+			CS_XFLM_IMPORT_STATS	pImportStats);
 
 //-----------------------------------------------------------------------------
-// importDocument
+// importIntoDocument
 //-----------------------------------------------------------------------------
 
 		/// <summary>
-		/// Imports an XML fragment into the XFlaim database.  The import requires
+		/// Imports an XML fragment into a document.  The import requires
 		/// an update transaction.
 		/// </summary>
 		/// <param name="istream">
-		/// Input stream containing the nodes to be imported
+		/// Input stream containing the nodes to be imported.
 		/// </param>
 		/// <param name="nodeToLinkTo">
-		/// Existing node that imported nodes will link to
+		/// Existing node that imported nodes will link to.
 		/// </param>
 		/// <param name="insertLocation">
-		/// Relationship of imported nodes to "nodeToLinkTo"
+		/// Where imported XML fragment is to be linked with respect
+		/// to nodeToLinkTo.
 		/// </param>
 		/// <returns>
-		/// Returns import statistics <see cref="XFLM_IMPORT_STATS"/>.
+		/// Returns import statistics <see cref="CS_XFLM_IMPORT_STATS"/>.
 		/// </returns>
-		public XFLM_IMPORT_STATS importDocument(
+		public CS_XFLM_IMPORT_STATS importIntoDocument(
 			IStream				istream,
 			DOMNode				nodeToLinkTo,
 			eNodeInsertLoc		insertLocation)
 		{
-			RCODE					rc;
-			XFLM_IMPORT_STATS	importStats = new XFLM_IMPORT_STATS();
+			RCODE						rc;
+			CS_XFLM_IMPORT_STATS	importStats = new CS_XFLM_IMPORT_STATS();
 
-			if ((rc = xflaim_Db_importDocument(m_pDb, 
+			if ((rc = xflaim_Db_importIntoDocument( m_pDb, 
 				istream.getIStream(), nodeToLinkTo.getNode(), insertLocation,
 				importStats)) != 0)
 			{
@@ -2748,12 +2825,12 @@ namespace xflaim
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_importDocument(
-			IntPtr				pDb,
-			IntPtr				pIStream,
-			IntPtr				pNodeToLinkTo,
-			eNodeInsertLoc		insertLocation,
-			XFLM_IMPORT_STATS	importStatus);
+		private static extern RCODE xflaim_Db_importIntoDocument(
+			IntPtr					pDb,
+			IntPtr					pIStream,
+			IntPtr					pNodeToLinkTo,
+			eNodeInsertLoc			insertLocation,
+			CS_XFLM_IMPORT_STATS	importStats);
 
 //-----------------------------------------------------------------------------
 // changeItemState
@@ -2773,19 +2850,34 @@ namespace xflaim
 		/// Number of element or attribute definition whose state
 		/// is to be changed
 		/// </param>
-		/// <param name="sState">
-		/// State the definition is to be changed to.  Must be
-		/// "checking", "purge", or "active".
+		/// <param name="eStateToChangeTo">
+		/// State the definition is to be changed to.
 		/// </param>
 		public void changeItemState(
 			ReservedElmTag	dictType,
 			uint				uiDictNumber,
-			string			sState)
+			ChangeState		eStateToChangeTo)
 		{
-			RCODE rc;
+			RCODE		rc;
+			string	sState = "";
 
-			if ((rc = xflaim_Db_changeItemState(m_pDb,
-				dictType, uiDictNumber, sState)) != 0)
+			switch (eStateToChangeTo)
+			{
+				case ChangeState.STATE_CHECKING:
+					sState = "checking";
+					break;
+				case ChangeState.STATE_PURGE:
+					sState = "purge";
+					break;
+				case ChangeState.STATE_ACTIVE:
+					sState = "active";
+					break;
+				default:
+					throw new XFlaimException( RCODE.NE_XFLM_INVALID_PARM);
+			}
+
+			if ((rc = xflaim_Db_changeItemState( m_pDb,
+								dictType, uiDictNumber, sState)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -2796,7 +2888,7 @@ namespace xflaim
 			IntPtr			pDb,
 			ReservedElmTag	dictType,
 			uint				uiDictNumber,
-			[MarshalAs(UnmanagedType.LPWStr)]
+			[MarshalAs(UnmanagedType.LPStr)]
 			string			sState);
 
 //-----------------------------------------------------------------------------
@@ -2824,14 +2916,14 @@ namespace xflaim
 			IntPtr	pszFileName;
 			string	sFileName;
 
-			if ((rc = xflaim_Db_getRflFileName(m_pDb, uiFileNum,
+			if ((rc = xflaim_Db_getRflFileName( m_pDb, uiFileNum,
 				(int)(bBaseOnly ? 1 : 0), out pszFileName)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			sFileName = Marshal.PtrToStringAnsi(pszFileName);
-			m_dbSystem.freeUnmanagedMem(pszFileName);
+			sFileName = Marshal.PtrToStringAnsi( pszFileName);
+			m_dbSystem.freeUnmanagedMem( pszFileName);
 			return( sFileName);
 		}
 
@@ -2840,7 +2932,7 @@ namespace xflaim
 			IntPtr		pDb,
 			uint			uiFileNum,
 			int			bBaseOnly,
-			out IntPtr	ppsName);
+			out IntPtr	ppszName);
 
 //-----------------------------------------------------------------------------
 // setNextNodeId
@@ -2864,7 +2956,7 @@ namespace xflaim
 		{
 			RCODE rc;
 
-			if ((rc = xflaim_Db_setNextNodeId(m_pDb, uiCollection, 
+			if ((rc = xflaim_Db_setNextNodeId( m_pDb, uiCollection, 
 				ulNextNodeId)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2900,7 +2992,7 @@ namespace xflaim
 		{
 			RCODE	rc;
 
-			if ((rc = xflaim_Db_setNextDictNum(m_pDb, dictType,
+			if ((rc = xflaim_Db_setNextDictNum( m_pDb, dictType,
 				uiDictNumber)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -2911,7 +3003,7 @@ namespace xflaim
 		private static extern RCODE xflaim_Db_setNextDictNum(
 			IntPtr			pDb,
 			ReservedElmTag	dictType,
-			ulong				uiDictNumber);
+			uint				uiDictNumber);
 
 //-----------------------------------------------------------------------------
 // setRflKeepFilesFlag
@@ -2955,7 +3047,7 @@ namespace xflaim
 			RCODE	rc;
 			int	bKeep;
 
-			if ((rc = xflaim_Db_getRflKeepFlag(m_pDb, out bKeep)) != 0)
+			if ((rc = xflaim_Db_getRflKeepFlag( m_pDb, out bKeep)) != 0)
 			{
 				throw new XFlaimException( rc);
 			}
@@ -2983,7 +3075,7 @@ namespace xflaim
 		{
 			RCODE rc;
 
-			if ((rc = xflaim_Db_setRflDir(m_pDb, sRflDir)) != 0)
+			if ((rc = xflaim_Db_setRflDir( m_pDb, sRflDir)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -2992,7 +3084,7 @@ namespace xflaim
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_setRflDir(
 			IntPtr	pDb,
-			[MarshalAs(UnmanagedType.LPWStr)]
+			[MarshalAs(UnmanagedType.LPStr)]
 			string	sRflDir);
 
 //-----------------------------------------------------------------------------
@@ -3016,8 +3108,8 @@ namespace xflaim
 				throw new XFlaimException(rc);
 			}
 
-			sRflDir = Marshal.PtrToStringAnsi(pszRflDir);
-			m_dbSystem.freeUnmanagedMem(pszRflDir);
+			sRflDir = Marshal.PtrToStringAnsi( pszRflDir);
+			m_dbSystem.freeUnmanagedMem( pszRflDir);
 			return( sRflDir);
 		}
 
@@ -3041,7 +3133,7 @@ namespace xflaim
 			RCODE	rc;
 			uint	uiRflFileNum;
 
-			if ((rc = xflaim_Db_getRflFileNum(m_pDb, out uiRflFileNum)) != 0)
+			if ((rc = xflaim_Db_getRflFileNum( m_pDb, out uiRflFileNum)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -3070,7 +3162,7 @@ namespace xflaim
 			RCODE	rc;
 			uint	uiRflFileNum;
 
-			if ((rc = xflaim_Db_getHighestNotUsedRflFileNum(m_pDb, 
+			if ((rc = xflaim_Db_getHighestNotUsedRflFileNum( m_pDb, 
 				out uiRflFileNum)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -3112,7 +3204,7 @@ namespace xflaim
 		{
 			RCODE rc;
 
-			if ((rc = xflaim_Db_setRflFileSizeLimits(m_pDb, 
+			if ((rc = xflaim_Db_setRflFileSizeLimits( m_pDb, 
 				uiMinRflSize, uiMaxRflSize)) != 0)
 			{
 				throw new XFlaimException(rc);
@@ -3121,76 +3213,41 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_setRflFileSizeLimits(
-			IntPtr pDb,
-			uint uiMinRflSize,
-			uint uiMaxRflSize);
+			IntPtr	pDb,
+			uint		uiMinRflSize,
+			uint		uiMaxRflSize);
 
 //-----------------------------------------------------------------------------
-// getMinRflFileSize
+// getRflFileSizeLimits
 //-----------------------------------------------------------------------------
 
 		/// <summary>
-		/// Get the minimum RFL file size.  This is the minimum size an RFL file
-		/// must reach before rolling to the next RFL file.
+		/// Get the minimum and maximum RFL file sizes.
 		/// </summary>
-		/// <returns>
+		/// <param name="uiMinRflSize">
 		/// Returns minimum RFL file size.
-		/// </returns>
-		public uint getMinRflFileSize()
-		{
-			RCODE rc;
-			uint uiRflFileSize;
-
-			if ((rc = xflaim_Db_getMinRflFileSize(m_pDb,
-				out uiRflFileSize)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (uiRflFileSize);
-		}
-
-		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getMinRflFileSize(
-			IntPtr pDb,
-			out uint uiRflFileSize);
-
-//-----------------------------------------------------------------------------
-// getMaxRflFileSize
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Get the maximum RFL file size.  This is the maximum size an RFL file
-		/// is allowed to grow to.  When the current RFL file exceeds the minimum
-		/// RFL file size, the database will attempt to fit the rest of the
-		/// transaction in the current file.  If the transaction completes before
-		/// the current RFL file grows larger than the maximum RFL file size,
-		/// the database will roll to the next RFL file.  However, if the current transaction
-		/// would cause the RFL file to grow larger than the maximum RFL file size,
-		/// the database will roll to the next file before the transaction completes,
-		/// and the transaction will be split across multiple RFL files.
-		/// </summary>
-		/// <returns>
+		/// </param>
+		/// <param name="uiMaxRflSize">
 		/// Returns maximum RFL file size.
-		/// </returns>
-		public uint getMaxRflFileSize()
+		/// </param>
+		public void getRflFileSizeLimits(
+			out uint	uiMinRflSize,
+			out uint	uiMaxRflSize)
 		{
-			RCODE rc;
-			uint uiRflFileSize;
+			RCODE	rc;
 
-			if ((rc = xflaim_Db_getMaxRflFileSize(m_pDb,
-				out uiRflFileSize)) != 0)
+			if ((rc = xflaim_Db_getRflFileSizeLimits( m_pDb,
+								out uiMinRflSize, out uiMaxRflSize)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
-
-			return (uiRflFileSize);
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getMaxRflFileSize(
-			IntPtr pDb,
-			out uint uiRflFileSize);
+		private static extern RCODE xflaim_Db_getRflFileSizeLimits(
+			IntPtr	pDb,
+			out uint	puiMinRflSize,
+			out uint	puiMaxRflSize);
 
 //-----------------------------------------------------------------------------
 // rflRollToNextFile
@@ -3229,7 +3286,8 @@ namespace xflaim
 		{
 			RCODE rc;
 
-			if ((rc = xflaim_Db_setKeepAbortedTransInRflFlag(m_pDb, bKeep)) != 0)
+			if ((rc = xflaim_Db_setKeepAbortedTransInRflFlag( m_pDb,
+				(int)(bKeep ? 1 : 0))) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -3237,8 +3295,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_setKeepAbortedTransInRflFlag(
-			IntPtr pDb,
-			bool bKeep);
+			IntPtr	pDb,
+			int		bKeep);
 
 //-----------------------------------------------------------------------------
 // getKeepAbortedTransInRflFlag
@@ -3257,19 +3315,19 @@ namespace xflaim
 			int bKeep;
 
 
-			if ((rc = xflaim_Db_getKeepAbortedTransInRflFlag(m_pDb,
+			if ((rc = xflaim_Db_getKeepAbortedTransInRflFlag( m_pDb,
 				out bKeep)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return (bKeep != 0 ? true : false);
+			return( bKeep != 0 ? true : false);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getKeepAbortedTransInRflFlag(
-			IntPtr pDb,
-			out int bKeep);
+			IntPtr	pDb,
+			out int	pbKeep);
 
 //-----------------------------------------------------------------------------
 // setAutoTurnOffKeepRflFlag
@@ -3288,7 +3346,8 @@ namespace xflaim
 		{
 			RCODE rc;
 
-			if ((rc = xflaim_Db_setAutoTurnOffKeepRflFlag(m_pDb, bAutoTurnOff)) != 0)
+			if ((rc = xflaim_Db_setAutoTurnOffKeepRflFlag( m_pDb,
+				(int)(bAutoTurnOff ? 1 : 0))) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
@@ -3296,8 +3355,8 @@ namespace xflaim
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_setAutoTurnOffKeepRflFlag(
-			IntPtr pDb,
-			bool bAutoTurnOff);
+			IntPtr	pDb,
+			int		bAutoTurnOff);
 
 //-----------------------------------------------------------------------------
 // getAutoTurnOffKeepRflFlag
@@ -3313,22 +3372,21 @@ namespace xflaim
 		/// </returns>
 		public bool getAutoTurnOffKeepRflFlag()
 		{
-			RCODE rc;
-			int bAutoTurnOff;
+			RCODE	rc;
+			int	bAutoTurnOff;
 
-			if ((rc = xflaim_Db_getAutoTurnOffKeepRflFlag(m_pDb,
-				out bAutoTurnOff)) != 0)
+			if ((rc = xflaim_Db_getAutoTurnOffKeepRflFlag( m_pDb, out bAutoTurnOff)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return (bAutoTurnOff != 0 ? true : false);
+			return( bAutoTurnOff != 0 ? true : false);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getAutoTurnOffKeepRflFlag(
-			IntPtr pDb,
-			out int bAutoTurnOff);
+			IntPtr	pDb,
+			out int	pbAutoTurnOff);
 
 //-----------------------------------------------------------------------------
 // setFileExtendSize
@@ -3344,18 +3402,13 @@ namespace xflaim
 		public void setFileExtendSize(
 			uint	uiFileExtendSize)
 		{
-			RCODE rc;
-
-			if ((rc = xflaim_Db_setFileExtendSize(m_pDb, uiFileExtendSize)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
+			xflaim_Db_setFileExtendSize( m_pDb, uiFileExtendSize);
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_setFileExtendSize(
-			IntPtr pDb,
-			uint uiFileExtendSize);
+		private static extern void xflaim_Db_setFileExtendSize(
+			IntPtr	pDb,
+			uint		uiFileExtendSize);
 
 //-----------------------------------------------------------------------------
 // getFileExtendSize
@@ -3369,22 +3422,12 @@ namespace xflaim
 		/// </returns>
 		public uint getFileExtendSize()
 		{
-			RCODE rc;
-			uint uiFileExtendSize;
-
-			if ((rc = xflaim_Db_getFileExtendSize(m_pDb,
-				out uiFileExtendSize)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (uiFileExtendSize);
+			return( xflaim_Db_getFileExtendSize( m_pDb));
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getFileExtendSize(
-			IntPtr pDb,
-			out uint uiFileExtendSize);
+		private static extern uint xflaim_Db_getFileExtendSize(
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // getDbVersion
@@ -3399,21 +3442,12 @@ namespace xflaim
 		/// </returns>
 		public uint getDbVersion()
 		{
-			RCODE rc;
-			uint uiDbVersion;
-
-			if ((rc = xflaim_Db_getDbVersion(m_pDb, out uiDbVersion)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (uiDbVersion);
+			return( xflaim_Db_getDbVersion( m_pDb));
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getDbVersion(
-			IntPtr pDb,
-			out uint uiDbVersion);
+		private static extern uint xflaim_Db_getDbVersion(
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // getBlockSize
@@ -3427,21 +3461,12 @@ namespace xflaim
 		/// </returns>
 		public uint getBlockSize()
 		{
-			RCODE rc;
-			uint uiBlockSize;
-
-			if ((rc = xflaim_Db_getBlockSize(m_pDb, out uiBlockSize)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (uiBlockSize);
+			return( xflaim_Db_getBlockSize( m_pDb));
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getBlockSize(
-			IntPtr pDb,
-			out uint uiBlockSize);
+		private static extern uint xflaim_Db_getBlockSize(
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // getDefaultLanguage
@@ -3455,21 +3480,12 @@ namespace xflaim
 		/// </returns>
 		public Languages getDefaultLanguage()
 		{
-			RCODE rc;
-			Languages defaultLang;
-
-			if ((rc = xflaim_Db_getDefaultLanguage(m_pDb, out defaultLang)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (defaultLang);
+			return( xflaim_Db_getDefaultLanguage( m_pDb));
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getDefaultLanguage(
-			IntPtr pDb,
-			out Languages defaultLang);
+		private static extern Languages xflaim_Db_getDefaultLanguage(
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // getTransID
@@ -3487,21 +3503,12 @@ namespace xflaim
 		/// </returns>
 		public ulong getTransID()
 		{
-			RCODE rc;
-			ulong ulTransId;
-
-			if ((rc = xflaim_Db_getTransID(m_pDb, out ulTransId)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (ulTransId);
+			return( xflaim_Db_getTransID( m_pDb));
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getTransID(
-			IntPtr pDb,
-			out ulong ulTransId);
+		private static extern ulong xflaim_Db_getTransID(
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // getDbControlFileName
@@ -3515,25 +3522,24 @@ namespace xflaim
 		/// </returns>
 		public string getDbControlFileName()
 		{
-			RCODE rc;
-			IntPtr pszFileName;
-			string sFileName;
+			RCODE		rc;
+			IntPtr	pszFileName;
+			string	sFileName;
 
-			if ((rc = xflaim_Db_getDbControlFileName(m_pDb, 
-				out pszFileName)) != 0)
+			if ((rc = xflaim_Db_getDbControlFileName( m_pDb, out pszFileName)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			sFileName = Marshal.PtrToStringAnsi(pszFileName);
-			m_dbSystem.freeUnmanagedMem(pszFileName);
-			return (sFileName);
+			sFileName = Marshal.PtrToStringAnsi( pszFileName);
+			m_dbSystem.freeUnmanagedMem( pszFileName);
+			return( sFileName);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getDbControlFileName(
-			IntPtr pDb,
-			out IntPtr pszFileName);
+			IntPtr		pDb,
+			out IntPtr	ppszFileName);
 
 //-----------------------------------------------------------------------------
 // getLastBackupTransID
@@ -3547,22 +3553,21 @@ namespace xflaim
 		/// </returns>
 		public ulong getLastBackupTransID()
 		{
-			RCODE rc;
-			ulong ulTransId;
+			RCODE	rc;
+			ulong	ulTransId;
 
-			if ((rc = xflaim_Db_getLastBackupTransID(m_pDb, 
-				out ulTransId)) != 0)
+			if ((rc = xflaim_Db_getLastBackupTransID( m_pDb, out ulTransId)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return (ulTransId);
+			return( ulTransId);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getLastBackupTransID(
-			IntPtr pDb,
-			out ulong ulTransId);
+			IntPtr		pDb,
+			out ulong	ulTransId);
 
 //-----------------------------------------------------------------------------
 // getBlocksChangedSinceBackup
@@ -3577,22 +3582,22 @@ namespace xflaim
 		/// </returns>
 		public uint getBlocksChangedSinceBackup()
 		{
-			RCODE rc;
-			uint uiBlocksChanged;
+			RCODE	rc;
+			uint	uiBlocksChanged;
 
-			if ((rc = xflaim_Db_getBlocksChangedSinceBackup(m_pDb,
+			if ((rc = xflaim_Db_getBlocksChangedSinceBackup( m_pDb,
 				out uiBlocksChanged)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return (uiBlocksChanged);
+			return( uiBlocksChanged);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getBlocksChangedSinceBackup(
-			IntPtr pDb,
-			out uint uiBlocksChanged);
+			IntPtr	pDb,
+			out uint	uiBlocksChanged);
 
 //-----------------------------------------------------------------------------
 // getNextIncBackupSequenceNum
@@ -3606,160 +3611,78 @@ namespace xflaim
 		/// </returns>
 		public uint getNextIncBackupSequenceNum()
 		{
-			RCODE rc;
-			uint uiNextIncBackupSequenceNum;
+			RCODE	rc;
+			uint	uiNextIncBackupSequenceNum;
 
-			if ((rc = xflaim_Db_getNextIncBackupSequenceNum(m_pDb,
+			if ((rc = xflaim_Db_getNextIncBackupSequenceNum( m_pDb,
 				out uiNextIncBackupSequenceNum)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
 
-			return (uiNextIncBackupSequenceNum);
+			return( uiNextIncBackupSequenceNum);
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getNextIncBackupSequenceNum(
-			IntPtr pDb,
-			out uint uiNextIncBackupSequenceNum);
+			IntPtr	pDb,
+			out uint	uiNextIncBackupSequenceNum);
 
 //-----------------------------------------------------------------------------
-// getDiskSpaceDataSize
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Get the amount of disk space currently being used by data files.
-		/// </summary>
-		/// <returns>
-		/// Returns disk space used by data files.
-		/// </returns>
-		public ulong getDiskSpaceDataSize()
-		{
-			RCODE rc;
-			ulong ulDiskSpace;
-
-			if ((rc = xflaim_Db_getDiskSpaceDataSize(m_pDb,
-				out ulDiskSpace)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (ulDiskSpace);
-		}
-
-		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getDiskSpaceDataSize(
-			IntPtr pDb,
-			out ulong ulDiskSpace);
-
-//-----------------------------------------------------------------------------
-// getDiskSpaceRollbackSize
+// getDiskSpaceUsage
 //-----------------------------------------------------------------------------
 
 		/// <summary>
-		/// Get the amount of disk space currently being used by rollback files.
+		/// Get the disk space usage for the database.
 		/// </summary>
-		/// <returns>
-		/// Returns disk space used by rollback files.
-		/// </returns>
-		public ulong getDiskSpaceRollbackSize()
+		/// <param name="ulDataSize">
+		/// Returns the amount of disk space currently being used by data files.
+		/// </param>
+		/// <param name="ulRollbackSize">
+		/// Returns the amount of disk space currently being used by rollback files.
+		/// </param>
+		/// <param name="ulRflSize">
+		/// Returns the amount of disk space currently being used by RFL files.
+		/// </param>
+		public void getDiskSpaceUsage(
+			out ulong	ulDataSize,
+			out ulong	ulRollbackSize,
+			out ulong	ulRflSize)
 		{
-			RCODE rc;
-			ulong ulDiskSpace;
+			RCODE	rc;
 
-			if ((rc = xflaim_Db_getDiskSpaceRollbackSize(m_pDb,
-				out ulDiskSpace)) != 0)
+			if ((rc = xflaim_Db_getDiskSpaceUsage( m_pDb,
+				out ulDataSize, out ulRollbackSize, out ulRflSize)) != 0)
 			{
 				throw new XFlaimException(rc);
 			}
-
-			return (ulDiskSpace);
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getDiskSpaceRollbackSize(
-			IntPtr pDb,
-			out ulong ulDiskSpace);
-
-//-----------------------------------------------------------------------------
-// getDiskSpaceRflSize
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Get the amount of disk space currently being used by RFL files.
-		/// </summary>
-		/// <returns>
-		/// Returns disk space used by RFL files.
-		/// </returns>
-		public ulong getDiskSpaceRflSize()
-		{
-			RCODE rc;
-			ulong ulDiskSpace;
-
-			if ((rc = xflaim_Db_getDiskSpaceRflSize(m_pDb,
-				out ulDiskSpace)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (ulDiskSpace);
-		}
-
-		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getDiskSpaceRflSize(
-			IntPtr pDb,
-			out ulong ulDiskSpace);
-
-//-----------------------------------------------------------------------------
-// getDiskSpaceTotalSize
-//-----------------------------------------------------------------------------
-
-		/// <summary>
-		/// Get the amount of disk space currently being used by all types of
-		/// database files.  This includes the total of data files plus rollback
-		/// files plus RFL files.
-		/// </summary>
-		/// <returns>
-		/// Returns total disk space used by database files of all types.
-		/// </returns>
-		public ulong getDiskSpaceTotalSize()
-		{
-			RCODE rc;
-			ulong ulDiskSpace;
-
-			if ((rc = xflaim_Db_getDiskSpaceTotalSize(m_pDb,
-				out ulDiskSpace)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (ulDiskSpace);
-		}
-
-		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getDiskSpaceTotalSize(
-			IntPtr pDb,
-			out ulong ulDiskSpace);
+		private static extern RCODE xflaim_Db_getDiskSpaceUsage(
+			IntPtr		pDb,
+			out ulong	ulDataSize,
+			out ulong	ulRollbackSize,
+			out ulong	ulRflSize);
 
 //-----------------------------------------------------------------------------
 // getMustCloseRC
 //-----------------------------------------------------------------------------
 
 		/// <summary>
-		/// Get error code that caused the database to force itself to close.  This should
-		/// be one of the values in {@link xflaim.RCODE RCODE}.
+		/// Get error code that caused the database to force itself to close.
 		/// </summary>
 		/// <returns>
 		/// Returns error code that caused the "must close" condition.
 		/// </returns>
 		public RCODE getMustCloseRC()
 		{
-			return( xflaim_Db_getMustCloseRC(m_pDb));
+			return( xflaim_Db_getMustCloseRC( m_pDb));
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getMustCloseRC(
-			IntPtr pDb);
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // getAbortRC
@@ -3773,12 +3696,12 @@ namespace xflaim
 		/// </returns>
 		public RCODE getAbortRC()
 		{
-			return (xflaim_Db_getAbortRC(m_pDb));
+			return( xflaim_Db_getAbortRC(m_pDb));
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_getAbortRC(
-			IntPtr pDb);
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // setMustAbortTrans
@@ -3798,13 +3721,13 @@ namespace xflaim
 		public void setMustAbortTrans(
 			RCODE		rc)
 		{
-			xflaim_Db_setAbortRC( m_pDb, rc);
+			xflaim_Db_setMustAbortTrans( m_pDb, rc);
 		}
 
 		[DllImport("xflaim")]
-		private static extern void xflaim_Db_setAbortRC(
-			IntPtr pDb,
-			RCODE rc);
+		private static extern void xflaim_Db_setMustAbortTrans(
+			IntPtr	pDb,
+			RCODE		rc);
 
 //-----------------------------------------------------------------------------
 // enableEncryption
@@ -3815,12 +3738,17 @@ namespace xflaim
 		/// </summary>
 		public void enableEncryption()
 		{
-			xflaim_Db_enableEncryption( m_pDb);
+			RCODE	rc;
+
+			if ((rc = xflaim_Db_enableEncryption( m_pDb)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
 		}
 
 		[DllImport("xflaim")]
-		private static extern void xflaim_Db_enableEncryption(
-			IntPtr pDb);
+		private static extern RCODE xflaim_Db_enableEncryption(
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // wrapKey
@@ -3842,17 +3770,17 @@ namespace xflaim
 		{
 			RCODE rc;
 
-			if ((rc = xflaim_Db_wrapKey(m_pDb, sPassword)) != 0)
+			if ((rc = xflaim_Db_wrapKey( m_pDb, sPassword)) != 0)
 			{
-				throw new XFlaimException(rc);
+				throw new XFlaimException( rc);
 			}
 		}
 
 		[DllImport("xflaim")]
 		private static extern RCODE xflaim_Db_wrapKey(
-			IntPtr pDb,
-			[MarshalAs(UnmanagedType.LPWStr)]
-			string sPassword);
+			IntPtr	pDb,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string	sPassword);
 
 //-----------------------------------------------------------------------------
 // rollOverDbKey
@@ -3864,12 +3792,17 @@ namespace xflaim
 		/// </summary>
 		public void rollOverDbKey()
 		{
-			xflaim_Db_rollOverDbKey(m_pDb);
+			RCODE	rc;
+
+			if ((rc = xflaim_Db_rollOverDbKey( m_pDb)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
 		}
 
 		[DllImport("xflaim")]
-		private static extern void xflaim_Db_rollOverDbKey(
-			IntPtr pDb);
+		private static extern RCODE xflaim_Db_rollOverDbKey(
+			IntPtr	pDb);
 
 //-----------------------------------------------------------------------------
 // getSerialNumber
@@ -3884,84 +3817,120 @@ namespace xflaim
 		/// </returns>
 		public byte[] getSerialNumber()
 		{
-			RCODE rc;
-			byte[] ucValue;
+			byte[]	ucValue;
 
 			ucValue = new byte[16];
 
-			if ((rc = xflaim_Db_getSerialNumber( m_pDb, ucValue)) != 0)
-			{
-				throw new XFlaimException(rc);
-			}
-
-			return (ucValue);
+			xflaim_Db_getSerialNumber( m_pDb, ucValue);
+			return( ucValue);
 		}
 
 		[DllImport("xflaim")]
-		private static extern RCODE xflaim_Db_getSerialNumber(
-			IntPtr pDb,
+		private static extern void xflaim_Db_getSerialNumber(
+			IntPtr	pDb,
 			[MarshalAs(UnmanagedType.LPArray), Out] 
-			byte[] pucValue);
+			byte[]	pucValue);
 
 //-----------------------------------------------------------------------------
 // getCheckpointInfo
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/// <summary>
-	/// Get information about the checkpoint thread's current state. 
-	/// </summary>
-	/// <returns></returns>
-	public XFLM_CHECKPOINT_INFO getCheckpointInfo()
-	{
-		return( _getCheckpointInfo( m_this));
-	}
-#endif
+		/// <summary>
+		/// Get information about the checkpoint thread.
+		/// </summary>
+		/// <returns>Returns information about what the checkpoint thread is doing.</returns>
+		public XFLM_CHECKPOINT_INFO getCheckpointInfo()
+		{
+			XFLM_CHECKPOINT_INFO	checkpointInfo = new XFLM_CHECKPOINT_INFO();
+
+			xflaim_Db_getCheckpointInfo( m_pDb, checkpointInfo);
+			return( checkpointInfo);
+		}
+
+		[DllImport("xflaim")]
+		private static extern void xflaim_Db_getCheckpointInfo(
+			IntPtr					pDb,
+			XFLM_CHECKPOINT_INFO	pCheckpointInfo);
 
 //-----------------------------------------------------------------------------
 // exportXML
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Export XML to a text file.
-	 * @param startNode The node in the XML document to export.  All of its
-	 * sub-tree will be exported.
-	 * @param sFileName File the XML is to be exported to.  File will be
-	 * overwritten.
-	 * @param iFormat Formatting to use when exporting.  Should be one of
-	 * {@link xflaim.ExportFormatType ExportFormatType}.
-	 * @throws XFlaimException
-	 */
-	public void exportXML(
-		DOMNode	startNode,
-		String	sFileName,
-		int		iFormat) throws XFlaimException
-	{
-		_exportXML( m_this, startNode.getThis(), sFileName, iFormat);
-	}
-#endif
+		/// <summary>
+		/// Export XML to a text file.
+		/// </summary>
+		/// <param name="startNode">
+		/// The node in the XML document to export.  All of its sub-tree will be exported.
+		/// </param>
+		/// <param name="sFileName">
+		/// File the XML is to be exported to.  File will be overwritten.
+		/// </param>
+		/// <param name="eFormat">
+		/// Formatting to use when exporting.
+		/// </param>
+		public void exportXML(
+			DOMNode				startNode,
+			string				sFileName,
+			eExportFormatType	eFormat)
+		{
+			RCODE		rc;
+			IntPtr	pStartNode = (startNode != null) ? startNode.getNode() : IntPtr.Zero;
+
+			if ((rc = xflaim_Db_exportXML( m_pDb, pStartNode, sFileName, eFormat)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_exportXML(
+			IntPtr				pDb,
+			IntPtr				pStartNode,
+			[MarshalAs(UnmanagedType.LPStr)]
+			string				sFileName,
+			eExportFormatType	eFormat);
 
 //-----------------------------------------------------------------------------
-// exportXML
+// exportXMLToString
 //-----------------------------------------------------------------------------
 
-#if TODO
-	/**
-	 * Export XML to a string.
-	 * @param startNode The node in the XML document to export.  All of its
-	 * sub-tree will be exported.
-	 * @param iFormat Formatting to use when exporting.  Should be one of
-	 * {@link xflaim.ExportFormatType ExportFormatType}.
-	 * @throws XFlaimException
-	 */
-	public String exportXML(
-		DOMNode	startNode,
-		int		iFormat) throws XFlaimException
-	{
-		return( _exportXML( m_this, startNode.getThis(), iFormat));
-	}
-#endif
+		/// <summary>
+		/// Export XML to a string.
+		/// </summary>
+		/// <param name="startNode">
+		/// The node in the XML document to export.  All of its sub-tree will be exported.
+		/// </param>
+		/// <param name="eFormat">
+		/// Formatting to use when exporting.
+		/// </param>
+		/// <returns>
+		/// Returns a string containing the exported XML.
+		/// </returns>
+		public string exportXMLToString(
+			DOMNode				startNode,
+			eExportFormatType	eFormat)
+		{
+			RCODE		rc;
+			IntPtr	pszStr;
+			string	sXML;
+			IntPtr	pStartNode = (startNode != null) ? startNode.getNode() : IntPtr.Zero;
+
+			if ((rc = xflaim_Db_exportXMLToString( m_pDb, pStartNode,
+						eFormat, out pszStr)) != 0)
+			{
+				throw new XFlaimException( rc);
+			}
+			sXML = Marshal.PtrToStringAnsi( pszStr);
+			m_dbSystem.freeUnmanagedMem( pszStr);
+			return( sXML);
+		}
+
+		[DllImport("xflaim")]
+		private static extern RCODE xflaim_Db_exportXMLToString(
+			IntPtr				pDb,
+			IntPtr				pStartNode,
+			eExportFormatType	eFormat,
+			out IntPtr			ppszStr);
 
 //-----------------------------------------------------------------------------
 // getLockWaiters
