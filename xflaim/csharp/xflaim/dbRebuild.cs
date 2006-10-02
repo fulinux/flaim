@@ -42,11 +42,11 @@ namespace xflaim
 		REBUILD_RECOVER_DATA		= 3
 	}
 
+	// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_REBUILD_INFO
+	// structure defined in xflaim.h
 	/// <summary>
 	/// Class that reports progress information for a <see cref="DbSystem.dbRebuild"/> operation.
 	/// It is returned in the <see cref="DbRebuildStatus.reportRebuild"/> method.
-	/// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_REBUILD_INFO
-	/// structure defined in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_REBUILD_INFO

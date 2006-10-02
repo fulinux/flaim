@@ -40,10 +40,10 @@ namespace xflaim
 		XFLM_CURRENT_VERSION_NUM	= XFLM_VER_5_12
 	}
 
+	// IMPORTANT NOTE: These need to be kept in sync with the definitions
+	// in ftk.h.
 	/// <summary>
-	/// Valid languages.
-	/// IMPORTANT NOTE: These need to be kept in sync with the definitions
-	/// in ftk.h.
+	/// Database languages.
 	/// </summary>
 	public enum Languages : uint
 	{
@@ -141,10 +141,10 @@ namespace xflaim
 		XFLM_LF_INDEX
 	}
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the same
+	// structure that is defined in xflaim.h
 	/// <summary>
 	/// Create options for creating a database.
-	/// IMPORTANT NOTE: This needs to be kept in sync with the same
-	/// structure that is defined in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_CREATE_OPTS

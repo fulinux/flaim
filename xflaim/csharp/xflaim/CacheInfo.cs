@@ -29,10 +29,10 @@ using System.Runtime.InteropServices;
 namespace xflaim
 {
 
+	// IMPORTANT NOTE: This structure must be kept in sync
+	// with the corresponding structure in ftk.h
 	/// <summary>
 	/// Information about slab usage
-	/// IMPORTANT NOTE: This structure must be kept in sync
-	/// with the corresponding structure in ftk.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class FLM_SLAB_USAGE
@@ -47,11 +47,11 @@ namespace xflaim
 		public ulong			ulFreeCells;
 	}
 
+	// IMPORTANT NOTE: This structure must be kept in sync
+	// with the corresponding structure in xflaim.h
 	/// <summary>
 	/// Information about usage within a particular cache - either block
 	/// cache or node cache.
-	/// IMPORTANT NOTE: This structure must be kept in sync
-	/// with the corresponding structure in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_CACHE_USAGE
@@ -76,10 +76,10 @@ namespace xflaim
 		public FLM_SLAB_USAGE		slabUsage;
 	}
 
+	// IMPORTANT NOTE: This structure must be kept in sync
+	// with the corresponding structure in xflaim.h
 	/// <summary>
 	/// Information about the current state of cache.
-	/// IMPORTANT NOTE: This structure must be kept in sync
-	/// with the corresponding structure in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_CACHE_INFO

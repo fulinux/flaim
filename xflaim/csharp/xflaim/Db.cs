@@ -66,10 +66,10 @@ namespace xflaim
 // Element tags
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// Reserved dictionary tags for elements
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	public enum ReservedElmTag : uint
 	{
@@ -187,10 +187,10 @@ namespace xflaim
 // Attribute tags
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// Reserved dictionary tags for attributes
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	public enum ReservedAttrTag : uint
 	{
@@ -450,9 +450,10 @@ namespace xflaim
 // XML parse errors
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
+	/// Parse errors that can occur when importing XML into a database.
 	/// </summary>
 	public enum XMLParseError : uint
 	{
@@ -654,9 +655,10 @@ namespace xflaim
 // XML encoding
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
+	/// Types of XML encoding
 	/// </summary>
 	public enum XMLEncoding : uint
 	{
@@ -674,12 +676,12 @@ namespace xflaim
 // XML import stats
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
+	// definitions in Db.cpp - CS_XFLM_IMPORT_STATS.  CS_XFLM_IMPORT_STATS is
+	// designed to correspond to XFLM_IMPORT_STATS in xflaim.h, but it cannot be
+	// exactly the same because the enums will be a different size in C++ code.
 	/// <summary>
-	/// XML import stats
-	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
-	/// definitions in Db.cpp - CS_XFLM_IMPORT_STATS.  CS_XFLM_IMPORT_STATS is
-	/// designed to correspond to XFLM_IMPORT_STATS in xflaim.h, but it cannot be
-	/// exactly the same because the enums will be a different size in C++ code.
+	/// XML import statistics
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_IMPORT_STATS
@@ -738,10 +740,10 @@ namespace xflaim
 // Database transaction types
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// Database transaction types.
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	public enum eDbTransType : uint
 	{
@@ -757,10 +759,10 @@ namespace xflaim
 // Database transaction flags
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// Database transaction flags.
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	[Flags]
 	public enum DbTransFlags : uint
@@ -781,10 +783,10 @@ namespace xflaim
 // Database lock types
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// enum in ftk.h
 	/// <summary>
 	/// Types of locks that may be requested.
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// enum in ftk.h
 	/// </summary>
 	public enum eLockType : uint
 	{
@@ -814,10 +816,10 @@ namespace xflaim
 		public uint	uiTime;
 	}
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// Types of locks that may be requested.
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	public enum eXFlmIndexState : uint
 	{
@@ -829,13 +831,13 @@ namespace xflaim
 		XFLM_INDEX_SUSPENDED
 	}
 
+	// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
+	// definitions in xflaim.h.  It is almost exactly the same as the XFLM_INDEX_STATUS
+	// structure, except that we cannot guarantee the size of eState.  In C# it is always
+	// a 32 bit number.  It may not be that in C++.  That is the reason we have a
+	// different structure in C# than we have in C++.
 	/// <summary>
-	/// Index status object
-	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
-	/// definitions in xflaim.h.  It is almost exactly the same as the XFLM_INDEX_STATUS
-	/// structure, except that we cannot guarantee the size of eState.  In C# it is always
-	/// a 32 bit number.  It may not be that in C++.  That is the reason we have a
-	/// different structure in C# than we have in C++.
+	/// Index status information.
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_INDEX_STATUS
@@ -875,12 +877,12 @@ namespace xflaim
 // RetrieveFlags
 //-----------------------------------------------------------------------------
 
+	// IMPORTANT NOTE: These flags need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// Flags used to specify items to be retrieved from a result set.
 	/// The <see cref="Db.keyRetrieve"/> method also uses these flags
 	/// to specify how keys from an index are to be retrieved.
-	/// IMPORTANT NOTE: These flags need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	[Flags]
 	public enum RetrieveFlags : uint
@@ -907,10 +909,10 @@ namespace xflaim
 		XFLM_MATCH_DOC_ID = 0x0800
 	}
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// defines in xflaim.h.
 	/// <summary>
-	/// Reason for forcing a checkpoint
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// defines in xflaim.h.
+	/// Reason checkpoint thread is forcing a checkpoint.
 	/// </summary>
 	public enum eCPReason : uint
 	{
@@ -928,10 +930,10 @@ namespace xflaim
 		XFLM_CP_RFL_VOLUME_PROBLEM = 3
 	}
 
+	// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
-	/// Checkpoint information object
-	/// IMPORTANT NOTE: This structure needs to be kept in sync with the corresponding
-	/// definitions in xflaim.h
+	/// Checkpoint information.
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_CHECKPOINT_INFO

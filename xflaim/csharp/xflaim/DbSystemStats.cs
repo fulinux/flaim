@@ -28,10 +28,10 @@ using System.Runtime.InteropServices;
 namespace xflaim
 {
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding definition in ftk.h
 	/// <summary>
 	/// Structure used in gathering statistics to hold an operation count elapsed time.
-	/// IMPORTANT NOTE: This needs to be kept in sync with the
-	/// corresponding definition in ftk.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class F_COUNT_TIME_STAT
@@ -42,10 +42,10 @@ namespace xflaim
 		public ulong	ulElapMilli;
 	}
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding definition in ftk.h
 	/// <summary>
 	/// Lock statistics.
-	/// IMPORTANT NOTE: This needs to be kept in sync with the
-	/// corresponding definition in ftk.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class F_LOCK_STATS
@@ -58,10 +58,10 @@ namespace xflaim
 		public F_COUNT_TIME_STAT	HeldLock;
 	}
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding definition in xflaim.h
 	/// <summary>
 	/// Read transaction statistics
-	/// IMPORTANT NOTE: This needs to be kept in sync with the
-	/// corresponding definition in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_RTRANS_STATS
@@ -72,10 +72,10 @@ namespace xflaim
 		public F_COUNT_TIME_STAT		AbortedTrans;
 	}
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding definition in xflaim.h
 	/// <summary>
 	/// Update transaction statistics.
-	/// IMPORTANT NOTE: This needs to be kept in sync with the
-	/// corresponding definition in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_UTRANS_STATS
@@ -90,10 +90,10 @@ namespace xflaim
 		public F_COUNT_TIME_STAT		AbortedTrans;
 	}
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding definition in xflaim.h
 	/// <summary>
 	/// Disk IO statistics.
-	/// IMPORTANT NOTE: This needs to be kept in sync with the
-	/// corresponding definition in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_DISKIO_STAT
@@ -106,10 +106,10 @@ namespace xflaim
 		public ulong	ulElapMilli;
 	}
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding definition in xflaim.h
 	/// <summary>
 	/// Block statistics.
-	/// IMPORTANT NOTE: This needs to be kept in sync with the
-	/// corresponding definition in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_BLOCKIO_STATS
@@ -128,10 +128,10 @@ namespace xflaim
 		public uint					uiOldViewErrors;
 	}
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding definition in DbSystemStats.cpp
 	/// <summary>
 	/// Logical file statistics
-	/// IMPORTANT NOTE: This needs to be kept in sync with the
-	/// corresponding definition in DbSystemStats.cpp
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_LFILE_STATS
@@ -152,10 +152,10 @@ namespace xflaim
 		public eLFileType				eLfType;
 	}
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the
+	// corresponding definition in DbSystemStats.cpp
 	/// <summary>
 	/// Database statistics
-	/// IMPORTANT NOTE: This needs to be kept in sync with the
-	/// corresponding definition in DbSystemStats.cpp
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_DB_STATS

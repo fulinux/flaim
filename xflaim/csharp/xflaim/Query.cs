@@ -29,9 +29,9 @@ using System.Runtime.InteropServices;
 namespace xflaim
 {
 
+	// IMPORTANT NOTE: This needs to be kept in sync with the definitions in ftk.h
 	/// <summary>
 	/// Flags for comparing strings.
-	/// IMPORTANT NOTE: This needs to be kept in sync with the definitions in ftk.h
 	/// </summary>
 	[Flags]
 	public enum CompareFlags : uint
@@ -93,12 +93,12 @@ namespace xflaim
 		META_AXIS
 	}
 
+	// IMPORTANT NOTE: These must be kept in sync with the corresponding
+	// definitions in xflaim.h.  NOTE: Only the ones that are valid
+	// to pass into the <see cref="Query.addOperator"/> method need to be
+	// defined here.
 	/// <summary>
 	/// Query operators.
-	/// IMPORTANT NOTE: These must be kept in sync with the corresponding
-	/// definitions in xflaim.h.  NOTE: Only the ones that are valid
-	/// to pass into the <see cref="Query.addOperator"/> method need to be
-	/// defined here.
 	/// </summary>
 	public enum eQueryOperators
 	{
@@ -169,10 +169,10 @@ namespace xflaim
 		XFLM_QOPT_NODE_ID_RANGE
   }
 
+	// IMPORTANT NOTE: This structure must be kept in sync with the
+	// corresponding structure in C# code.
 	/// <summary>
 	/// Optimization information for queries.
-	/// IMPORTANT NOTE: This structure must be kept in sync with the
-	/// corresponding structure in C# code.
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class CS_XFLM_OPT_INFO

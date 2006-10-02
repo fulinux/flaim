@@ -29,10 +29,10 @@ using System.Runtime.InteropServices;
 namespace xflaim
 {
 
+	// IMPORTANT NOTE: These should be kept in sync with data types defined
+	// in xflaim.h
 	/// <summary>
 	/// Data types supported in an XFLAIM database.
-	/// IMPORTANT NOTE: These should be kept in sync with data types defined
-	/// in xflaim.h
 	/// </summary>
 	public enum FlmDataType : uint
 	{
@@ -46,10 +46,10 @@ namespace xflaim
 		XFLM_BINARY_TYPE			= 3
 	}
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// DOM Node types
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	public enum eDomNodeType : uint
 	{
@@ -75,10 +75,10 @@ namespace xflaim
 		ANY_NODE_TYPE =						0xFFFF
 	}
 
+	// IMPORTANT NOTE: These need to be kept in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// Node insert locations - relative to another node.
-	/// IMPORTANT NOTE: These need to be kept in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	public enum eNodeInsertLoc : uint
 	{

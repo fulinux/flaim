@@ -49,11 +49,11 @@ namespace xflaim
 		XFLM_ALLOW_LIMITED_MODE		= 0x0400
 	}
 
+	// IMPORTANT NOTE: Any additions or changes made in the C++ code should be
+	// synced to here.
 	/// <summary>
 	/// Corruption codes that can be returned from <see cref="DbSystem.dbCheck"/> when it
 	/// reports a corruption.
-	/// IMPORTANT NOTE: Any additions or changes made in the C++ code should be
-	/// synced to here.
 	/// </summary>
 	public enum FlmCorruptionCode : int
 	{
@@ -261,10 +261,10 @@ namespace xflaim
 		FLM_BAD_CHILD_ELM_COUNT				= 101
 	}
 		
+	// IMPORTANT NOTE: Any additions or changes made in the C++ code should be
+	// synced to here.
 	/// <summary>
 	/// Locations in the database where corruptions can occur.
-	/// IMPORTANT NOTE: Any additions or changes made in the C++ code should be
-	/// synced to here.
 	/// </summary>
 	public enum ErrLocale : int
 	{
@@ -280,12 +280,12 @@ namespace xflaim
 		XFLM_LOCALE_INDEX				= 4
 	}
 
+	// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_CORRUPT_INFO
+	// structure defined in xflaim.h
 	/// <summary>
 	/// Class that reports a corruption when it is detected by the
 	/// <see cref="DbSystem.dbCheck"/> operation.
 	/// It is returned in the <see cref="DbCheckStatus.reportCheckErr"/> method.
-	/// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_CORRUPT_INFO
-	/// structure defined in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_CORRUPT_INFO
@@ -332,11 +332,11 @@ namespace xflaim
 		// in xflaim.h.  That is by design.
 	}
 
+	// IMPORTANT NOTE: These enums need to stay in sync with the corresponding
+	// definitions in xflaim.h
 	/// <summary>
 	/// This enum defines the various phases that a <see cref="DbSystem.dbCheck"/>
 	/// operation goes through.
-	/// IMPORTANT NOTE: These enums need to stay in sync with the corresponding
-	/// definitions in xflaim.h
 	/// </summary>
 	public enum FlmCheckPhase : int
 	{
@@ -352,11 +352,11 @@ namespace xflaim
 		XFLM_CHECK_DOM_LINKS				= 5
 	}
 
+	// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_PROGRESS_CHECK_INFO
+	// structure defined in xflaim.h
 	/// <summary>
 	/// Class that reports progress information for a <see cref="DbSystem.dbCheck"/> operation.
 	/// It is returned in the <see cref="DbCheckStatus.reportProgress"/> method.
-	/// IMPORTANT NOTE: This structure needs to stay in sync with the XFLM_PROGRESS_CHECK_INFO
-	/// structure defined in xflaim.h
 	/// </summary>
 	[StructLayout(LayoutKind.Sequential, Pack = 1, CharSet = CharSet.Ansi)]
 	public class XFLM_PROGRESS_CHECK_INFO
