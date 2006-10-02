@@ -222,8 +222,7 @@ public class Db
 	}
 
 	/**
-	 * Returns the thread id of the thread that currently holds the database
-	 * lock at the specified priority.
+	 * Returns the thread id of the thread that currently holds the database lock.
 	 * @return Returns thread ID.
 	 * @throws XFlaimException
 	 */
