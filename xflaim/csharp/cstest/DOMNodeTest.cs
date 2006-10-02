@@ -776,6 +776,7 @@ namespace cstest
 				System.Console.WriteLine( "Document should NOT have a previous document");
 				return( false);
 			}
+			endTest( false, true);
 			
 			return( true);
 		}
@@ -836,6 +837,7 @@ namespace cstest
 					return( false);
 				}
 			}
+			endTest( false, true);
 
 			// Start a transaction
 
