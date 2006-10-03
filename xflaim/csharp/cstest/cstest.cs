@@ -186,6 +186,14 @@ namespace cstest
 				return;
 			}
 
+			// Import tests
+
+			ImportTests importTest = new ImportTests();
+			if (!importTest.importTests( TEST_DB_NAME, dbSystem))
+			{
+				return;
+			}
+
 			// Statistics test
 
 			StatsTests statsTests = new StatsTests();
