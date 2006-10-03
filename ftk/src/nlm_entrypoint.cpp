@@ -25,6 +25,10 @@
 #include "ftksys.h"
 #include "ftknlm.h"
 
+#if defined( FLM_NLM)
+
+#if defined( FLM_RING_ZERO_NLM)
+
 static SEMAPHORE						gv_lFlmSyncSem = 0;
 static FLMBOOL							gv_bUnloadCalled = FALSE;
 static FLMBOOL							gv_bMainRunning = FALSE;
@@ -35,10 +39,6 @@ static F_EXIT_FUNC					gv_fnExit = NULL;
 extern FLMATOMIC						gv_NetWareStartupCount;
 extern void *							gv_MyModuleHandle;
 extern rtag_t							gv_lAllocRTag;
-
-#if defined( FLM_NLM)
-
-#if defined( FLM_RING_ZERO_NLM)
 
 RCODE f_nssInitialize( void);
 
