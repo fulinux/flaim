@@ -211,8 +211,6 @@ namespace cstest
 				rc = RCODE.NE_XFLM_OK;
 				try
 				{
-					XFLM_CREATE_OPTS	createOpts = null;
-#if false
 					XFLM_CREATE_OPTS	createOpts = new XFLM_CREATE_OPTS();
 
 					createOpts.uiBlockSize = 8192;
@@ -222,7 +220,6 @@ namespace cstest
 					createOpts.bKeepRflFiles = 1;
 					createOpts.bLogAbortedTransToRfl = 1;
 					createOpts.eDefaultLanguage = Languages.FLM_DE_LANG;
-#endif
 					db = dbSystem.dbCreate( sDbName, null, null, null, null, createOpts);
 				}
 				catch (XFlaimException ex)
