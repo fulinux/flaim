@@ -5860,10 +5860,10 @@ RCODE FLMAPI f_wpCheckDoubleCollation(
 	}
 	bUpperFlag = f_wpIsUpper( ui16WpChar);
 
+	*pbTwoIntoOne = FALSE;
+	*puzChar2 = 0;
 	if ((ui16CurState = flmGetNextCharState( 0, uiLanguage)) == 0)
 	{
-		*pbTwoIntoOne = FALSE;
-		*puzChar2 = 0;
 		goto Exit;
 	}
 
