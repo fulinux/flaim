@@ -42,8 +42,8 @@ project_brief_desc = An extensible, flexible, adaptable, embeddable XML database
 
 # -- Maintainers --
 
-ahodgkinson_info = Andrew Hodgkinson <ahodgkinson@novell.com>
-dsanders_info = Daniel Sanders <dsanders@novell.com>
+ahodgkinson_info = Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>
+dsanders_info = Daniel Sanders (Sr. Software Engineer) <dsanders@novell.com>
 
 # -- Versions --
 
@@ -601,7 +601,7 @@ dash := \055
 backslash := \134
 double_quote := \042
 
-# -- Tools --
+# -- printf --
 
 ifdef unix_target
 	gprintf = printf
@@ -654,14 +654,14 @@ ifneq (,$(findstring rpm,$(MAKECMDGOALS)))
 	endif
 endif
 
-ifneq (,$(findstring debbin,$(MAKECMDGOALS)))
+ifneq (,$(findstring ubuntubin,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
 	ifndef ignore_local_mods
 		local_mods_ok =
 	endif
 endif
 
-ifneq (,$(findstring debsrc,$(MAKECMDGOALS)))
+ifneq (,$(findstring ubuntusrc,$(MAKECMDGOALS)))
 	calc_svn_revision = 1
 	ifndef ignore_local_mods
 		local_mods_ok =
@@ -775,7 +775,7 @@ endif
 
 ifndef rpm_build_root
 	ifneq (,$(DESTDIR))
-		rpm_build_root = $(DESTDIR)/
+		rpm_build_root = $(DESTDIR)
 	else
 		rpm_build_root =
 	endif
@@ -804,6 +804,12 @@ pkgconfig_file = $(package_dir)/$(pkgconfig_file_name)
 package_debian_dir = $(package_dir)/DEBIAN
 debian_stage_dir = $(package_dir)/debian_stage
 debian_pkginfo_dir = $(debian_stage_dir)/DEBIAN
+
+package_ubuntu_dir = $(package_dir)/UBUNTU
+package_version_ubuntu = $(version)-0ubuntu1
+package_distro_ubuntu = edgy
+ubuntu_stage_dir = $(package_dir)/ubuntu_stage
+ubuntu_pkginfo_dir = $(ubuntu_stage_dir)/DEBIAN
 
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
@@ -1022,7 +1028,7 @@ ifdef unix_target
 		-falign-loops \
 		-falign-labels \
 		-fcrossjumping
-		
+				
 	ifeq ($(usenativecc),yes)
 		ifeq ($(target_os_family),solaris)
 			compiler = CC
@@ -1274,7 +1280,7 @@ ifdef netware_target
 	
 	ifndef netware_ring_0_target
 		ifndef ndk_dir
-			$(error Netware SDK could not be found.  Please define ndk_dir)
+         $(error Netware SDK could not be found. Please define ndk_dir)
 		endif
 		
 		ndk_dir := $(call normpath,$(ndk_dir))
@@ -2259,6 +2265,15 @@ ifneq ($(host_os_family),win)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/xflaim.h $(include_install_dir)
 	install --mode=644 $(ftk_src_dir)/ftk.h $(include_install_dir)/xflaimtk.h
+ifneq ($(so_age),0)
+ifneq ($(so_revision),0)
+	cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age) $(lib_prefix)$(project_name).so.$(so_current).$(so_revision) 
+endif
+endif
+ifneq ($(so_revision),0)
+	cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision) $(lib_prefix)$(project_name).so.$(so_current) 
+endif
+	cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current) $(lib_prefix)$(project_name).so
 	-ldconfig $(lib_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
@@ -2378,150 +2393,155 @@ rpms: spec srcdist
 	$(ec)find $(package_dir) -name *.rpm | xargs chmod 775
 	$(ec)$(gprintf) "Source and binary RPMs created.\n"
 
-# -- Debian Binary Package --
+# -- Ubuntu Binary Package --
 
-.PHONY : debbin
-debbin: bindist
-	$(ec)$(gprintf) "Creating Debian binary package ...\n"
+.PHONY : ubuntubin
+ubuntubin: bindist
+	$(ec)$(gprintf) "Creating Ubuntu binary package ...\n"
 	
-	-$(ec)$(call rmdircmd,$(debian_stage_dir))
-	$(ec)$(call mkdircmd,$(debian_stage_dir))
-	$(ec)$(call mkdircmd,$(debian_pkginfo_dir))
+	-$(ec)$(call rmdircmd,$(ubuntu_stage_dir))
+	$(ec)$(call mkdircmd,$(ubuntu_stage_dir))
+	$(ec)$(call mkdircmd,$(ubuntu_pkginfo_dir))
 	
-	$(ec)$(gprintf) "Creating Debian control file ...\n"
-	$(ec)$(gprintf) "Package: $(package_proj_name)\n" > $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) "Version: $(version)\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) "Section: libs\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) "Priority: optional\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) "Architecture: $(debian_arch)\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) "Depends:\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) " XFLAIM is an embeddable cross-platform XML database engine that\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) " provides a rich, powerful, easy-to-use feature set. It has proven to be\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) " highly scalable, reliable, and robust. It is available on a wide\n" >> $(debian_pkginfo_dir)/control
-	$(ec)$(gprintf) " variety of 32 bit and 64 bit platforms.\n" >> $(debian_pkginfo_dir)/control
+	$(ec)$(gprintf) "Creating Ubuntu control file ...\n"
+	$(ec)$(gprintf) "Package: $(package_proj_name)\n" > $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) "Version: $(version)\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) "Section: libs\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) "Priority: optional\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) "Architecture: $(debian_arch)\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) "Depends:\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) " XFLAIM is an embeddable cross-platform XML database engine that\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) " provides a rich, powerful, easy-to-use feature set. It has proven to be\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) " highly scalable, reliable, and robust. It is available on a wide\n" >> $(ubuntu_pkginfo_dir)/control
+	$(ec)$(gprintf) " variety of 32 bit and 64 bit platforms.\n" >> $(ubuntu_pkginfo_dir)/control
 	
-	$(ec)$(gprintf) "Creating Debian post install file ...\n"
-	$(ec)$(gprintf) "#!/bin/bash\n" > $(debian_pkginfo_dir)/postinst
+	$(ec)$(gprintf) "Creating Ubuntu post install file ...\n"
+	$(ec)$(gprintf) "#!/bin/bash\n" > $(ubuntu_pkginfo_dir)/postinst
 ifneq ($(so_age),0)
 ifneq ($(so_revision),0)
-	$(ec)$(gprintf) "ln -fs $(xflaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(debian_pkginfo_dir)/postinst 
+	$(ec)$(gprintf) "cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age) $(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(ubuntu_pkginfo_dir)/postinst 
 endif
 endif
 ifneq ($(so_revision),0)
-	$(ec)$(gprintf) "ln -fs $(xflaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(debian_pkginfo_dir)/postinst 
+	$(ec)$(gprintf) "cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age) $(lib_prefix)$(project_name).so.$(so_current)\n" >> $(ubuntu_pkginfo_dir)/postinst 
 endif
-	$(ec)$(gprintf) "ln -fs $(xflaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(debian_pkginfo_dir)/postinst
-	$(ec)$(gprintf) "ldconfig /usr/lib/$(xflaim_shared_lib)\n" >> $(debian_pkginfo_dir)/postinst
-	$(ec)chmod 0755 $(debian_pkginfo_dir)/postinst
+	$(ec)$(gprintf) "cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age) $(lib_prefix)$(project_name).so\n" >> $(ubuntu_pkginfo_dir)/postinst
+	$(ec)$(gprintf) "ldconfig /usr/lib/$(flaim_shared_lib)\n" >> $(ubuntu_pkginfo_dir)/postinst
+	$(ec)chmod 0755 $(ubuntu_pkginfo_dir)/postinst
 	
-	$(ec)$(gprintf) "Creating Debian pre-uninstall file ...\n"
-	$(ec)$(gprintf) "#!/bin/bash\n" > $(debian_pkginfo_dir)/postrm
+	$(ec)$(gprintf) "Creating Ubuntu pre-uninstall file ...\n"
+	$(ec)$(gprintf) "#!/bin/bash\n" > $(ubuntu_pkginfo_dir)/postrm
 ifneq ($(so_age),0)
 ifneq ($(so_revision),0)
-	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(debian_pkginfo_dir)/postrm 
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(ubuntu_pkginfo_dir)/postrm 
 endif
 endif
 ifneq ($(so_revision),0)
-	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(debian_pkginfo_dir)/postrm 
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(ubuntu_pkginfo_dir)/postrm 
 endif
-	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(debian_pkginfo_dir)/postrm
-	$(ec)chmod 0755 $(debian_pkginfo_dir)/postrm
+	$(ec)$(gprintf) "rm -f /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(ubuntu_pkginfo_dir)/postrm
+	$(ec)chmod 0755 $(ubuntu_pkginfo_dir)/postrm
 	
-	$(ec)$(gprintf) "Creating Debian shlibs file ...\n"
-	$(ec)$(gprintf) "$(lib_prefix)$(project_name) $(shared_lib_version)\n" > $(debian_pkginfo_dir)/shlibs
-	$(ec)chmod 0644 $(debian_pkginfo_dir)/shlibs
+	$(ec)$(gprintf) "Creating Ubuntu shlibs file ...\n"
+	$(ec)$(gprintf) "$(lib_prefix)$(project_name) $(shared_lib_version)\n" > $(ubuntu_pkginfo_dir)/shlibs
+	$(ec)chmod 0644 $(ubuntu_pkginfo_dir)/shlibs
 	
-	-$(ec)$(call rmdircmd,$(debian_stage_dir)/tmp)
-	$(ec)$(call mkdircmd,$(debian_stage_dir)/tmp)
-	$(ec)$(call copycmd,$(bin_package_dir)/$(bin_package_name),$(debian_stage_dir)/tmp)
-	$(ec)$(call extract_archive,$(debian_stage_dir)/tmp,$(bin_package_base_name))
-	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr)
-	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/lib)
-	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/include)
-	$(ec)$(call mkdircmd,$(debian_stage_dir)/usr/share/doc/$(package_proj_name))
+	-$(ec)$(call rmdircmd,$(ubuntu_stage_dir)/tmp)
+	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/tmp)
+	$(ec)$(call copycMd,$(bin_package_dir)/$(bin_package_name),$(ubuntu_stage_dir)/tmp)
+	$(ec)$(call extract_archive,$(ubuntu_stage_dir)/tmp,$(bin_package_base_name))
+	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/usr)
+	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/usr/lib)
+	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/usr/include)
+	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name))
 	
-	$(ec)$(gprintf) "Creating Debian changelog file ...\n"
-	$(ec)$(gprintf) "$(package_proj_name) ($(version)) unstable; urgency=low\n" > $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
-	$(ec)cat ChangeLog >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
-	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
-	$(ec)822-date >> $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
-	$(ec)gzip -f --best $(debian_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)$(gprintf) "Creating Ubuntu changelog file ...\n"
+	$(ec)$(gprintf) "$(package_proj_name) ($(package_version_ubuntu)) $(package_distro_ubuntu); urgency=low\n" > $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)cat ChangeLog.ubuntu >> $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)822-date >> $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)gzip -f --best $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
 	
-	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/COPYRIGHT,$(debian_stage_dir)/usr/share/doc/$(package_proj_name)/copyright)
-	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/shared/*,$(debian_stage_dir)/usr/lib)
-	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/static/*,$(debian_stage_dir)/usr/lib)
-	$(ec)strip $(debian_stage_dir)/usr/lib/*
-	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/static/*,$(debian_stage_dir)/usr/lib)
-	$(ec)$(call copycmd,$(debian_stage_dir)/tmp/$(package_proj_name_and_ver)/include/*,$(debian_stage_dir)/usr/include)
-	$(ec)$(call rmdircmd,$(debian_stage_dir)/tmp)
-	$(ec)chmod 0644 $(debian_stage_dir)/usr/lib/*
-	$(ec)fakeroot dpkg-deb -b $(debian_stage_dir) $(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/tmp/$(package_proj_name_and_ver)/COPYRIGHT,$(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/copyright)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/shared/*,$(ubuntu_stage_dir)/usr/lib)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/static/*,$(ubuntu_stage_dir)/usr/lib)
+	$(ec)strip $(ubuntu_stage_dir)/usr/lib/*
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/tmp/$(package_proj_name_and_ver)/$(target_os_family)-$(target_processor_family)-$(target_word_size)/release/lib/static/*,$(ubuntu_stage_dir)/usr/lib)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/tmp/$(package_proj_name_and_ver)/include/*,$(ubuntu_stage_dir)/usr/include)
+	$(ec)$(call rmdircmd,$(ubuntu_stage_dir)/tmp)
+	$(ec)chmod 0644 $(ubuntu_stage_dir)/usr/lib/*
+	$(ec)fakeroot dpkg-deb -b $(ubuntu_stage_dir) $(package_dir)/$(package_proj_name)_$(package_version_ubuntu)-$(debian_arch).deb
 
-	$(ec)$(gprintf) "Checking Debian package ...\n"
-	$(ec)lintian -i -X bin,shl $(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb
+	$(ec)$(gprintf) "Checking Ubuntu package ...\n"
+	$(ec)lintian -i -X bin,shl $(package_dir)/$(package_proj_name)_$(package_version_ubuntu)-$(debian_arch).deb
+	$(ec)linda -i $(package_dir)/$(package_proj_name)_$(package_version_ubuntu)-$(debian_arch).deb
 	
-	$(ec)$(gprintf) "Moving package to DEBIAN directory ...\n"
-	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb,$(package_debian_dir))
-	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version)-$(debian_arch).deb)
+	$(ec)$(gprintf) "Moving package to UBUNTU directory ...\n"
+	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(package_version_ubuntu)-$(debian_arch).deb,$(package_ubuntu_dir))
+	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(package_version_ubuntu)-$(debian_arch).deb)
 	
 	$(ec)$(gprintf) "Removing temporary files ...\n"
-#	$(ec)$(call rmdircmd,$(debian_stage_dir))
+	$(ec)$(call rmdircmd,$(ubuntu_stage_dir))
 	
 	$(ec)$(gprintf) "Done.\n"
 	
-# -- Debian Source Package --
+# -- Ubuntu Source Package --
 
-.PHONY : debsrc
-debsrc: srcdist
-	$(ec)$(gprintf) "Creating Debian source package ...\n"
+.PHONY : ubuntusrc
+ubuntusrc: srcdist
+	$(ec)$(gprintf) "Creating Ubuntu source package ...\n"
 	
-	-$(ec)$(call rmdircmd,$(debian_stage_dir))
-	$(ec)$(call mkdircmd,$(debian_stage_dir))
-	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(debian_stage_dir))
-	$(ec)$(call extract_archive,$(debian_stage_dir),$(src_package_base_name))
+	-$(ec)$(call rmdircmd,$(ubuntu_stage_dir))
+	$(ec)$(call mkdircmd,$(ubuntu_stage_dir))
+	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(ubuntu_stage_dir))
+	$(ec)$(call extract_archive,$(ubuntu_stage_dir),$(src_package_base_name))
 
-	$(ec)$(gprintf) "Creating Debian changelog file ...\n"
-	$(ec)$(gprintf) "$(package_proj_name) ($(version)) unstable; urgency=low\n" > $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
-	$(ec)cat ChangeLog >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
-	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
-	$(ec)822-date >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) "Creating Ubuntu changelog file ...\n"
+	$(ec)$(gprintf) "$(package_proj_name) ($(package_version_ubuntu)) $(package_distro_ubuntu); urgency=low\n" > $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)cat ChangeLog.ubuntu >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)822-date >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	
-	$(ec)$(gprintf) "Creating Debian control file ...\n"
-	$(ec)$(gprintf) "Source: $(package_proj_name)\n" > $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Priority: optional\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Build-Depends: debhelper (>= 4.0.0), ncurses-dev\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Standards-Version: 3.6.2\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Package: $(package_proj_name)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Architecture: any\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Depends: ${shlibs:Depends}, ${misc:Depends}\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) " XFLAIM is an embeddable cross-platform XML database engine that\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) " provides a rich, powerful, easy-to-use feature set. It has proven to be\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) " highly scalable, reliable, and robust. It is available on a wide\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
-	$(ec)$(gprintf) " variety of 32 bit and 64 bit platforms.\n" >> $(debian_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Creating Ubuntu control file ...\n"
+	$(ec)$(gprintf) "Source: $(package_proj_name)\n" > $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Section: libs\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control 
+	$(ec)$(gprintf) "Priority: optional\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Maintainer: $(ahodgkinson_info)\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Build-Depends: debhelper (>= 4.0.0), ncurses-dev\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Standards-Version: 3.6.2\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Package: $(package_proj_name)\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Architecture: any\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Depends: ${shlibs:Depends}, ${misc:Depends}\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " XFLAIM is an embeddable cross-platform XML database engine that\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " provides a rich, powerful, easy-to-use feature set. It has proven to be\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " highly scalable, reliable, and robust. It is available on a wide\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
+	$(ec)$(gprintf) " variety of 32 bit and 64 bit platforms.\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/control
 	
-	$(ec)$(call copycmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/COPYRIGHT,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/copyright)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/$(package_proj_name_and_ver)/COPYRIGHT,$(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/copyright)
 
-	$(ec)$(call rmcmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/*.ex)
-	$(ec)$(call rmcmd,$(debian_stage_dir)/$(package_proj_name_and_ver)/debian/*.EX)
+	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/*.ex)
+	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/*.EX)
 
-	$(ec)cd $(package_dir); dpkg-source -b $(debian_stage_dir)/$(src_package_base_name)
+	$(ec)cd $(ubuntu_stage_dir)/$(package_proj_name_and_ver); dpkg-buildpackage -S -rfakeroot
 	
-	$(ec)$(gprintf) "Checking Debian package ...\n"
-	$(ec)lintian -i $(package_dir)/$(package_proj_name)_$(version).dsc
+	$(ec)$(gprintf) "Checking Ubuntu package ...\n"
+	$(ec)lintian -i $(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc
+	$(ec)linda -i $(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc
 	
-	$(ec)$(gprintf) "Moving packages to DEBIAN directory ...\n"
-	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version).dsc,$(package_debian_dir))
-	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version).dsc)
-	$(ec)$(call copycmd,$(package_dir)/$(package_proj_name)_$(version).tar.gz,$(package_debian_dir))
-	$(ec)$(call rmcmd,$(package_dir)/$(package_proj_name)_$(version).tar.gz)
+	$(ec)$(gprintf) "Moving packages to UBUNTU directory ...\n"
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc,$(package_ubuntu_dir))
+	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).tar.gz,$(package_ubuntu_dir))
+	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).tar.gz)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu)_source.changes,$(package_ubuntu_dir))
+	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu)_source.changes)
 
 	$(ec)$(gprintf) "Removing temporary files ...\n"
-	$(ec)$(call rmdircmd,$(debian_stage_dir))
+	$(ec)$(call rmdircmd,$(ubuntu_stage_dir))
 	
 	$(ec)$(gprintf) "Done.\n"
 	
@@ -2565,6 +2585,7 @@ dircheck:
 	$(ec)$(call mkdircmd,$(package_rpms_dir))
 	$(ec)$(call mkdircmd,$(package_srpms_dir))
 	$(ec)$(call mkdircmd,$(package_debian_dir))
+	$(ec)$(call mkdircmd,$(package_ubuntu_dir))
 
 # -- phony targets --
 
