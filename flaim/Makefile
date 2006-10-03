@@ -1216,7 +1216,7 @@ ifdef netware_target
 	
 	ifndef netware_ring_0_target
 		ifndef ndk_dir
-			$(error Netware SDK could not be found.  Please define ndk_dir)
+         $(error Netware SDK could not be found. Please define ndk_dir)
 		endif
 		
 		ndk_dir := $(call normpath,$(ndk_dir))
