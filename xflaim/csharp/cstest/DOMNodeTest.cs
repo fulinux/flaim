@@ -877,7 +877,6 @@ namespace cstest
 			endTest( false, true);
 
 			bOk = true;
-			endTest( false, true);
 
 		Exit:
 			if (bStartedTrans)
