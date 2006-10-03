@@ -2450,7 +2450,7 @@ endif
 	
 	-$(ec)$(call rmdircmd,$(ubuntu_stage_dir)/tmp)
 	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/tmp)
-	$(ec)$(call copycMd,$(bin_package_dir)/$(bin_package_name),$(ubuntu_stage_dir)/tmp)
+	$(ec)$(call copycmd,$(bin_package_dir)/$(bin_package_name),$(ubuntu_stage_dir)/tmp)
 	$(ec)$(call extract_archive,$(ubuntu_stage_dir)/tmp,$(bin_package_base_name))
 	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/usr)
 	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/usr/lib)

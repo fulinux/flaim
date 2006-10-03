@@ -9,7 +9,6 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-
 CFLAGS = -Wall -g
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -44,7 +43,7 @@ install: build
 	dh_clean -k 
 	dh_installdirs
 
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/libflaim
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/libxflaim
 
 
 binary-indep: build install
