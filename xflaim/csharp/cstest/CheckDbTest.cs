@@ -118,7 +118,7 @@ namespace cstest
 				System.Console.WriteLine( "Invalid signature in database header");
 				return( false);
 			}
-			if (dbHdr.ui16BlockSize != 8192)
+			if (dbHdr.ui16BlockSize != 8192 && dbHdr.ui16BlockSize != 4096)
 			{
 				endTest( true, false);
 				System.Console.WriteLine( "Invalid block size in database header");
