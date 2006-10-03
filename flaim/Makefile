@@ -792,7 +792,7 @@ debian_pkginfo_dir = $(debian_stage_dir)/DEBIAN
 
 package_ubuntu_dir = $(package_dir)/UBUNTU
 package_version_ubuntu = $(version)-0ubuntu1
-package_distro_ubuntu = dapper
+package_distro_ubuntu = edgy
 ubuntu_stage_dir = $(package_dir)/ubuntu_stage
 ubuntu_pkginfo_dir = $(ubuntu_stage_dir)/DEBIAN
 
@@ -1878,6 +1878,15 @@ ifneq ($(host_os_family),win)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/flaim.h $(include_install_dir)
 	install --mode=644 $(ftk_src_dir)/ftk.h $(include_install_dir)/flaimtk.h
+ifneq ($(so_age),0)
+ifneq ($(so_revision),0)
+	cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age) $(lib_prefix)$(project_name).so.$(so_current).$(so_revision) 
+endif
+endif
+ifneq ($(so_revision),0)
+	cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision) $(lib_prefix)$(project_name).so.$(so_current) 
+endif
+	cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current) $(lib_prefix)$(project_name).so
 	-ldconfig $(lib_install_dir)
 	$(ec)$(gprintf) "Installation complete.\n"
 endif
@@ -2028,13 +2037,13 @@ ubuntubin: bindist
 	$(ec)$(gprintf) "#!/bin/bash\n" > $(ubuntu_pkginfo_dir)/postinst
 ifneq ($(so_age),0)
 ifneq ($(so_revision),0)
-	$(ec)$(gprintf) "ln -fs $(flaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(ubuntu_pkginfo_dir)/postinst 
+	$(ec)$(gprintf) "cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age) $(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(ubuntu_pkginfo_dir)/postinst 
 endif
 endif
 ifneq ($(so_revision),0)
-	$(ec)$(gprintf) "ln -fs $(flaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(ubuntu_pkginfo_dir)/postinst 
+	$(ec)$(gprintf) "cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age) $(lib_prefix)$(project_name).so.$(so_current)\n" >> $(ubuntu_pkginfo_dir)/postinst 
 endif
-	$(ec)$(gprintf) "ln -fs $(flaim_shared_lib) /usr/lib/$(lib_prefix)$(project_name).so\n" >> $(ubuntu_pkginfo_dir)/postinst
+	$(ec)$(gprintf) "cd $(lib_install_dir); ln -fs $(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age) $(lib_prefix)$(project_name).so\n" >> $(ubuntu_pkginfo_dir)/postinst
 	$(ec)$(gprintf) "ldconfig /usr/lib/$(flaim_shared_lib)\n" >> $(ubuntu_pkginfo_dir)/postinst
 	$(ec)chmod 0755 $(ubuntu_pkginfo_dir)/postinst
 	
