@@ -1,5 +1,6 @@
 libflaim (4.9.0-0ubuntu1) edgy; urgency=low
 
+  * Removed shared libraries from the development package
   * Removed debian/docs
 
  -- Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>  Wed,  4 Oct 2006 11:50:56 -0600
