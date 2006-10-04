@@ -886,6 +886,7 @@ ccflags =
 clrflags =
 noclrflags =
 cs_flags = /nologo /warn:4 /warnaserror+
+cs_defines =
 ifeq ($(target_build_type),debug)
 	cs_flags += /debug+ /debug:full /define:FLM_DEBUG
 else
@@ -1068,6 +1069,7 @@ ifdef unix_target
 
 	ifeq ($(target_os_family),linux)
 		csharp_compiler := mcs
+		cs_defines = /d:mono
 
 		# Must support 64 bit file sizes - even for 32 bit builds.
 
@@ -1799,7 +1801,7 @@ ifdef csharp_compiler
 $(xflaim_csharp_assembly) : $(csharp_src)
 	$(ec)$(gprintf) "Compiling CSharp sources ...\n"
 	$(ec)$(csharp_compiler) /target:library /out:$(call hostpath,$(xflaim_csharp_assembly)) \
-		/doc:$(call hostpath,$(xflaim_csharp_assembly_xml)) $(cs_flags)\
+		/doc:$(call hostpath,$(xflaim_csharp_assembly_xml)) $(cs_defines) $(cs_flags)\
 		$(call hostpath,$(csharp_src))
 endif
 
@@ -1807,7 +1809,7 @@ ifdef csharp_compiler
 $(cstest_exe) : $(cstest_src) $(xflaim_csharp_assembly)
 	$(ec)$(gprintf) "Compiling CSTest sources ...\n"
 	$(ec)$(csharp_compiler) /out:$(call hostpath,$(cstest_exe)) $(call hostpath,$(cstest_src)) \
-		/reference:$(call hostpath,$(xflaim_csharp_assembly)) $(cs_flags)
+		/reference:$(call hostpath,$(xflaim_csharp_assembly)) $(cs_defines) $(cs_flags)
 endif
 
 # -- *.cpp -> *$(obj_suffix) --

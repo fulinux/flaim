@@ -249,6 +249,7 @@ namespace cstest
 					return( false);
 				}
 			}
+			endTest( false, true);
 
 			// Start a transaction
 
