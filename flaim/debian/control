@@ -1,0 +1,28 @@
+Source: libflaim
+Priority: optional
+Maintainer: Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>
+Build-Depends: debhelper (>= 5.0), libncurses-dev
+Standards-Version: 3.6.2
+Section: libs
+
+Package: libflaim-dev
+Section: libdevel
+Architecture: any
+Depends: libflaim (= ${Source-Version})
+Description: Embeddable cross-platform database engine
+ FLAIM is an embeddable cross-platform database engine that provides a
+ rich, powerful, easy-to-use feature set. It is the database engine used
+ by Novell eDirectory. It has proven to be highly scalable, reliable,
+ and robust. It is available on a wide variety of 32 bit and 64 bit
+ platforms.  Project homepage is http://www.bandit-project.org/index.php/FLAIM.
+
+Package: libflaim
+Section: libs
+Architecture: any
+Depends: ${shlibs:Depends}
+Description: Embeddable cross-platform database engine
+ FLAIM is an embeddable cross-platform database engine that provides a
+ rich, powerful, easy-to-use feature set. It is the database engine used
+ by Novell eDirectory. It has proven to be highly scalable, reliable,
+ and robust. It is available on a wide variety of 32 bit and 64 bit
+ platforms.  Project homepage is http://www.bandit-project.org/index.php/FLAIM.

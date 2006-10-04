@@ -1,1 +1,5 @@
-   * Initial revision for Ubuntu
+libflaim (4.8.0-0ubuntu1) dapper; urgency=low
+
+  * Initial release
+
+ -- Martin Meredith <mez@ubuntu.com>  Tue, 14 Feb 2006 01:09:45 +0000

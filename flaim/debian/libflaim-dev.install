@@ -1,0 +1,4 @@
+usr/include/*
+usr/lib/lib*.a
+usr/lib/libflaim.so*
+usr/lib/pkgconfig/*
