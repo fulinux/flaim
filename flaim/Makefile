@@ -2017,8 +2017,8 @@ ubuntusrc: srcdist
 	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(ubuntu_stage_dir)/$(package_proj_name)_$(version).orig.tar.gz)
 
 	$(ec)$(gprintf) "Creating Ubuntu changelog file ...\n"
-	$(ec)$(gprintf) "$(package_proj_name) ($(package_version_ubuntu)) $(package_distro_ubuntu); urgency=low\n" > $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
-	$(ec)$(gprintf) "  * Package update for Ubuntu.\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) "$(package_proj_name) ($(package_version_ubuntu)) $(package_distro_ubuntu); urgency=low\n\n" > $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) "  * Package update for Ubuntu.\n\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)822-date >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)$(gprintf) "\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
