@@ -13,9 +13,6 @@ else
 	CFLAGS += -O2
 endif
 
-version=4.8.0
-major=4
-
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
