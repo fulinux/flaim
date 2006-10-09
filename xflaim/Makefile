@@ -2428,8 +2428,8 @@ ubuntusrc: srcdist
 	$(ec)$(gprintf) "Moving packages to UBUNTU directory ...\n"
 	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.dsc,$(package_ubuntu_dir))
 	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.dsc)
-	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.gz,$(package_ubuntu_dir))
-	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.gz)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.tar.gz,$(package_ubuntu_dir))
+	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.tar.gz)
 	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.changes,$(package_ubuntu_dir))
 	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.changes)
 
