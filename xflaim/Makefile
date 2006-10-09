@@ -353,6 +353,14 @@ ifndef host_native_word_size
 endif
 
 ifndef host_native_word_size
+	ifneq (,$(findstring amd64,$(HOSTTYPE)))
+		host_processor_family = x86
+		host_native_word_size = 64
+		host_supported_word_sizes = 32 64
+	endif
+endif
+
+ifndef host_native_word_size
 	ifneq (,$(findstring x86,$(HOSTTYPE)))
 		host_processor_family = x86
 		host_native_word_size = 32
