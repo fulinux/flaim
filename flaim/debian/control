@@ -18,7 +18,7 @@ Description: Embeddable cross-platform database engine
  .
  Homepage: http://www.bandit-project.org/index.php/FLAIM
 
-Package: libflaim4
+Package: libflaim
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}

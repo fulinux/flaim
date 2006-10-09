@@ -2022,7 +2022,6 @@ ubuntusrc: srcdist
 	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/$(src_package_base_name).orig.tar)
 
 	$(ec)$(call copycmd,$(ubuntu_stage_dir)/$(package_proj_name_and_ver)/COPYRIGHT,$(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/copyright)
-	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(ubuntu_stage_dir)/$(package_proj_name)_$(version).orig.tar.gz)
 
 	$(ec)$(gprintf) "Creating Ubuntu changelog file ...\n"
 	$(ec)$(gprintf) "$(package_proj_name) ($(package_version_ubuntu)) $(package_distro_ubuntu); urgency=low\n\n" > $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
@@ -2032,7 +2031,7 @@ ubuntusrc: srcdist
 	$(ec)$(gprintf) "\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)cat ChangeLog.ubuntu >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	
-	$(ec)cd $(ubuntu_stage_dir)/$(package_proj_name_and_ver); dpkg-buildpackage -S -sa -rfakeroot
+	$(ec)cd $(ubuntu_stage_dir); dpkg-source -b $(package_proj_name_and_ver) $(package_proj_name_and_ver) 
 	
 	$(ec)$(gprintf) "Checking Ubuntu package ...\n"
 	$(ec)lintian -i $(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc
@@ -2041,10 +2040,10 @@ ubuntusrc: srcdist
 	$(ec)$(gprintf) "Moving packages to UBUNTU directory ...\n"
 	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.dsc,$(package_ubuntu_dir))
 	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.dsc)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.diff.gz,$(package_ubuntu_dir))
+	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.diff.gz)
 	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.tar.gz,$(package_ubuntu_dir))
 	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.tar.gz)
-	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.changes,$(package_ubuntu_dir))
-	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.changes)
 
 	$(ec)$(gprintf) "Removing temporary files ...\n"
 	$(ec)$(call rmdircmd,$(ubuntu_stage_dir))
