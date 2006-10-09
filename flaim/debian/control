@@ -1,6 +1,6 @@
 Source: libflaim
 Priority: optional
-Maintainer: Martin Meredith <mez@ubuntu.com>
+Maintainer: Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>
 Build-Depends: debhelper (>= 5.0), libncurses-dev
 Standards-Version: 3.7.2
 Section: libs
