@@ -509,22 +509,12 @@ Begin_Check:
 	bStartOver = FALSE;
 
 	pPool->poolReset( pvDbInfoMark);
-	pDbInfo->pProgress->bPhysicalCorrupt = FALSE;
-	pDbInfo->pProgress->bLogicalIndexCorrupt = FALSE;
-	pDbInfo->pProgress->ui64DatabaseSize = 0;
-	pDbInfo->pProgress->uiNumFields = 0;
-	pDbInfo->pProgress->uiNumIndexes = 0;
-	pDbInfo->pProgress->uiNumContainers = 0;
-	pDbInfo->pProgress->uiNumLogicalFiles = 0;
+	f_memset( pDbInfo->pProgress, 0, sizeof(DB_CHECK_PROGRESS));
 	pDbInfo->pLogicalFiles = NULL;
-	pDbInfo->pProgress->pLfStats = NULL;
 	pDbInfo->uiFlags = uiCheckFlags;
 	pDbInfo->bStartedUpdateTrans = FALSE;
-	f_memset( &pDbInfo->pProgress->AvailBlocks, 0, sizeof(BLOCK_INFO));
-	f_memset( &pDbInfo->pProgress->LFHBlocks, 0, sizeof(BLOCK_INFO));
 	f_memset( &pDbInfo->FileHdr, 0, sizeof(FILE_HDR));
-	f_memset( &Progress, 0, sizeof(DB_CHECK_PROGRESS));
-	Progress.AppArg = AppArg;
+	pDbInfo->pProgress->AppArg = AppArg;
 
 	// Get the dictionary information for the file
 
@@ -532,8 +522,6 @@ Begin_Check:
 	{
 		goto Exit;
 	}
-
-	Progress.ui64BytesExamined = 0;
 
 	for (uiLoop = 1;
 		  uiLoop <= MAX_DATA_BLOCK_FILE_NUMBER( pDb->pFile->FileHdr.uiVersionNum);
@@ -544,7 +532,7 @@ Begin_Check:
 			break;
 		}
 
-		Progress.ui64DatabaseSize += ui64TmpSize;
+		pDbInfo->pProgress->ui64DatabaseSize += ui64TmpSize;
 	}
 
 	// See if we have a valid end of file
@@ -558,10 +546,10 @@ Begin_Check:
 			goto Exit;
 		}
 	}
-	else if (Progress.ui64DatabaseSize < FSGetSizeInBytes( pDbInfo->pDb->pFile->uiMaxFileSize,
+	else if (pDbInfo->pProgress->ui64DatabaseSize < FSGetSizeInBytes( pDbInfo->pDb->pFile->uiMaxFileSize,
 																			uiFileEnd))
 	{
-		Progress.ui64DatabaseSize = FSGetSizeInBytes( pDbInfo->pDb->pFile->uiMaxFileSize,
+		pDbInfo->pProgress->ui64DatabaseSize = FSGetSizeInBytes( pDbInfo->pDb->pFile->uiMaxFileSize,
 																	uiFileEnd);
 	}
 
