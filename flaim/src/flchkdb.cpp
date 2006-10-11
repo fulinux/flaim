@@ -298,7 +298,7 @@ public:
 		FLMUINT64				ui64EstTotalUnits,
 		FLMUINT64				ui64UnitsDone)
 	{
-		FLMINT					iRetVal = 0;
+		RCODE						rc = NE_FLM_OK;
 		DB_CHECK_PROGRESS *	pProgress = m_pIxChkInfo->pDbInfo->pProgress;
 	
 		// Set the status values.
@@ -308,16 +308,15 @@ public:
 	
 		// Call the progress callback.
 	
-		if (RC_BAD( chkCallProgFunc( m_pIxChkInfo->pDbInfo)))
+		if (RC_BAD( rc = chkCallProgFunc( m_pIxChkInfo->pDbInfo)))
 		{
-			iRetVal = -1;
 			goto Exit;
 		}
 	
 	Exit:
 	
 		pProgress->bStartFlag = FALSE;
-		return( iRetVal);
+		return( rc);
 	}
 		
 private:
