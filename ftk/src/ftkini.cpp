@@ -365,7 +365,7 @@ RCODE FLMAPI F_IniFile::write( void)
 	RCODE					rc = NE_FLM_OK;
 	FLMUINT				uiBytesWritten;
 	INI_LINE *			pCurLine = NULL;
-	FLMBOOL				uiFileOffset = 0;		
+	FLMUINT				uiFileOffset = 0;		
 	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
 
 	f_assert( m_bReady);
