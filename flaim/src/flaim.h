@@ -663,7 +663,7 @@
 		FLMUINT		uiIxNum;					///< Index used to execute query if eOptType is qOptTypes::QOPT_USING_INDEX.
 		FLMBOOL		bDoRecMatch;			///< Record must be retrieved to test against query criteria.\   Only valid
 													///< if OPT_INFO::eOptType is qOptTypes::QOPT_USING_INDEX.
-		FLMUINT		bDoKeyMatch;			///< Must match against index keys.  Only valid if OPT_INFO::eOptType is qOptTypes::QOPT_USING_INDEX.
+		FLMBOOL		bDoKeyMatch;			///< Must match against index keys.  Only valid if OPT_INFO::eOptType is qOptTypes::QOPT_USING_INDEX.
 		FLMUINT		uiDrn;					///< DRN to read if OPT_INFO::eOptType is qOptTypes::QOPT_SINGLE_RECORD_READ.
 	} OPT_INFO;
 
