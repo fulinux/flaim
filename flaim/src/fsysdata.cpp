@@ -1068,7 +1068,7 @@ FLMEXP RCODE FLMAPI FlmConfig(
 			
 			if( !gv_FlmSysData.uiOpenFFiles)
 			{
-				if( (FLMBOOL)Value1)
+				if( (FLMBOOL)((FLMUINT)Value1))
 				{
 					gv_FlmSysData.uiFileOpenFlags = 
 						FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT;
