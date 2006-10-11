@@ -2287,7 +2287,16 @@ endif
 uninstall: 
 ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Uninstalling ...\n"
-	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)*$(shared_lib_suffix)*
+ifneq ($(so_age),0)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)
+else
+ifneq ($(so_revision),0)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)
+endif
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name).so.$(so_current)
+	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name).so
+endif
 	-rm -rf $(lib_install_dir)/$(lib_prefix)$(project_name)$(static_lib_suffix)
 	-rm -rf $(pkgconfig_install_dir)/$(pkgconfig_file_name)
 	-rm -rf $(include_install_dir)/xflaim.h
@@ -2356,9 +2365,18 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)files\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)doc COPYING COPYRIGHT VERSION\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(asterisk)$(shared_lib_suffix)$(asterisk)\n" >> $(spec_file)
+ifneq ($(so_age),0)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision).$(so_age)\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(spec_file)
+else
+ifneq ($(so_revision),0)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name).so.$(so_current).$(so_revision)\n" >> $(spec_file)
+endif
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(spec_file)
+endif
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name).so\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(static_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/include/xflaim.h\n" >> $(spec_file)
