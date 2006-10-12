@@ -28,6 +28,10 @@
 
 	#include "xflaimtk.h"
 	
+	#ifdef FLM_PACK_STRUCTS
+		#pragma pack(push, 1)
+	#endif
+
 	/****************************************************************************
 									Forward References
 	****************************************************************************/
@@ -5055,5 +5059,8 @@
 
 	*/
 
+	#ifdef FLM_PACK_STRUCTS
+		#pragma pack(pop)
+	#endif
 
 #endif // XFLAIM_H

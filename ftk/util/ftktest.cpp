@@ -6201,9 +6201,12 @@ RCODE ftkTestBTree( void)
 				goto Exit;
 			}
 		}
-
-		f_assert( uiKeyLen == sizeof( ucKey));
-		f_assert( ui32Loop == f_bigEndianToUINT32( ucKey));
+		
+		if( uiKeyLen != sizeof( ucKey) || ui32Loop != f_bigEndianToUINT32( ucKey))
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+			goto Exit;
+		}
 	}
 	
 Exit:

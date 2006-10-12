@@ -379,6 +379,7 @@
 	#if !defined( FLM_UNIX) && !defined( FLM_64BIT)
 		#define FLM_PACK_STRUCTS
 		#ifdef FLM_WIN
+
 			// For some reason, Windows emits a warning when the packing
 			// is changed.
 
