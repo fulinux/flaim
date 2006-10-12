@@ -376,6 +376,20 @@
 		#define xpcselany
 	#endif
 	
+	#if !defined( FLM_UNIX) && !defined( FLM_64BIT)
+		#define FLM_PACK_STRUCTS
+		#ifdef FLM_WIN
+			// For some reason, Windows emits a warning when the packing
+			// is changed.
+
+			#pragma warning( disable : 4103)
+		#endif
+	#endif
+
+	#ifdef FLM_PACK_STRUCTS
+		#pragma pack(push, 1)
+	#endif
+
 	typedef struct
 	{
 		FLMUINT32	l;
@@ -384,6 +398,10 @@
 		FLMUINT8		b[ 8];
 	} FLM_GUID;
 	
+	#ifdef FLM_PACK_STRUCTS
+		#pragma pack(pop)
+	#endif
+
 	#define RFLMIID		const FLM_GUID &
 	#define RFLMCLSID		const FLM_GUID &
 	#define FLMGUID		FLM_GUID
@@ -924,6 +942,10 @@
 
 	#define F_PUSHCOLOR			F_PUSH_FORECOLOR F_PUSH_BACKCOLOR
 	#define F_POPCOLOR			F_POP_FORECOLOR F_POP_BACKCOLOR
+
+	#ifdef FLM_PACK_STRUCTS
+		#pragma pack(push, 1)
+	#endif
 
 	// IMPORTANT NOTE: This structure needs to be kept in sync with corresponding
 	// structures and classes in java and C#.
@@ -7051,5 +7073,9 @@
 	****************************************************************************/
 
 	FLMUINT f_getpid( void);
+
+	#ifdef FLM_PACK_STRUCTS
+		#pragma pack(pop)
+	#endif
 
 #endif // FTK_H

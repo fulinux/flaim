@@ -30,6 +30,10 @@
 
 	#include "flaimtk.h"
 
+	#ifdef FLM_PACK_STRUCTS
+		#pragma pack(push, 1)
+	#endif
+
 	/// \defgroup dbsystem FLAIM System Functions
 
 		/// \defgroup startupshutdown FLAIM System Startup/Shutdown
@@ -5593,5 +5597,9 @@
 															///< local storage key.\  NOTE: Once the database key has been wrapped in a password,
 															///< that password must be supplied to FlmDbOpen() when opening the database.
 		);
+
+	#ifdef FLM_PACK_STRUCTS
+		#pragma pack(pop)
+	#endif
 
 #endif

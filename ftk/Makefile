@@ -840,7 +840,7 @@ ifdef win_target
 
 	# Compiler defines and flags
 
-	ccflags += /nologo /c /GF /GR /J /MD /W4 /WX /Zi /Zp1
+	ccflags += /nologo /c /GF /GR /J /MD /W4 /WX /Zi
 	ccdefs += _CRT_SECURE_NO_DEPRECATE
 	ccdefs += WIN32_LEAN_AND_MEAN
 	ccdefs += WIN32_EXTRA_LEAN
@@ -1206,7 +1206,7 @@ ifdef netware_target
 		ccdefs += FLM_LIBC_NLM
 	endif
 
-	ccflags += /ez /6s /w4 /za /zp1 /zq /zm /s /ei /of+ /we /bt=NETWARE
+	ccflags += /ez /6s /w4 /za /zq /zm /s /ei /of+ /we /bt=NETWARE
 
 	ifeq ($(target_build_type),release)
 		ccflags += /oair
