@@ -3305,7 +3305,7 @@ RCODE F_DOMNode::storeTextAsBinary(
 	
 	if( RC_BAD( rc = setBinary( 
 		(IF_Db *)pDb, dynaBuf.getBufferPtr(), 
-		dynaBuf.getDataLength(), uiEncDefId)))
+		dynaBuf.getDataLength(), TRUE, uiEncDefId)))
 	{
 		goto Exit;
 	}
