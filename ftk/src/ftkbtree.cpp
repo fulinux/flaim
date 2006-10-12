@@ -4019,7 +4019,7 @@ RCODE F_BTree::updateParentCounts(
 	FLMUINT				uiCounts;
 	FLMBYTE *			pucCounts;
 
-	f_assert( getBlockType( pucChildBlock) == F_BLK_TYPE_BT_NON_LEAF_COUNTS);
+	f_assert( getBlockType( *ppucParentBlock) == F_BLK_TYPE_BT_NON_LEAF_COUNTS);
 	uiCounts = countKeys( pucChildBlock);
 
 	if( RC_BAD( rc = m_pBlockMgr->prepareForUpdate( ppParentBlock, 
@@ -4944,6 +4944,9 @@ RCODE F_BTree::moveEntriesToPrevBlock(
 	FLMUINT				uiCount;
 	FLMUINT				uiOffset;
 
+	f_assert( !(*ppPrevBlock));
+	f_assert( !(*ppucPrevBlock));
+
 	// Assume nothing to move.
 	
 	*pbEntriesWereMoved = FALSE;
@@ -5042,7 +5045,6 @@ RCODE F_BTree::moveEntriesToPrevBlock(
 
 	// We will need to return this block.
 	
-	f_assert( !(*ppPrevBlock));
 	*ppPrevBlock = pPrevBlock;
 	*ppucPrevBlock = pucPrevBlock;
 	
@@ -5398,6 +5400,10 @@ RCODE F_BTree::moveEntriesToNextBlock(
 				
 				pParentStack->pBlock = pParentBlock;
 				pParentStack->pucBlock = pucParentBlock;
+
+				pParentBlock = NULL;
+				pucParentBlock = NULL;
+
 				bCommonParent = TRUE;
 			}
 			else
@@ -6111,6 +6117,8 @@ RCODE F_BTree::findEntry(
 		{
 			goto Exit;
 		}
+
+		f_assert( pucBlock);
 
 		// We are building the stack inverted to make traversing it a bit easier.
 		
@@ -7512,7 +7520,7 @@ StartOver:
 
 	// Can we move entries around at all to make some room?
 	
-	if( RC_BAD( rc = moveEntriesToPrevBlock(  uiEntrySize, &pPrevBlock, 
+	if( RC_BAD( rc = moveEntriesToPrevBlock( uiEntrySize, &pPrevBlock, 
 		&pucPrevBlock, &bEntriesWereMoved)))
 	{
 		goto Exit;
@@ -7706,6 +7714,10 @@ StartOver:
 		{
 			goto Exit;
 		}
+
+		pPrevBlock->Release();
+		pPrevBlock = NULL;
+		pucPrevBlock = NULL;
 
 		// Increment so we point to one past the last entry.
 
@@ -12924,6 +12936,17 @@ RCODE FLMAPI FlmAllocBTree(
 {
 	RCODE					rc = NE_FLM_OK;
 	F_BTree *			pBTree = NULL;
+	IF_BlockMgr *		pTmpBlockMgr = NULL;
+
+	if( !pBlockMgr)
+	{
+		if( RC_BAD( rc = FlmAllocBlockMgr( 4096, &pTmpBlockMgr)))
+		{
+			goto Exit;
+		}
+
+		pBlockMgr = pTmpBlockMgr;
+	}
 	
 	if( (pBTree = f_new F_BTree( pBlockMgr)) == NULL)
 	{
@@ -12939,6 +12962,11 @@ Exit:
 	if( pBTree)
 	{
 		pBTree->Release();
+	}
+
+	if( pTmpBlockMgr)
+	{
+		pTmpBlockMgr->Release();
 	}
 
 	return( rc);

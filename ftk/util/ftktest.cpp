@@ -74,6 +74,8 @@ FSTATIC FLMBYTE ftkSlowPacketChecksum(
 	
 FSTATIC RCODE ftkTestText( void);
 
+FSTATIC RCODE ftkTestBTree( void);
+
 FSTATIC FLMBOOL flmCh6Brkcar(
 	FLMUINT16			ui16WpChar,
 	FLMUINT16 *			pui16BaseChar,
@@ -4282,10 +4284,7 @@ int main( void)
 	RCODE					rc = NE_FLM_OK;
 	IF_DirHdl *			pDirHdl = NULL;
 	IF_FileSystem *	pFileSystem = NULL;
-	IF_BlockMgr *		pBlockMgr = NULL;
-	IF_BTree *			pBTree = NULL;
 	FLMUINT *			puiPacketSize;
-	FLMUINT32			ui32RootBlkId;
 	char					szTmpBuf[ 128];
 	
 	if( RC_BAD( rc = ftkStartup()))
@@ -4320,24 +4319,27 @@ int main( void)
 	pDirHdl->Release();
 	pDirHdl = NULL;
 	
-	if( RC_BAD( rc = FlmAllocBlockMgr( 4096, &pBlockMgr)))
+	// B-Tree tests
+	
+	f_printf( "Running B-Tree tests: ");
+	
+	if( RC_BAD( rc = ftkTestBTree()))
 	{
 		goto Exit;
 	}
-	
-	if( RC_BAD( rc = FlmAllocBTree( pBlockMgr, &pBTree)))
-	{
-		goto Exit;
-	}
-	
-	if( RC_BAD( rc = pBTree->btCreate( 1, FALSE, TRUE, &ui32RootBlkId)))
-	{
-		goto Exit;
-	}
-	
-	pBTree->btDeleteTree();
-	pBTree->Release();
 
+	f_printf( "Done.\n");
+	
+	// Run a multi-threaded test to verify the proper operation of
+	// the atomic operations
+	
+	if( RC_BAD( rc = ftkTestAtomics()))
+	{
+		goto Exit;
+	}
+	
+	// sprintf tests
+	
 	f_printf( "Running sprintf test: ");
 	f_sprintf( szTmpBuf, "Hello, World! (You're number %u)\n", 1);
 	f_printf( szTmpBuf);
@@ -4446,11 +4448,6 @@ Exit:
 		pFileSystem->Release();
 	}
 	
-	if( pBlockMgr)
-	{
-		pBlockMgr->Release();
-	}
-
 	ftkShutdown();
 	return( (int)rc);
 }
@@ -5988,7 +5985,6 @@ FLMUINT16 HanToZenkaku(
 
 	if (!ui16Zenkaku)
 	{
-
 		// Change return value
 
 		ui16CharsUsed = 0;
@@ -6151,4 +6147,72 @@ FLMUINT16 ZenToHankaku(
 	}
 
 	return (ui16Hankaku);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE ftkTestBTree( void)
+{
+	RCODE				rc = NE_FLM_OK;
+	IF_BTree *		pTree = NULL;
+	FLMUINT32		ui32RootId;
+	FLMUINT32		ui32Loop;
+	FLMBYTE			ucKey[ 4];
+	FLMUINT			uiKeyLen;
+	
+	if( RC_BAD( rc = FlmAllocBTree( NULL, &pTree)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pTree->btCreate( 1, TRUE, TRUE, &ui32RootId)))
+	{
+		goto Exit;
+	}
+	
+	for( ui32Loop = 0; ui32Loop < 10000; ui32Loop++)
+	{
+		f_UINT32ToBigEndian( ui32Loop, ucKey);
+		uiKeyLen = sizeof( ucKey);
+
+		if( RC_BAD( rc = pTree->btInsertEntry( ucKey, 
+			uiKeyLen, uiKeyLen, NULL, 0, FALSE, TRUE, NULL, NULL)))
+		{
+			goto Exit;
+		}
+	}
+
+	for( ui32Loop = 0; ui32Loop < 10000; ui32Loop++)
+	{
+		uiKeyLen = sizeof( ucKey);
+
+		if( ui32Loop != 0)
+		{
+			if( RC_BAD( rc = pTree->btNextEntry( ucKey, uiKeyLen, &uiKeyLen))) 
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( RC_BAD( rc = pTree->btFirstEntry( ucKey, uiKeyLen, &uiKeyLen))) 
+			{
+				goto Exit;
+			}
+		}
+
+		f_assert( uiKeyLen == sizeof( ucKey));
+		f_assert( ui32Loop == f_bigEndianToUINT32( ucKey));
+	}
+	
+Exit:
+
+	if( pTree)
+	{
+		pTree->btClose();
+		pTree->Release();
+	}
+
+	return( rc);
 }
