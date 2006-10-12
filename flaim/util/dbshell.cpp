@@ -2258,7 +2258,7 @@ FLMINT FlmDbConfigCommand::execute(
 			iExitCode = -1;
 			goto Exit;
 		}
-		if( RC_BAD( rc = FlmDbConfig( hDb, FDB_RFL_KEEP_FILES, (void *)bEnable, NULL)))
+		if( RC_BAD( rc = FlmDbConfig( hDb, FDB_RFL_KEEP_FILES, (void *)((FLMUINT)bEnable), NULL)))
 		{
 			goto Exit;
 		}
@@ -2329,7 +2329,7 @@ FLMINT FlmDbConfigCommand::execute(
 			iExitCode = -1;
 			goto Exit;
 		}
-		if( RC_BAD( rc = FlmDbConfig( hDb, FDB_KEEP_ABORTED_TRANS_IN_RFL, (void *)bEnable, NULL)))
+		if( RC_BAD( rc = FlmDbConfig( hDb, FDB_KEEP_ABORTED_TRANS_IN_RFL, (void *)((FLMUINT)bEnable), NULL)))
 		{
 			goto Exit;
 		}
