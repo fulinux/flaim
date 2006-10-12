@@ -386,20 +386,25 @@ Desc:	This routine reads and verifies the information contained in the
 *****************************************************************************/
 FSTATIC RCODE ViewReadAndVerifyHdrInfo( void)
 {
-	RCODE				rc = FERR_OK;
-	RCODE				rc0;
-	RCODE				rc1;
-	FLMUINT			uiBytesRead;
-	FLMBYTE *		pReadBuf = NULL;
-	IF_FileHdl *	pCFileHdl = NULL;
-	FLMUINT			uiTmpLen;
+	RCODE					rc = FERR_OK;
+	RCODE					rc0;
+	RCODE					rc1;
+	FLMUINT				uiBytesRead;
+	FLMBYTE *			pReadBuf = NULL;
+	IF_FileHdl *		pCFileHdl = NULL;
+	IF_FileSystem *	pFileSystem = NULL;
+	FLMUINT				uiTmpLen;
 
 	if( RC_BAD( rc = f_calloc( 2048, &pReadBuf)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( gv_szViewFileName, 
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
+	if( RC_BAD( rc = pFileSystem->openFile( gv_szViewFileName, 
 		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pCFileHdl)))
 	{
 		goto Exit;
@@ -492,10 +497,14 @@ Exit:
 	{
 		pCFileHdl->Release();
 	}
+	if (pFileSystem)
+	{
+		pFileSystem->Release();
+	}
 	
 	return( rc);
 }
-
+
 /***************************************************************************
 Desc: Read the header information from the database -- this includes
 		the file header and the log header.

@@ -991,8 +991,14 @@ RCODE TestBase::openTestState(
 {
 	RCODE					rc = FERR_OK;
 	CREATE_OPTS			createOpts;
+	IF_FileSystem *	pFileSystem = NULL;
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->doesFileExist( pszDibName)))
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pFileSystem->doesFileExist( pszDibName)))
 	{
 		// Create the database
 
@@ -1016,6 +1022,11 @@ RCODE TestBase::openTestState(
 	}
 
 Exit:
+
+	if (pFileSystem)
+	{
+		pFileSystem->Release();
+	}
 
 	return( rc);
 }
@@ -1257,11 +1268,16 @@ Desc:
 RCODE ArgList::expandFileArgs( 
 	const char *		pszFilename)
 {
-	RCODE				rc = FERR_OK;
-	char				token[64];
-	IF_FileHdl *	pFileHdl = NULL;
+	RCODE					rc = FERR_OK;
+	char					token[64];
+	IF_FileHdl *		pFileHdl = NULL;
+	IF_FileSystem *	pFileSystem = NULL;
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile(
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
+	if( RC_BAD( rc = pFileSystem->openFile(
 		pszFilename, FLM_IO_RDWR, &pFileHdl)))
 	{
 		goto Exit;
@@ -1296,6 +1312,10 @@ Exit:
 	if( pFileHdl)
 	{
 		pFileHdl->Release();
+	}
+	if (pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 
 	return( rc);

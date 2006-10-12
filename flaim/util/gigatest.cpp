@@ -764,61 +764,25 @@ Desc: Update the memory information on the screen.
 *********************************************************************/
 void gigaCheckpointDisplay( void)
 {
-	FLMUINT		uiRunningTime = 0;
-	FLMBOOL		bRunning = FALSE;
-	FLMBOOL		bForcingCheckpoint = FALSE;
-	char			szBuf[ 80];
-	FFILE *		pFile = ((FDB *)gv_hDb)->pFile;
+	char					szBuf[ 80];
+	CHECKPOINT_INFO	cpInfo;
 
-	f_mutexLock( gv_FlmSysData.hShareMutex);
-	if (pFile->pCPInfo)
-	{
-		bRunning = pFile->pCPInfo->bDoingCheckpoint;
-		if (bRunning)
-		{
-			FLMUINT	uiElapTime;
-			FLMUINT	uiCurrTime;
-				
-			if (pFile->pCPInfo->uiStartTime)
-			{
-				uiCurrTime = FLM_GET_TIMER();
-
-				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
-							pFile->pCPInfo->uiStartTime);
-				uiRunningTime = FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
-			}
-			else
-			{
-				uiRunningTime = 0;
-			}
-			bForcingCheckpoint = pFile->pCPInfo->bForcingCheckpoint;
-			if (pFile->pCPInfo->uiForceCheckpointStartTime)
-			{
-				uiCurrTime = FLM_GET_TIMER();
-				uiElapTime = FLM_ELAPSED_TIME( uiCurrTime,
-							pFile->pCPInfo->uiForceCheckpointStartTime);
-				uiRunningTime = FLM_TIMER_UNITS_TO_MILLI( uiElapTime);
-			}
-		}
-	}
-	
-	f_mutexUnlock( gv_FlmSysData.hShareMutex);
-	
-	if (!bRunning)
+	FlmDbGetConfig( gv_hDb, FDB_GET_CHECKPOINT_INFO, &cpInfo, NULL, NULL);
+	if (!cpInfo.bRunning)
 	{
 		f_strcpy( szBuf, "Idle                  ");
 	}
 	else
 	{
-		if (bForcingCheckpoint)
+		if (cpInfo.bForcingCheckpoint)
 		{
 			f_sprintf( szBuf, "Forcing (%ums)          ",
-				(unsigned)uiRunningTime);
+				(unsigned)cpInfo.uiRunningTime);
 		}
 		else
 		{
 			f_sprintf( szBuf, "Running (%ums)           ",
-				(unsigned)uiRunningTime);
+				(unsigned)cpInfo.uiRunningTime);
 		}
 	}
 	

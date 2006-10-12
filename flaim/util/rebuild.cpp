@@ -1295,6 +1295,7 @@ FSTATIC RCODE bldGetCreateOpts(
 	FLMBYTE				ucLogHdr [LOG_HEADER_SIZE];
 	HDR_INFO				HdrInfo;
 	FLMUINT				uiVersion;
+	IF_FileSystem *	pFileSystem = NULL;
 	IF_FileHdl *		pCFileHdl = NULL;
 
 	f_memset( pCreateOpts, 0, sizeof( CREATE_OPTS));
@@ -1304,7 +1305,11 @@ FSTATIC RCODE bldGetCreateOpts(
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = gv_FlmSysData.pFileSystem->openFile( pszFileName, 
+	if( RC_BAD( rc = FlmGetFileSystem( &pFileSystem)))
+	{
+		goto Exit;
+	}
+	if( RC_BAD( rc = pFileSystem->openFile( pszFileName, 
 		FLM_IO_RDWR | FLM_IO_SH_DENYNONE | FLM_IO_DIRECT, &pCFileHdl)))
 	{
 		goto Exit;
@@ -1356,6 +1361,10 @@ Exit:
 	if( pCFileHdl)
 	{
 		pCFileHdl->Release();
+	}
+	if (pFileSystem)
+	{
+		pFileSystem->Release();
 	}
 	
 	return( rc);
