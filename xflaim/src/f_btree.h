@@ -201,48 +201,6 @@ FINLINE FLMUINT actualEntrySize(
 	return uiEntrySize - 2;
 }
 
-// Error information returned by btCheck()
-
-enum BTREE_ERR_TYPE
-{
-	NO_ERR = 0,  // FYI: Visual Studio already defines NOERROR
-	BT_HEADER,
-	KEY_ORDER,
-	DUPLICATE_KEYS,
-	INFINITY_MARKER,
-	CHILD_BLOCK_ADDRESS,
-	SCA_GET_BLOCK_FAILED,
-	MISSING_OVERALL_DATA_LENGTH,
-	NOT_DATA_ONLY_BLOCK,
-	BAD_DO_BLOCK_LENGTHS,
-	BAD_COUNTS,
-	CATASTROPHIC_FAILURE = 999
-};
-
-typedef struct
-{
-	FLMUINT			uiKeyCnt;
-	FLMUINT			uiFirstKeyCnt;
-	FLMUINT			uiBlkCnt;
-	FLMUINT			uiBytesUsed;
-	FLMUINT			uiDOBlkCnt;
-	FLMUINT			uiDOBytesUsed;
-} BTREE_LEVEL_STATS;
-
-typedef struct
-{
-	FLMUINT				uiBlkAddr;
-	FLMUINT				uiBlockSize;
-	FLMUINT				uiBlocksChecked;
-	FLMUINT				uiAvgFreeSpace;
-	FLMUINT				uiLevels;
-	FLMUINT				uiNumKeys;
-	FLMUINT64			ui64FreeSpace;
-	BTREE_LEVEL_STATS	LevelStats[ BH_MAX_LEVELS];
-	char					szMsg[ 64];
-	BTREE_ERR_TYPE		type;
-}  BTREE_ERR_STRUCT;
-
 typedef struct
 {
 	FLMUINT		uiParentLevel;
@@ -386,7 +344,7 @@ public:
 		FLMUINT *				puiPosition);
 
 	RCODE btCheck(
-		BTREE_ERR_STRUCT *	pErrStruct);
+		BTREE_ERR_INFO *		pErrStruct);
 
 	RCODE btRewind(
 		FLMBYTE *				pucKey,
@@ -862,11 +820,11 @@ private:
 	RCODE verifyDOBlkChain(
 		FLMUINT					uiDOAddr,
 		FLMUINT					uiDataLength,
-		BTREE_ERR_STRUCT *	localErrStruct);
+		BTREE_ERR_INFO *		plErrStruct);
 
 	// Performs a check to verify that the counts in the DB match.
 	RCODE verifyCounts(
-		BTREE_ERR_STRUCT *	pErrStruct);
+		BTREE_ERR_INFO *		pErrStruct);
 
 	void releaseBlocks(
 		FLMBOOL				bResetStack);

@@ -4321,15 +4321,11 @@ int main( void)
 	
 	// B-Tree tests
 	
-	f_printf( "Running B-Tree tests: ");
-	
 	if( RC_BAD( rc = ftkTestBTree()))
 	{
 		goto Exit;
 	}
 
-	f_printf( "Done.\n");
-	
 	// Run a multi-threaded test to verify the proper operation of
 	// the atomic operations
 	
@@ -6154,12 +6150,17 @@ Desc:
 ****************************************************************************/
 RCODE ftkTestBTree( void)
 {
-	RCODE				rc = NE_FLM_OK;
-	IF_BTree *		pTree = NULL;
-	FLMUINT32		ui32RootId;
-	FLMUINT32		ui32Loop;
-	FLMBYTE			ucKey[ 4];
-	FLMUINT			uiKeyLen;
+	RCODE						rc = NE_FLM_OK;
+	IF_BTree *				pTree = NULL;
+	FLMUINT32				ui32RootId;
+	FLMUINT32				ui32Loop;
+	FLMBYTE					ucKey[ 4];
+	FLMUINT					uiKeyLen;
+	BTREE_ERR_INFO			errInfo;
+	FLMBOOL					bFirstPass;
+	FLMUINT32				ui32NumEntries = 100000;
+	
+	f_printf( "Running B-Tree tests ... ");
 	
 	if( RC_BAD( rc = FlmAllocBTree( NULL, &pTree)))
 	{
@@ -6171,23 +6172,25 @@ RCODE ftkTestBTree( void)
 		goto Exit;
 	}
 	
-	for( ui32Loop = 0; ui32Loop < 10000; ui32Loop++)
+	for( ui32Loop = 0; ui32Loop < ui32NumEntries; ui32Loop++)
 	{
 		f_UINT32ToBigEndian( ui32Loop, ucKey);
 		uiKeyLen = sizeof( ucKey);
 
 		if( RC_BAD( rc = pTree->btInsertEntry( ucKey, 
-			uiKeyLen, uiKeyLen, NULL, 0, FALSE, TRUE, NULL, NULL)))
+			uiKeyLen, uiKeyLen, ucKey, uiKeyLen, TRUE, TRUE, NULL, NULL)))
 		{
 			goto Exit;
 		}
 	}
+	
+	bFirstPass = TRUE;
 
-	for( ui32Loop = 0; ui32Loop < 10000; ui32Loop++)
+	for( ui32Loop = 0; ui32Loop < ui32NumEntries; ui32Loop++)
 	{
 		uiKeyLen = sizeof( ucKey);
 
-		if( ui32Loop != 0)
+		if( !bFirstPass)
 		{
 			if( RC_BAD( rc = pTree->btNextEntry( ucKey, uiKeyLen, &uiKeyLen))) 
 			{
@@ -6200,6 +6203,8 @@ RCODE ftkTestBTree( void)
 			{
 				goto Exit;
 			}
+			
+			bFirstPass = FALSE;
 		}
 		
 		if( uiKeyLen != sizeof( ucKey) || ui32Loop != f_bigEndianToUINT32( ucKey))
@@ -6209,7 +6214,61 @@ RCODE ftkTestBTree( void)
 		}
 	}
 	
+	bFirstPass = TRUE;
+	
+	for( ui32Loop = ui32NumEntries; ui32Loop > 0; ui32Loop--)
+	{
+		uiKeyLen = sizeof( ucKey);
+
+		if( !bFirstPass)
+		{
+			if( RC_BAD( rc = pTree->btPrevEntry( ucKey, uiKeyLen, &uiKeyLen))) 
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( RC_BAD( rc = pTree->btLastEntry( ucKey, uiKeyLen, &uiKeyLen))) 
+			{
+				goto Exit;
+			}
+			
+			bFirstPass = FALSE;
+		}
+		
+		if( uiKeyLen != sizeof( ucKey) || 
+			 (ui32Loop - 1) != f_bigEndianToUINT32( ucKey))
+		{
+			rc = RC_SET_AND_ASSERT( NE_FLM_FAILURE);
+			goto Exit;
+		}
+	}
+	
+	if( RC_BAD( rc = pTree->btCheck( &errInfo)))
+	{
+		goto Exit;
+	}
+
+	for( ui32Loop = 0; ui32Loop < ui32NumEntries; ui32Loop++)
+	{
+		f_UINT32ToBigEndian( ui32Loop, ucKey);
+		uiKeyLen = sizeof( ucKey);
+
+		if( RC_BAD( rc = pTree->btRemoveEntry( ucKey, uiKeyLen, uiKeyLen)))
+		{
+			goto Exit;
+		}
+	}
+	
+	if( RC_BAD( rc = pTree->btCheck( &errInfo)))
+	{
+		goto Exit;
+	}
+
 Exit:
+
+	f_printf( "Done.\n");
 
 	if( pTree)
 	{

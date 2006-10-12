@@ -11108,7 +11108,7 @@ Desc: Performs a consistancy check on the BTree
 		NOTE: Must be performed inside of a read transaction!
 ****************************************************************************/
 RCODE F_Btree::btCheck(
-	BTREE_ERR_STRUCT *	pErrStruct)
+	BTREE_ERR_INFO *	pErrStruct)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMUINT32			ui32NextBlkAddr = 0;
@@ -11127,7 +11127,7 @@ RCODE F_Btree::btCheck(
 	FLMBYTE *			pucPrevEntry = NULL;
 	F_CachedBlock *	pChildBlk = NULL;
 	FLMUINT16 *			puiOffsetArray;
-	BTREE_ERR_STRUCT	localErrStruct;
+	BTREE_ERR_INFO		localErrStruct;
 	FLMINT				iCmpResult;
 	FLMUINT				uiOADataLength = 0;
 
@@ -11157,7 +11157,7 @@ RCODE F_Btree::btCheck(
 		if( RC_BAD( rc = m_pDb->m_pDatabase->getBlock( m_pDb, m_pLFile,
 			ui32NextBlkAddr, NULL, &pCurrentBlk)))
 		{
-			localErrStruct.type = SCA_GET_BLOCK_FAILED;
+			localErrStruct.type = GET_BLOCK_FAILED;
 			f_sprintf( localErrStruct.szMsg, 
 				"Failed to get block at %X", ui32NextBlkAddr);
 			goto Exit;
@@ -11198,7 +11198,7 @@ RCODE F_Btree::btCheck(
 				(getBlkAvailSpace(pBlk) / localErrStruct.uiBlocksChecked);
 			localErrStruct.ui64FreeSpace += getBlkAvailSpace(pBlk);
 
-			localErrStruct.LevelStats[ localErrStruct.uiLevels - 1].uiBlkCnt++;
+			localErrStruct.LevelStats[ localErrStruct.uiLevels - 1].uiBlockCnt++;
 			localErrStruct.LevelStats[ localErrStruct.uiLevels - 1].uiBytesUsed +=
 										(m_uiBlockSize - getBlkAvailSpace(pBlk));
 
@@ -11283,7 +11283,7 @@ RCODE F_Btree::btCheck(
 							 (btGetEntryDataLength( pucEntry, NULL, NULL, NULL) > 0)))
 					{
 						localErrStruct.type = INFINITY_MARKER;
-						localErrStruct.uiBlkAddr = ((F_BLK_HDR *)pBlk)->ui32BlkAddr;
+						localErrStruct.uiBlockAddr = ((F_BLK_HDR *)pBlk)->ui32BlkAddr;
 						f_sprintf( localErrStruct.szMsg, "Invalid Infinity Marker %ul", uiLoop);
 						rc = RC_SET_AND_ASSERT( NE_XFLM_BTREE_ERROR);
 						goto Exit;
@@ -11302,7 +11302,7 @@ RCODE F_Btree::btCheck(
 					if( iCmpResult > 0)
 					{
 						localErrStruct.type = KEY_ORDER;
-						localErrStruct.uiBlkAddr = ((F_BLK_HDR *)pBlk)->ui32BlkAddr;
+						localErrStruct.uiBlockAddr = ((F_BLK_HDR *)pBlk)->ui32BlkAddr;
 						f_sprintf( localErrStruct.szMsg, "Key Number %ul", uiLoop);
 						rc = RC_SET_AND_ASSERT( NE_XFLM_BTREE_ERROR);
 						goto Exit;
@@ -11351,7 +11351,7 @@ RCODE F_Btree::btCheck(
 							{
 								RC_UNEXPECTED_ASSERT( rc);
 								localErrStruct.type = CATASTROPHIC_FAILURE;
-								localErrStruct.uiBlkAddr = ((F_BLK_HDR *)pBlk)->ui32BlkAddr;
+								localErrStruct.uiBlockAddr = ((F_BLK_HDR *)pBlk)->ui32BlkAddr;
 								f_sprintf( localErrStruct.szMsg, 
 										"getEntryData couldn't get the DO blk addr.");
 								goto Exit;
@@ -11364,7 +11364,7 @@ RCODE F_Btree::btCheck(
 							if( bteOADataLenFlag( pucEntry) == 0)
 							{
 								localErrStruct.type = MISSING_OVERALL_DATA_LENGTH;
-								localErrStruct.uiBlkAddr = ((F_BLK_HDR *)pBlk)->ui32BlkAddr;
+								localErrStruct.uiBlockAddr = ((F_BLK_HDR *)pBlk)->ui32BlkAddr;
 								f_sprintf( localErrStruct.szMsg, 
 									"OverallDataLength field is missing");
 							}
@@ -11404,7 +11404,7 @@ RCODE F_Btree::btCheck(
 					if( RC_BAD( rc = m_pDb->m_pDatabase->getBlock( m_pDb, m_pLFile,
 						ui32ChildBlkAddr, NULL, &pChildBlk)))
 					{
-						localErrStruct.type = SCA_GET_BLOCK_FAILED;
+						localErrStruct.type = GET_BLOCK_FAILED;
 						f_sprintf( localErrStruct.szMsg, "Failed to get block at %X", 
 							ui32ChildBlkAddr);
 						goto Exit;
@@ -11432,7 +11432,7 @@ RCODE F_Btree::btCheck(
 				if( RC_BAD( rc = m_pDb->m_pDatabase->getBlock( m_pDb, m_pLFile,
 												ui32NextBlkAddr, NULL, &pCurrentBlk)))
 				{
-					localErrStruct.type = SCA_GET_BLOCK_FAILED;
+					localErrStruct.type = GET_BLOCK_FAILED;
 					f_sprintf( localErrStruct.szMsg, 
 						"Failed to get block at %X", ui32ChildBlkAddr);
 					goto Exit;
@@ -11475,7 +11475,7 @@ Desc: Performs an integrity check on a chain of data-only blocks.  Should
 RCODE F_Btree::verifyDOBlkChain(
 	FLMUINT					uiDOAddr,			// Address of first block in chain
 	FLMUINT					uiDataLength,		// The length of the entire entry
-	BTREE_ERR_STRUCT *	errStruct)
+	BTREE_ERR_INFO *		errStruct)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMUINT				uiRunningLength = 0; // A running total of the DataLength fields
@@ -11487,14 +11487,14 @@ RCODE F_Btree::verifyDOBlkChain(
 
 	while( ui32NextAddr)
 	{
-		errStruct->LevelStats[ errStruct->uiLevels - 1].uiDOBlkCnt++;
+		errStruct->LevelStats[ errStruct->uiLevels - 1].uiDOBlockCnt++;
 		
 		// Get the next block
 		
 		if( RC_BAD( m_pDb->m_pDatabase->getBlock( m_pDb, m_pLFile,
 			ui32NextAddr, NULL, &pCurrentBlk)))
 		{
-			errStruct->type = SCA_GET_BLOCK_FAILED;
+			errStruct->type = GET_BLOCK_FAILED;
 			f_sprintf( errStruct->szMsg, "Failed to get block at %X", uiDOAddr);
 			goto Exit;
 		}
@@ -11568,7 +11568,7 @@ Exit:
 Desc:	Method to check the counts in a database with counts.
 ****************************************************************************/
 RCODE F_Btree::verifyCounts(
-	BTREE_ERR_STRUCT *	pErrStruct)
+	BTREE_ERR_INFO *	pErrStruct)
 {
 	RCODE					rc = NE_XFLM_OK;
 	FLMUINT				uiNextLevelBlkAddr;
@@ -11639,7 +11639,7 @@ RCODE F_Btree::verifyCounts(
 				if( uiChildCounts != uiParentCounts)
 				{
 					pErrStruct->type = BAD_COUNTS;
-					pErrStruct->uiBlkAddr = pChildBlk->m_pBlkHdr->ui32BlkAddr;
+					pErrStruct->uiBlockAddr = pChildBlk->m_pBlkHdr->ui32BlkAddr;
 					f_sprintf(
 						pErrStruct->szMsg,
 						"Counts do not match.  Expected %d, got %d",

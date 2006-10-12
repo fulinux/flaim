@@ -292,7 +292,7 @@
 				#elif _MSC_VER >= 1300
 					typedef unsigned long __w64	FLMUINT;
 					typedef long __w64				FLMINT;
-					typedef __w64 unsigned int				FLMUINT32;
+					typedef __w64 unsigned int		FLMUINT32;
 					typedef __w64 unsigned int		FLMSIZET;
 				#else
 					typedef unsigned long			FLMUINT;
@@ -1059,17 +1059,17 @@
 			FLMSIZET			uiSize,				///< Number of bytes to allocate - should be sizeof( ThisClass).
 			const char *	pszFile,				///< Name of source file where this allocation is made.
 			int				iLine)				///< Line number in source file where this allocation request is made.
-#ifndef FLM_WATCOM_NLM
+		#ifndef FLM_WATCOM_NLM
 			throw()
-#endif
+		#endif
 			;
 
 		/// Overloaded new operator for objects of this class.
 		void * FLMAPI operator new(
 			FLMSIZET			uiSize)				///< Number of bytes to allocate - should be sizeof( ThisClass).
-#ifndef FLM_WATCOM_NLM
+		#ifndef FLM_WATCOM_NLM
 			throw()
-#endif
+		#endif
 			;
 	
 		/// Overloaded new operator (array) for objects of this class (with source file and line number).
@@ -1080,18 +1080,18 @@
 			FLMSIZET			uiSize,				///< Number of bytes to allocate - should be sizeof( ThisClass).
 			const char *	pszFile,				///< Name of source file where this allocation is made.
 			int				iLine)				///< Line number in source file where this allocation request is made.
-#ifndef FLM_WATCOM_NLM
+		#ifndef FLM_WATCOM_NLM
 			throw()
-#endif
+		#endif
 			;
 		
 		/// Overloaded new operator (array) for objects of this class.
 		/// This new operator is called when an array of objects of this class are allocated.
 		void * FLMAPI operator new[](
 			FLMSIZET			uiSize)				///< Number of bytes to allocate - should be sizeof( ThisClass).
-#ifndef FLM_WATCOM_NLM
+		#ifndef FLM_WATCOM_NLM
 			throw()
-#endif
+		#endif
 			;
 		
 		/// Overloaded delete operator for objects of this class.
@@ -1148,18 +1148,18 @@
 			FLMSIZET			uiSize,
 			const char *	pszFile,
 			int				iLine)
-#ifndef FLM_WATCOM_NLM
+		#ifndef FLM_WATCOM_NLM
 			throw()
-#endif
+		#endif
 			;
 	
 		void * operator new[](
 			FLMSIZET			uiSize,
 			const char *	pszFile,
 			int				iLine)
-#ifndef FLM_WATCOM_NLM
+		#ifndef FLM_WATCOM_NLM
 			throw()
-#endif
+		#endif
 			;
 		
 		void operator delete(
@@ -1544,8 +1544,8 @@
 	};
 	
 	/****************************************************************************
-	****************************************************************************/
 	/// Message severity.
+	****************************************************************************/
 	typedef enum
 	{
 		F_FATAL_MESSAGE = 0,			///< Indicates that a fatal error occurred - the kind that would normally
@@ -2831,11 +2831,11 @@
 		FLMUINT						uiLang);
 
 	RCODE FLMAPI f_asiaParseSubCol(
-		FLMBYTE *			pucWPStr,
-		FLMUINT *			puiWPStrLen,
-		FLMUINT				uiMaxWPBytes,
-		const FLMBYTE *	pucSubColBuf,
-		FLMUINT *			puiSubColBitPos);
+		FLMBYTE *					pucWPStr,
+		FLMUINT *					puiWPStrLen,
+		FLMUINT						uiMaxWPBytes,
+		const FLMBYTE *			pucSubColBuf,
+		FLMUINT *					puiSubColBitPos);
 
 	RCODE FLMAPI f_asiaColStr2WPStr(
 		const FLMBYTE *			pucColStr,
@@ -3932,9 +3932,9 @@
 		}
 	
 		FLMINT FLMAPI strvPrintf(
-			char *					pszDestStr,
-			const char *			pszFormat,
-			f_va_list *				args);
+			char *			pszDestStr,
+			const char *	pszFormat,
+			f_va_list *		args);
 
 		FLMINT FLMAPI strPrintf(
 			char *			pszDestStr,
@@ -3954,59 +3954,59 @@
 	private:
 	
 		void processFieldInfo(
-			const char **		ppszFormat,
-			FLMUINT *			puiWidth,
-			FLMUINT *			puiPrecision,
-			FLMUINT *			puiFlags,
-			f_va_list *			args);
+			const char **	ppszFormat,
+			FLMUINT *		puiWidth,
+			FLMUINT *		puiPrecision,
+			FLMUINT *		puiFlags,
+			f_va_list *		args);
 	
 		void stringFormatter(
-			char					cFormatChar,
-			FLMUINT				uiWidth,
-			FLMUINT				uiPrecision,
-			FLMUINT				uiFlags,
-			f_va_list *			args);
+			char				cFormatChar,
+			FLMUINT			uiWidth,
+			FLMUINT			uiPrecision,
+			FLMUINT			uiFlags,
+			f_va_list *		args);
 	
 		void colorFormatter(
-			char					cFormatChar,
-			eColorType			eColor,
-			FLMUINT				uiFlags);
+			char				cFormatChar,
+			eColorType		eColor,
+			FLMUINT			uiFlags);
 			
 		void charFormatter(
-			char					cFormatChar,
-			f_va_list *			args);
+			char				cFormatChar,
+			f_va_list *		args);
 	
 		void errorFormatter(
-			f_va_list *			args);
+			f_va_list *		args);
 	
 		void notHandledFormatter( void);
 	
 		void numberFormatter(
-			char					cFormatChar,
-			FLMUINT				uiWidth,
-			FLMUINT				uiPrecision,
-			FLMUINT				uiFlags,
-			f_va_list *			args);
+			char				cFormatChar,
+			FLMUINT			uiWidth,
+			FLMUINT			uiPrecision,
+			FLMUINT			uiFlags,
+			f_va_list *		args);
 		
 		void parseArgs(
-			const char *			pszFormat,
-			f_va_list *				args);
+			const char *	pszFormat,
+			f_va_list *		args);
 		
 		void processFormatString(
-			FLMUINT					uiLen,
+			FLMUINT			uiLen,
 			...);
 			
 		FLMUINT printNumber(
-			FLMUINT64			ui64Val,
-			FLMUINT				uiBase,
-			FLMBOOL				bUpperCase,
-			FLMBOOL				bCommas,
-			char *				pszBuf);
+			FLMUINT64		ui64Val,
+			FLMUINT			uiBase,
+			FLMBOOL			bUpperCase,
+			FLMBOOL			bCommas,
+			char *			pszBuf);
 			
 		void outputLogBuffer( void);
 		
 		FINLINE void outputChar(
-			char		cChar)
+			char				cChar)
 		{
 			if (!m_pLogMsg)
 			{
@@ -4024,8 +4024,8 @@
 		}
 		
 		FINLINE void memsetChar(
-			char		cChar,
-			FLMUINT	uiCount)
+			char				cChar,
+			FLMUINT			uiCount)
 		{
 			if (!m_pLogMsg)
 			{
@@ -4461,28 +4461,78 @@
 		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
 		
 		virtual RCODE FLMAPI getBlock(
-			FLMUINT32				ui32BlockId,
+			FLMUINT32				ui32BlockAddr,
 			IF_Block **				ppBlock,
-			FLMBYTE **				ppucBlock) = 0;
+			FLMBYTE **				ppucBlock = NULL) = 0;
 			
 		virtual RCODE FLMAPI createBlock(
 			IF_Block **				ppBlock,
-			FLMBYTE **				ppucBlock,
-			FLMUINT32 *				pui32BlockId) = 0;
+			FLMBYTE **				ppucBlock = NULL,
+			FLMUINT32 *				pui32BlockAddr = NULL) = 0;
 		
 		virtual RCODE FLMAPI freeBlock(
 			IF_Block **				ppBlock,
-			FLMBYTE **				ppucBlock) = 0;
+			FLMBYTE **				ppucBlock = NULL) = 0;
 		
 		virtual RCODE FLMAPI prepareForUpdate(
 			IF_Block **				ppBlock,
-			FLMBYTE **				ppucBlock) = 0;
+			FLMBYTE **				ppucBlock = NULL) = 0;
 	};
 	
 	RCODE FLMAPI FlmAllocBlockMgr(
 		FLMUINT						uiBlockSize,
 		IF_BlockMgr **				ppBlockMgr);
 	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	enum BTREE_ERR_TYPE
+	{
+		NO_ERR = 0,
+		BT_HEADER,
+		KEY_ORDER,
+		DUPLICATE_KEYS,
+		INFINITY_MARKER,
+		CHILD_BLOCK_ADDRESS,
+		GET_BLOCK_FAILED,
+		MISSING_OVERALL_DATA_LENGTH,
+		NOT_DATA_ONLY_BLOCK,
+		BAD_DO_BLOCK_LENGTHS,
+		BAD_COUNTS,
+		CATASTROPHIC_FAILURE = 999
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	typedef struct
+	{
+		FLMUINT				uiKeyCnt;
+		FLMUINT				uiFirstKeyCnt;
+		FLMUINT				uiBlockCnt;
+		FLMUINT				uiBytesUsed;
+		FLMUINT				uiDOBlockCnt;
+		FLMUINT				uiDOBytesUsed;
+	} BTREE_LEVEL_STATS;
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	typedef struct
+	{
+		FLMUINT				uiBlockAddr;
+		FLMUINT				uiBlockSize;
+		FLMUINT				uiBlocksChecked;
+		FLMUINT				uiAvgFreeSpace;
+		FLMUINT				uiLevels;
+		FLMUINT				uiNumKeys;
+		FLMUINT64			ui64FreeSpace;
+	#define F_BTREE_MAX_LEVELS			8
+		BTREE_LEVEL_STATS	LevelStats[ F_BTREE_MAX_LEVELS];
+		char					szMsg[ 64];
+		BTREE_ERR_TYPE		type;
+	} BTREE_ERR_INFO;
+
 	/****************************************************************************
 	Desc:	B-Tree
 	****************************************************************************/
@@ -4492,10 +4542,10 @@
 			FLMUINT16					ui16BtreeId,
 			FLMBOOL						bCounts,
 			FLMBOOL						bData,
-			FLMUINT32 *					pui32RootBlockId) = 0;
+			FLMUINT32 *					pui32RootBlockAddr) = 0;
 	
 		virtual RCODE FLMAPI btOpen(
-			FLMUINT32					ui32RootBlockId,
+			FLMUINT32					ui32RootBlockAddr,
 			FLMBOOL						bCounts,
 			FLMBOOL						bData,
 			IF_ResultSetCompare *	pCompare = NULL) = 0;
@@ -4522,7 +4572,7 @@
 			FLMUINT						uiDataLen,
 			FLMBOOL						bFirst,
 			FLMBOOL						bLast,
-			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
 		virtual RCODE FLMAPI btReplaceEntry(
@@ -4534,7 +4584,7 @@
 			FLMBOOL						bFirst,
 			FLMBOOL						bLast,
 			FLMBOOL						bTruncate = TRUE,
-			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
 		virtual RCODE FLMAPI btLocateEntry(
@@ -4544,7 +4594,7 @@
 			FLMUINT						uiMatch,
 			FLMUINT *					puiPosition = NULL,
 			FLMUINT *					puiDataLength = NULL,
-			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
 		virtual RCODE FLMAPI btGetEntry(
@@ -4559,7 +4609,7 @@
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
 			FLMUINT *					puiDataLength = NULL,
-			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
 		virtual RCODE FLMAPI btPrevEntry(
@@ -4567,7 +4617,7 @@
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
 			FLMUINT *					puiDataLength = NULL,
-			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
 		virtual RCODE FLMAPI btFirstEntry(
@@ -4575,7 +4625,7 @@
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
 			FLMUINT *					puiDataLength = NULL,
-			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
 		virtual RCODE FLMAPI btLastEntry(
@@ -4583,7 +4633,7 @@
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
 			FLMUINT *					puiDataLength = NULL,
-			FLMUINT32 *					pui32BlockId = NULL,
+			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
 		virtual RCODE FLMAPI btSetReadPosition(
@@ -4618,7 +4668,10 @@
 		
 		virtual void FLMAPI btResetBtree( void) = 0;
 		
-		virtual FLMUINT32 FLMAPI getRootBlockId( void) = 0;
+		virtual FLMUINT32 FLMAPI getRootBlockAddr( void) = 0;
+		
+		virtual RCODE btCheck(
+			BTREE_ERR_INFO *			pErrInfo) = 0;
 	};
 	
 	RCODE FLMAPI FlmAllocBTree(
