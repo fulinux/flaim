@@ -12812,11 +12812,8 @@ RCODE FLMAPI F_BlockMgr::createBlock(
 	{
 		pBlock->m_pNextInBucket->m_pPrevInBucket = pBlock;
 	}
-	else
-	{
-		*ppBucket = pBlock;
-	}
-	
+
+	*ppBucket = pBlock;
 	*ppBlock = pBlock;
 	pBlock->AddRef();
 	
