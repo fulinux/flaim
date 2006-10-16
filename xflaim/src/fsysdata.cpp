@@ -2317,23 +2317,6 @@ void FLMAPI F_DbSystem::setLogger(
 }
 
 /****************************************************************************
-Desc:		Enables or disables the use of ESM (if available)
-****************************************************************************/
-void FLMAPI F_DbSystem::enableExtendedServerMemory(
-	FLMBOOL						bEnable)
-{
-	gv_XFlmSysData.bOkToUseESM = bEnable;
-}
-
-/****************************************************************************
-Desc:		Returns the state of ESM
-****************************************************************************/
-FLMBOOL FLMAPI F_DbSystem::extendedServerMemoryEnabled( void)
-{
-	return( gv_XFlmSysData.bOkToUseESM);
-}
-
-/****************************************************************************
 Desc:		Deactivates open database handles, forcing the database to be
 			(eventually) closed
 Notes:	Passing NULL for the path values will cause all active database

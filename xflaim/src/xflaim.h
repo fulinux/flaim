@@ -546,14 +546,14 @@
 	typedef struct
 	{
 		FLMBOOL		bRunning;
-		FLMUINT32	ui32RunningTime;
 		FLMBOOL		bForcingCheckpoint;
+		FLMBOOL		bWritingDataBlocks;
+		FLMUINT32	ui32RunningTime;
 		FLMUINT32	ui32ForceCheckpointRunningTime;
 		FLMUINT32	ui32ForceCheckpointReason;
 			#define			XFLM_CP_TIME_INTERVAL_REASON			1
 			#define			XFLM_CP_SHUTTING_DOWN_REASON			2
 			#define			XFLM_CP_RFL_VOLUME_PROBLEM				3
-		FLMBOOL		bWritingDataBlocks;
 		FLMUINT32	ui32LogBlocksWritten;
 		FLMUINT32	ui32DataBlocksWritten;
 		FLMUINT32	ui32DirtyCacheBytes;
@@ -578,7 +578,6 @@
 	{
 		FLMUINT				uiMaxBytes;
 		FLMUINT				uiTotalBytesAllocated;
-		FLMBOOL				bDynamicCacheAdjust;
 		FLMUINT				uiCacheAdjustPercent;
 		FLMUINT				uiCacheAdjustMin;
 		FLMUINT				uiCacheAdjustMax;
@@ -595,6 +594,7 @@
 		FLMUINT				uiReplaceableBytes;
 		XFLM_CACHE_USAGE	BlockCache;
 		XFLM_CACHE_USAGE	NodeCache;
+		FLMBOOL				bDynamicCacheAdjust;
 		FLMBOOL				bPreallocatedCache;
 	} XFLM_CACHE_INFO;
 
@@ -710,9 +710,6 @@
 
 	typedef struct
 	{
-		FLMBOOL					bHaveStats;				// Flag indicating whether or
-																// not there are statistics
-																// for this LFILE.
 		XFLM_BLOCKIO_STATS	RootBlockStats;		// Block I/O statistics for root
 																// blocks.
 		XFLM_BLOCKIO_STATS	MiddleBlockStats;		// Block I/O statistics for
@@ -727,14 +724,14 @@
 																// have occurred in this LFile
 		FLMUINT					uiLFileNum;				// Logical file number.
 		eLFileType				eLfType;					// Logical file type.
+		FLMBOOL					bHaveStats;				// Flag indicating whether or
+																// not there are statistics
+																// for this LFILE.
 	} XFLM_LFILE_STATS;
 
 	typedef struct
 	{
 		char *						pszDbName;					// Database name - from pFile.
-		FLMBOOL						bHaveStats;					// Flag indicating whether or
-																		// not there are statistics
-																		// for this database.
 		XFLM_RTRANS_STATS			ReadTransStats;			// Read Transaction
 																		// Statistics.
 		XFLM_UTRANS_STATS			UpdateTransStats;			// Update Transaction
@@ -777,6 +774,9 @@
 		
 		F_LOCK_STATS			LockStats;
 
+		FLMBOOL					bHaveStats;						// Flag indicating whether or
+																		// not there are statistics
+																		// for this database.
 	} XFLM_DB_STATS;
 
 	typedef struct
@@ -790,13 +790,13 @@
 		FLMUINT				uiNumDbStats;						// Number of elements in the
 																		// database statistics array that
 																		// are currently in use.
-		FLMBOOL				bCollectingStats;					// Flag indicating whether or
-																		// not we are currently
-																		// collecting statistics.
 		FLMUINT				uiStartTime;						// Time we started collecting
 																		// statistics.
 		FLMUINT				uiStopTime;							// Time we stopped collecting
 																		// statistics.
+		FLMBOOL				bCollectingStats;					// Flag indicating whether or
+																		// not we are currently
+																		// collecting statistics.
 	} XFLM_STATS;
 
 	// IMPORTANT NOTE: If these change, please be sure to make
@@ -2255,22 +2255,6 @@
 		 */
 		virtual void FLMAPI setLogger(
 			IF_LoggerClient *		pLogger) = 0;
-
-		/**
-		 * @brief Enable or disable extended server memory (ESM).
-		 *
-		 * @param bEnable A boolean flag.  When TRUE, Extended Server Memory is enabled.
-		 * When FALSE, Extended Server Memory is disabled.
-		 */
-		virtual void FLMAPI enableExtendedServerMemory(
-			FLMBOOL					bEnable) = 0;
-
-		/**
-		 * @brief Determine if extended server memory (ESM) is enabled or disabled.
-		 *
-		 * @return FLMBOOL True if enabled, otherwise False.
-		 */
-		virtual FLMBOOL FLMAPI extendedServerMemoryEnabled( void) = 0;
 
 		/**
 		 * @brief Deactivate open database objects, forcing the database(s) to eventually be closed.

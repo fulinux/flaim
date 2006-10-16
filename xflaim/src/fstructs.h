@@ -556,7 +556,6 @@ Desc:		This structure is used to sort keys before the keys are actually
 ****************************************************************************/
 typedef struct Kref_Entry
 {
-	FLMBOOL		bDelete;					// Delete the key if TRUE
 	FLMUINT		uiSequence;	  			// Sequence of updates within trans.
 	FLMUINT		uiDataLen;				// Data length for this entry.  The
 												// data, if any, comes after the key.
@@ -566,6 +565,7 @@ typedef struct Kref_Entry
 
 	// Note: used uint16 below to reduce memory allocations.
 
+	FLMBOOL		bDelete;					// Delete the key if TRUE
 	FLMUINT16	ui16IxNum;		  		// Index number
 	FLMUINT16	ui16KeyLen;				// Key Length for this entry.  The key
 												// comes immediately after this structure.
@@ -582,9 +582,9 @@ typedef struct Cdl
 	FLMUINT64	ui64ParentId;		// If pNode is NULL, this is a place
 											// holder for a "missing" child node.  We
 											// just need to remember the parent node id.
+	Cdl *			pNext;				// Pointer to the next CDL entry.
 	FLMBOOL		bInNodeSubtree;	// Is this node subordinate to the original
 											// node we are indexing on?
-	Cdl *			pNext;				// Pointer to the next CDL entry.
 } CDL;
 
 /****************************************************************************
@@ -642,17 +642,17 @@ typedef struct
 	F_SuperFileHdl *	pSFileHdl;
 	F_SEM					hWaitSem;
 	XFLM_STATS			Stats;
-	FLMBOOL				bStatsInitialized;
-	FLMBOOL				bShuttingDown;
-	FLMBOOL				bDoingCheckpoint;
 	FLMUINT				uiStartTime;
-	FLMBOOL				bForcingCheckpoint;
 	FLMUINT				uiForceCheckpointStartTime;
 	FLMINT				iForceCheckpointReason;
 	FLMUINT				uiLogBlocksWritten;
-	FLMBOOL				bWritingDataBlocks;
 	FLMUINT				uiDataBlocksWritten;
 	FLMUINT				uiStartWaitTruncateTime;
+	FLMBOOL				bStatsInitialized;
+	FLMBOOL				bShuttingDown;
+	FLMBOOL				bDoingCheckpoint;
+	FLMBOOL				bForcingCheckpoint;
+	FLMBOOL				bWritingDataBlocks;
 } CP_INFO;
 
 #define MAX_WRITE_BUFFER_BYTES			(4 * 1024 * 1024)
@@ -1109,8 +1109,6 @@ private:
 	FLMUINT					m_uiMaxFileSize;		// Maximum file size for the database.
 	FLMUINT					m_uiOpenIFDbCount;	// Number of IF_Dbs currently using this
 															// database.  Does NOT count internal uses
-	FLMBOOL					m_bTempDb;				// Is this a temporary database?  If so,
-															// minimize writing out to disk.
 	F_Db *					m_pFirstDb;				// List of ALL F_Db's associated with
 															// this database.
 	char *					m_pszDbPath;			// Database file name.
@@ -1171,6 +1169,8 @@ private:
 															// longer used, it is removed from the
 															// list.  Hence, the list is usually
 															//	has only one member.
+	FLMBOOL					m_bTempDb;				// Is this a temporary database?  If so,
+															// minimize writing out to disk.
 	FLMBOOL					m_bMustClose;			// The database is being forced to close
 															// because of a critical error.
 	RCODE						m_rcMustClose;			// Return code that caused bMustClose to
@@ -1204,7 +1204,6 @@ private:
 															// set across multiple calls.
 	F_Btree *				m_pPendingBTree;		// B-Tree used by node that is having
 															// its value set across multiple calls
-	FLMBOOL					m_bUpdFirstBuf;
 	FLMUINT					m_uiUpdByteCount;
 	FLMUINT					m_uiUpdCharCount;
 	FLMUINT					m_uiPendingType;
@@ -1229,6 +1228,7 @@ private:
 															// perform when this database is finally
 															// locked (points to a linked list of
 															// F_NOTIFY_LIST_ITEM structures).
+	FLMBOOL					m_bUpdFirstBuf;
 	FLMBOOL					m_bBeingLocked;		// Flag indicating whether or not this
 															// database is in the process of being
 															// locked for exclusive access.
@@ -1259,13 +1259,13 @@ private:
 															// 0xFFFF means it is not currently
 															// in a bucket.
 	FLMUINT					m_uiFlags;				// Flags for this database.
-	FLMBOOL					m_bBackupActive;		// Backup is currently being run against the
-															// database.
 	F_NodeList				m_DocumentList;		// List of documents modified in a transaction
 	IF_Thread *				m_pMaintThrd;			// Background maintenance thread
 	F_SEM						m_hMaintSem;			// Maintenance thread "work-to-do" semaphore
 	FLMBYTE *				m_pszDbPasswd;			// The database encryption password
 	IF_CCS *					m_pWrappingKey;		// The database wrapping key
+	FLMBOOL					m_bBackupActive;		// Backup is currently being run against the
+															// database.
 	FLMBOOL					m_bHaveEncKey;			// 
 	FLMBOOL					m_bAllowLimitedMode;	// Is this database allowed to be opened in limited mode?
 	FLMBOOL					m_bInLimitedMode;		// Has this database been opened in limited mode?
@@ -1366,8 +1366,6 @@ typedef struct FlmSystemData
 
 	FLMBOOL					bOkToDoAsyncWrites;
 													// OK To do async writes, if available.
-	FLMBOOL					bOkToUseESM;	// OK to use Extended Server Memory,
-													// if available
 	FLMUINT					uiMaxCPInterval;
 													// Maximum number of seconds to allow between
 													// checkpoints

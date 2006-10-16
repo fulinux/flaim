@@ -551,16 +551,21 @@ Desc:
 ****************************************************************************/
 FlagSet::FlagSet( const FlagSet& fs)
 {
+	m_ppucElemArray = NULL;
+	m_pbFlagArray = NULL;
+
 	f_alloc( sizeof( FLMBYTE *) * fs.m_uiNumElems, &m_ppucElemArray);
 	f_alloc( sizeof( FLMBOOL) * fs.m_uiNumElems, &m_pbFlagArray);
 	
 	f_memset( m_pbFlagArray, 0, sizeof( FLMBOOL) * fs.m_uiNumElems);
+
 	for ( FLMUINT uiLoop = 0; uiLoop < fs.m_uiNumElems; uiLoop++)
 	{
 		f_alloc( f_strlen( (char *)fs.m_ppucElemArray[uiLoop]) + 1,
 			&m_ppucElemArray[ uiLoop]);
 		f_strcpy( (char *)m_ppucElemArray[uiLoop], (char *)fs.m_ppucElemArray[uiLoop]);
 	}
+
 	m_uiNumElems = fs.m_uiNumElems;
 }
 
