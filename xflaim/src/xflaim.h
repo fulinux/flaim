@@ -1067,12 +1067,6 @@
 		FLMUINT		uiIxNum;					// Index used to execute query if
 													// eOptType == QOPT_USING_INDEX
 		FLMBYTE		szIxName[ 80];
-		FLMBOOL		bMustVerifyPath;		// Must verify node path.
-		FLMBOOL		bDoNodeMatch;			// Node must be retrieved to exe
-													// query.  Only valid if eOptType
-													// is XFLM_QOPT_USING_INDEX.
-		FLMUINT		bCanCompareOnKey;		// Can we compare on index keys?  Only
-													// valid if eOptType == XFLM_QOPT_USING_INDEX.
 		FLMUINT64	ui64KeysRead;
 		FLMUINT64	ui64KeyHadDupDoc;
 		FLMUINT64	ui64KeysPassed;
@@ -1084,6 +1078,12 @@
 		FLMUINT64	ui64NodesFailedValidation;
 		FLMUINT64	ui64DocsFailedValidation;
 		FLMUINT64	ui64DocsPassed;
+		FLMBOOL		bMustVerifyPath;		// Must verify node path.
+		FLMBOOL		bDoNodeMatch;			// Node must be retrieved to exe
+													// query.  Only valid if eOptType
+													// is XFLM_QOPT_USING_INDEX.
+		FLMBOOL		bCanCompareOnKey;		// Can we compare on index keys?  Only
+													// valid if eOptType == XFLM_QOPT_USING_INDEX.
 	} XFLM_OPT_INFO;
 
 	/**************************************************************************

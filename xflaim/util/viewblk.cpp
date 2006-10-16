@@ -2972,7 +2972,7 @@ void ViewHexBlock(
 	uiFileOffset = FSGetFileOffset( uiReadAddress);
 	uiFileNumber = FSGetFileNumber( uiReadAddress);
 
-	if (!ViewBlkRead( uiReadAddress, ppBlkHdr, uiViewLen, FALSE,
+	if (!ViewBlkRead( uiReadAddress, ppBlkHdr, FALSE, uiViewLen,
 						NULL, NULL, &uiBytesRead, TRUE))
 	{
 		return;

@@ -548,7 +548,7 @@ Desc:
 RCODE FlmThreadContext::execute( void)
 {
 	flmAssert( m_pThrdFunc != NULL);
-	m_FuncRC = m_pThrdFunc( this, m_pvAppData);
+	m_FuncRC = (RCODE)m_pThrdFunc( this, m_pvAppData);
 	return m_FuncRC;
 }
 
