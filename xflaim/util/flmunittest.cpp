@@ -429,7 +429,7 @@ FLMBOOL FlagSet::removeElem( FLMBYTE * pElem)
 					
 				f_memmove( &m_pbFlagArray[ uiLoop], 
 					&m_pbFlagArray[ uiLoop + 1], 
-					(m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBYTE *));
+					(m_uiNumElems - ( uiLoop + 1)) * sizeof( FLMBOOL));
 			}
 			// Otherwise, we're at the end and decrementing to counter will suffice
 
@@ -500,20 +500,27 @@ FlagSet FlagSet::crossProduct( FlagSet& fs2)
 	FlagSet		fsCross;
 	FLMUINT		uiLoop1;
 	FLMUINT		uiCrossProductElems = this->getNumElements() * fs2.getNumElements();
-	FLMBYTE **	ppszCross;
+	FLMBYTE **	ppszCross = NULL;
 	
 	
-	f_alloc( sizeof( FLMBYTE *) * uiCrossProductElems, &ppszCross);
+	if( RC_BAD( f_alloc( sizeof( FLMBYTE *) * uiCrossProductElems, &ppszCross)))
+	{
+		f_assert( 0);
+	}
 
 	for ( uiLoop1 = 0; uiLoop1 < this->getNumElements(); uiLoop1++)
 	{
 		for ( FLMUINT uiLoop2 = 0; uiLoop2 < fs2.getNumElements(); uiLoop2++)
 		{
-			FLMUINT uiIndex = uiLoop1 * fs2.getNumElements() + uiLoop2;
-			f_alloc(
+			FLMUINT uiIndex = (uiLoop1 * fs2.getNumElements()) + uiLoop2;
+
+			if( RC_BAD( f_alloc(
 				f_strlen( (char *)this->m_ppucElemArray[ uiLoop1]) + 
 					f_strlen( (char *)fs2.m_ppucElemArray[ uiLoop2]) + 1,
-					&ppszCross[ uiIndex]);
+					&ppszCross[ uiIndex])))
+			{
+				f_assert( 0);
+			}
 			
 			f_strcpy( (char *)ppszCross[ uiIndex], (char *)this->m_ppucElemArray[ uiLoop1]);
 			f_strcat( (char *)ppszCross[ uiIndex], (char *)fs2.m_ppucElemArray[ uiLoop2]);
