@@ -317,7 +317,8 @@ public:
 		FLMUINT16					ui16BtreeId,
 		FLMBOOL						bCounts,
 		FLMBOOL						bData,
-		FLMUINT32 *					pui32RootBlockAddr);
+		FLMUINT32 *					pui32RootBlockAddr,
+		IF_ResultSetCompare *	pCompare = NULL);
 
 	RCODE FLMAPI btOpen(
 		FLMUINT32					ui32RootBlockAddr,
@@ -1649,10 +1650,11 @@ Desc: Function to create a new (empty) B-Tree.  To do this, we create the
 		root block.
 ****************************************************************************/
 RCODE F_BTree::btCreate(
-	FLMUINT16				ui16BtreeId,
-	FLMBOOL					bCounts,
-	FLMBOOL					bData,
-	FLMUINT32 *				pui32RootBlockAddr)
+	FLMUINT16					ui16BtreeId,
+	FLMBOOL						bCounts,
+	FLMBOOL						bData,
+	FLMUINT32 *					pui32RootBlockAddr,
+	IF_ResultSetCompare *	pCompare)
 {
 	RCODE						rc = NE_FLM_OK;
 	IF_Block *				pBlock = NULL;
@@ -1687,7 +1689,7 @@ RCODE F_BTree::btCreate(
 
 	// Save the block address and identify the block as the root block.
 	
-	if( RC_BAD( rc = btOpen( *pui32RootBlockAddr, bCounts, bData)))
+	if( RC_BAD( rc = btOpen( *pui32RootBlockAddr, bCounts, bData, pCompare)))
 	{
 		goto Exit;
 	}

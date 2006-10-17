@@ -4542,8 +4542,9 @@
 			FLMUINT16					ui16BtreeId,
 			FLMBOOL						bCounts,
 			FLMBOOL						bData,
-			FLMUINT32 *					pui32RootBlockAddr) = 0;
-	
+			FLMUINT32 *					pui32RootBlockAddr,
+			IF_ResultSetCompare *	pCompare = NULL) = 0;
+
 		virtual RCODE FLMAPI btOpen(
 			FLMUINT32					ui32RootBlockAddr,
 			FLMBOOL						bCounts,
