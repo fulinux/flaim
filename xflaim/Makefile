@@ -2165,6 +2165,7 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,debian,$(package_stage_dir)/debian)
 	$(ec)$(call dircopycmd,sample,$(package_stage_dir)/sample)
+	$(ec)$(call dircopycmd,csharp,$(package_stage_dir)/csharp)
 	$(ec)$(call dircopycmd,java,$(package_stage_dir)/java)
 	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
 ifdef jhome	
@@ -2265,6 +2266,8 @@ ifneq ($(host_os_family),win)
 	mkdir -p $(include_install_dir)
 	install --mode=644 $(xflaim_shared_lib) $(lib_install_dir)
 	install --mode=644 $(xflaim_static_lib) $(lib_install_dir)
+	install --mode=644 $(xflaim_csharp_assembly) $(lib_install_dir)
+	install --mode=644 $(xflaim_csharp_assembly_xml) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/xflaim.h $(include_install_dir)
 	install --mode=644 $(ftk_src_dir)/ftk.h $(include_install_dir)/xflaimtk.h
@@ -2311,7 +2314,7 @@ spec: dircheck
 	$(ec)$(gprintf) "Creating spec file ...\n"
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
 	$(ec)$(gprintf) "$(percent)define prefix $(install_prefix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel java2-devel-packages\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel java2-devel-packages mono-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: $(project_brief_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
@@ -2354,7 +2357,7 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)setup -q\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)build\n" >> $(spec_file)
-	$(ec)$(gprintf) "$(MAKE) lib_dir_name=$(percent){_lib} $(submake_targets) libs\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(MAKE) lib_dir_name=$(percent){_lib} $(submake_targets) libs csharp\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)install\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(MAKE) rpm_build_root=$(dollar)RPM_BUILD_ROOT install_prefix=$(percent){prefix} lib_dir_name=$(percent){_lib} $(submake_targets) install\n" >> $(spec_file)
@@ -2374,6 +2377,8 @@ ifneq ($(so_revision),0)
 endif
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name).so.$(so_current)\n" >> $(spec_file)
 endif
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/xflaim_csharp.dll\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/xflaim_csharp.xml\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name).so\n" >> $(spec_file)
