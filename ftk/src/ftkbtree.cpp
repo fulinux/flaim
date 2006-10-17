@@ -5344,6 +5344,10 @@ RCODE F_BTree::moveEntriesToNextBlock(
 			if( bCommonParent || (pParentStack->uiCurOffset <
 					(FLMUINT)(getNumKeys( pParentStack->pucBlock) - 1)))
 			{
+				if (pParentBlock)
+				{
+					pParentBlock->Release();
+				}
 				pParentBlock = pParentStack->pBlock;
 				pucParentBlock = pParentStack->pucBlock;
 				pParentBlock->AddRef();
@@ -5364,10 +5368,8 @@ RCODE F_BTree::moveEntriesToNextBlock(
 				}
 				
 				pParentStack->pBlock = pParentBlock;
+				pParentStack->pBlock->AddRef();
 				pParentStack->pucBlock = pucParentBlock;
-
-				pParentBlock = NULL;
-				pucParentBlock = NULL;
 
 				bCommonParent = TRUE;
 			}
