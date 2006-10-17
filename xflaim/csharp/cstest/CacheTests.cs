@@ -43,7 +43,9 @@ namespace cstest
 			ulong						ulCacheAdjustMin = 20000000;
 			ulong						ulCacheAdjustMax = 1000000000;
 			ulong						ulCacheAdjustMinToLeave = 0;
+#if !mono
 			CS_XFLM_CACHE_INFO	cacheInfo;
+#endif
 
 			beginTest( "Set dynamic cache limit test");
 			try
@@ -59,6 +61,7 @@ namespace cstest
 			}
 			endTest( false, true);
 
+#if !mono
 			beginTest( "Get cache info for dynamic cache limit test");
 			try
 			{
@@ -93,6 +96,7 @@ namespace cstest
 				return( false);
 			}
 			endTest( false, true);
+#endif
 
 			// SET AND TEST A HARD LIMIT
 
@@ -109,6 +113,7 @@ namespace cstest
 			}
 			endTest( false, true);
 
+#if !mono
 			beginTest( "Get cache info for hard cache limit test");
 			try
 			{
@@ -140,6 +145,7 @@ namespace cstest
 
 			printCacheUsage( cacheInfo.blockCache, "BLOCK CACHE USAGE");
 			printCacheUsage( cacheInfo.nodeCache, "NODE CACHE USAGE");
+#endif
 
 			return( true);
 		}
