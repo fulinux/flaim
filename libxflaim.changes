@@ -1,4 +1,19 @@
 -------------------------------------------------------------------
+Tue Oct 17 16:40:11 CEST 2006 - dsanders@novell.com
+
+- Fixed various issues for Solaris builds: warnings, unit tests crash, and alignment issues.
+- Various enhancements and bug fixes in the B-Tree code.
+- Changes to remove 1-byte packing (zp1) flags from build.
+- Fixed bug in storeTextAsBinary().
+- Added C# bindings.
+- Updated javadoc documentation.
+
+-------------------------------------------------------------------
+Fri Sep 29 21:17:13 CEST 2006 - aj@suse.de
+
+- Removed self-provides on devel subpackage.
+
+-------------------------------------------------------------------
 Tue Sep  8 13:30:47 MST 2006 - dsanders@novell.com
 
 - Enhanced and updated the Java interfaces to be more complete, including javadoc.
