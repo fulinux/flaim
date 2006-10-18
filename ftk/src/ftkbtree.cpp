@@ -8783,10 +8783,6 @@ RCODE F_BTree::moveStackToNext(
 
 				// Get the next block
 				
-				pStack->pBlock->Release();
-				pStack->pBlock = NULL;
-				pStack->pucBlock = NULL;
-
 				if( RC_BAD( rc = getNextBlock( &pStack->pBlock, 
 					&pStack->pucBlock)))
 				{
