@@ -1302,5 +1302,11 @@
 	RCODE f_netwareRenameFile(
 		const char *		pOldFilePath,
 		const char *		pNewFilePath);
-	
+
+#if defined(FLM_WIN)
+	typedef WINBASEAPI BOOL (WINAPI * SET_FILE_VALID_DATA_FUNC) ( 
+		HANDLE				hFile,
+		LONGLONG				ValidDataLength);
+#endif
+
 #endif	// FTKSYS_H

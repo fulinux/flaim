@@ -39,9 +39,9 @@ F_MUTEX 								F_FileHdl::m_hAsyncListMutex = F_MUTEX_NULL;
 F_FileAsyncClient *				F_FileHdl::m_pFirstAvailAsync = NULL;
 FLMUINT								F_FileHdl::m_uiAvailAsyncCount = 0;
 
-FSTATIC RCODE f_initRandomGenerator( void);
-
-FSTATIC void f_freeRandomGenerator( void);
+#ifdef FLM_WIN
+	SET_FILE_VALID_DATA_FUNC 	gv_SetFileValidDataFunc = NULL;
+#endif
 
 #ifdef FLM_AIX
 	#ifndef nsleep
@@ -51,6 +51,10 @@ FSTATIC void f_freeRandomGenerator( void);
 		}
 	#endif
 #endif
+
+FSTATIC RCODE f_initRandomGenerator( void);
+
+FSTATIC void f_freeRandomGenerator( void);
 
 /****************************************************************************
 Desc:
@@ -203,13 +207,28 @@ RCODE FLMAPI ftkStartup( void)
 	setrlimit( RLIMIT_FSIZE, &rlim);
 #endif
 
+#if defined( FLM_WIN)
+	{
+		HINSTANCE		hLibrary; 
+	
+		// Get a handle to the DLL.  If the handle is valid, try to get the
+		// function address. 
+	 
+		if( (hLibrary = LoadLibrary( TEXT( "kernel32.dll"))) != NULL) 
+		{
+			gv_SetFileValidDataFunc = (SET_FILE_VALID_DATA_FUNC)GetProcAddress( 
+				hLibrary, TEXT( "SetFileValidData")); 
+			FreeLibrary( hLibrary);
+		}
+	}
+#endif
+
 	// Setup logger
 
 	if (RC_BAD( rc = f_loggerInit()))
 	{
 		goto Exit;
 	}
-	
 
 Exit:
 

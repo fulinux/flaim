@@ -4697,10 +4697,10 @@
 	/// of memory blocks that are used for pool memory allocation.
 	typedef struct
 	{
-	FLMUINT			uiAllocBytes;			///< Total number of bytes requested from
-													///< GedPoolAlloc and GedPoolCalloc calls
-	FLMUINT			uiCount;					///< Number of frees and resets performed on 
-													///< the pool
+		FLMUINT			uiAllocBytes;			///< Total number of bytes requested from
+														///< GedPoolAlloc and GedPoolCalloc calls
+		FLMUINT			uiCount;					///< Number of frees and resets performed on 
+														///< the pool
 	} POOL_STATS;
 
 	class FLMEXP F_Pool : public F_Object

@@ -27,7 +27,8 @@
 
 #if defined( FLM_WIN)
 
-extern FLMATOMIC					gv_openFiles;
+extern FLMATOMIC						gv_openFiles;
+extern SET_FILE_VALID_DATA_FUNC	gv_SetFileValidDataFunc;
 
 /****************************************************************************
 Desc:
@@ -193,23 +194,26 @@ RCODE F_FileHdl::openOrCreate(
 	// opened/created.  This will allow subsequent file extend operations to
 	// be done via calls to SetFileValidData().
 
-	if( OpenProcessToken( GetCurrentProcess(), 
-		TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
+	if( gv_SetFileValidDataFunc)
 	{
-		bClosePrivToken = TRUE;
-		
-		if( LookupPrivilegeValue( NULL, SE_MANAGE_VOLUME_NAME, &luid))
+		if( OpenProcessToken( GetCurrentProcess(), 
+			TOKEN_ADJUST_PRIVILEGES | TOKEN_QUERY, &hToken))
 		{
-			ZeroMemory ( &tp, sizeof( tp));
+			bClosePrivToken = TRUE;
 			
-			tp.PrivilegeCount = 1;
-			tp.Privileges[0].Luid = luid;
-			tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
-			
-			if( AdjustTokenPrivileges( hToken, FALSE, &tp, 
-				sizeof( TOKEN_PRIVILEGES), &oldtp, &udTokenPrivSize))
+			if( LookupPrivilegeValue( NULL, SE_MANAGE_VOLUME_NAME, &luid))
 			{
-				bRestoreTokenPrivileges = TRUE;
+				ZeroMemory ( &tp, sizeof( tp));
+				
+				tp.PrivilegeCount = 1;
+				tp.Privileges[0].Luid = luid;
+				tp.Privileges[0].Attributes = SE_PRIVILEGE_ENABLED;
+				
+				if( AdjustTokenPrivileges( hToken, FALSE, &tp, 
+					sizeof( TOKEN_PRIVILEGES), &oldtp, &udTokenPrivSize))
+				{
+					bRestoreTokenPrivileges = TRUE;
+				}
 			}
 		}
 	}
@@ -864,13 +868,14 @@ RCODE F_FileHdl::extendFile(
 		goto Exit;
 	}
 	
-	if( SetFileValidData( m_hFile, ui64NewFileSize))
+	if( gv_SetFileValidDataFunc)
 	{
-		// The call was successful.  We are done.
-
-		goto Exit;
+		if( (gv_SetFileValidDataFunc)( m_hFile, ui64NewFileSize))
+		{
+			goto Exit;
+		}
 	}
-	
+
 	// Determine the number of bytes to extend
 	
 	ui64TotalBytesToExtend = ui64NewFileSize - ui64FileSize;
