@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Nov 16 16:10:12 MST 2006 - dsanders@novell.com
+
+- Removed .exe files from package.
+
+-------------------------------------------------------------------
 Tue Oct 17 16:40:11 CEST 2006 - dsanders@novell.com
 
 - Fixed various issues for Solaris builds: warnings, unit tests crash, and alignment issues.

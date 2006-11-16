@@ -1,4 +1,21 @@
 -------------------------------------------------------------------
+Thu Nov 16 16:15:33 MST 2006 - dsanders@novell.com
+
+- Removed .exe files from package.
+- Removed /zp1 compiler switch and added pragmas to do one-byte packing on structures.
+- Getting rid of references to gv_FlmSysData.
+- Needed to add a (FLMUINT) cast to a FLMBOOL before it can be cast as a void *.
+- Fixed mis-typed member of OPT_INFO structure.
+- Fixed Linux compiler warnings.
+- Changed several places that needed to access pDbInfo->pProgress instead of just Progress.
+- Support for Ubuntu and Debian packages
+
+-------------------------------------------------------------------
+Fri Sep 29 21:16:21 CEST 2006 - aj@suse.de
+
+- Remove explicit self-provides
+
+-------------------------------------------------------------------
 Tue Sep  8 13:21:13 MST 2006 - dsanders@novell.com
 
 - Added support for 64 bit numbers.
