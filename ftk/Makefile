@@ -1591,7 +1591,9 @@ srcdist: status clean dircheck docs spec
 	$(ec)$(call dircopycmd,util,$(package_stage_dir)/util)
 	$(ec)$(call dircopycmd,debian,$(package_stage_dir)/debian)
 	$(ec)$(call dircopycmd,$(doxygen_output_dir),$(package_stage_dir)/docs)
+ifeq ($(host_os_family),win)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
+endif
 ifneq ($(host_os_family),win)
 	-$(ec)rm -rf `find $(package_stage_dir) -name .svn`
 endif

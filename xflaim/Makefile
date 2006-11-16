@@ -2171,7 +2171,9 @@ srcdist: status clean dircheck docs spec
 ifdef jhome	
 	$(ec)$(call dircopycmd,$(javadoc_output_dir),$(package_stage_dir)/javadocs)
 endif
+ifeq ($(host_os_family),win)
 	$(ec)$(call dircopycmd,$(dir $(topdir))tools,$(package_stage_dir)/tools)
+endif
 	$(ec)$(call mkdircmd,$(package_stage_dir)/ftk)
 	$(ec)$(call dircopycmd,$(dir $(topdir))ftk/src,$(package_stage_dir)/ftk/src)
 ifneq ($(host_os_family),win)
