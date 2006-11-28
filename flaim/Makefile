@@ -61,8 +61,8 @@ version = $(major_version).$(minor_version).$(svn_revision)
 # 5. If any interfaces have been added since the last public release, increment age
 # 6. If any interfaces have been removed since the last public release, set age to 0
 
-so_current = 4
-so_revision = 1
+so_current = 5
+so_revision = 2
 so_age = 0
 shared_lib_version =
 
@@ -506,6 +506,12 @@ endif
 
 ifneq (,$(findstring sparcgeneric,$(MAKECMDGOALS)))
 	sparc_generic = yes
+endif
+
+ifneq (,$(findstring 32bit,$(MAKECMDGOALS)))
+	ifeq ($(target_processor_family),sparc)
+		sparc_generic = yes
+	endif
 endif
 
 # -- Helper functions --
@@ -1023,6 +1029,10 @@ ifdef unix_target
 
 		ifeq ($(target_build_type),release)
 			ccflags += $(gcc_optimization_flags)
+		endif
+
+		ifdef sparc_generic
+			ccdefs += FLM_SPARC_GENERIC
 		endif
 	endif
 

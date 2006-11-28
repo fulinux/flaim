@@ -5,7 +5,15 @@ DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
 OSTYPE   ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_OS)
 HOSTTYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
 CFLAGS = -Wall -g
+PLAT64BIT = no
 
+ifeq (sparc,$(HOSTTYPE))
+	PLAT64BIT = yes
+endif
+
+ifeq (amd64,$(HOSTTYPE))
+	PLAT64BIT = yes
+endif
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
 	CFLAGS += -O0
@@ -16,24 +24,26 @@ endif
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-
 	touch configure-stamp
 
 
 build: build-stamp
 build-stamp: configure-stamp 
 	dh_testdir
-	$(MAKE) OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE)
-
+	$(MAKE) OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
+ifeq ($(PLAT64BIT),yes)
+	$(MAKE) 32bit OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
+endif
 	touch build-stamp
 
 clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
-
-	-$(MAKE) clean OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE)
-
+	-$(MAKE) clean OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
+ifeq ($(PLAT64BIT),yes)
+	-$(MAKE) 32bit clean OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
+endif
 	dh_clean 
 
 install: build
@@ -41,9 +51,10 @@ install: build
 	dh_testroot
 	dh_clean -k 
 	dh_installdirs
-
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE)
-
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
+ifeq ($(PLAT64BIT),yes)
+	$(MAKE) 32bit install DESTDIR=$(CURDIR)/debian/tmp OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
+endif
 
 binary-indep: build install
 
