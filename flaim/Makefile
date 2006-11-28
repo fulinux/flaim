@@ -802,6 +802,7 @@ package_version_ubuntu = $(version)-0ubuntu1
 package_distro_ubuntu = edgy
 ubuntu_stage_dir = $(package_dir)/ubuntu_stage
 ubuntu_pkginfo_dir = $(ubuntu_stage_dir)/DEBIAN
+ubuntu_proj_name_and_ver = $(package_proj_name)_$(version)
 
 package_stage_parent_dir = $(package_dir)/stage
 package_stage_dir = $(package_stage_parent_dir)/$(package_proj_name_and_ver)
@@ -2050,6 +2051,7 @@ ubuntusrc: srcdist
 	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(ubuntu_stage_dir)/$(src_package_base_name).orig.tar.gz)
 	$(ec)$(call extract_archive,$(ubuntu_stage_dir),$(src_package_base_name).orig)
 	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/$(src_package_base_name).orig.tar)
+	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(ubuntu_stage_dir)/$(ubuntu_proj_name_and_ver).orig.tar.gz)
 
 	$(ec)$(call copycmd,$(ubuntu_stage_dir)/$(package_proj_name_and_ver)/COPYRIGHT,$(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/copyright)
 
@@ -2061,7 +2063,7 @@ ubuntusrc: srcdist
 	$(ec)$(gprintf) "\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)cat ChangeLog.ubuntu >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	
-	$(ec)cd $(ubuntu_stage_dir); dpkg-source -b $(package_proj_name_and_ver) $(package_proj_name_and_ver) 
+	$(ec)cd $(ubuntu_stage_dir)/$(package_proj_name_and_ver); debuild -S -sa 
 	
 	$(ec)$(gprintf) "Checking Ubuntu package ...\n"
 	$(ec)lintian -i $(ubuntu_stage_dir)/$(package_proj_name)_$(package_version_ubuntu).dsc
@@ -2074,6 +2076,8 @@ ubuntusrc: srcdist
 	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.diff.gz)
 	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.tar.gz,$(package_ubuntu_dir))
 	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.tar.gz)
+	$(ec)$(call copycmd,$(ubuntu_stage_dir)/*.changes,$(package_ubuntu_dir))
+	$(ec)$(call rmcmd,$(ubuntu_stage_dir)/*.changes)
 
 	$(ec)$(gprintf) "Removing temporary files ...\n"
 	$(ec)$(call rmdircmd,$(ubuntu_stage_dir))
