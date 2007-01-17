@@ -2876,6 +2876,12 @@ FLMINT FlmRecord::Release(
 		flmAssert( !isCached());
 
 		m_uiFlags |= RCA_OK_TO_DELETE;
+		if (!bMutexLocked)
+		{
+			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+			bMutexLocked = TRUE;
+			bUnlockMutex = TRUE;
+		}
 		delete this;
 	}
 	else if( bMutexLocked && iRefCnt == 1 && isCached())
