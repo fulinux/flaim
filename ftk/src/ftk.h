@@ -1,26 +1,26 @@
 //------------------------------------------------------------------------------
 // Desc:	FLAIM's cross-platform toolkit public definitions and interfaces
-//
 // Tabs:	3
 //
-//		Copyright (c) 2003-2006 Novell, Inc. All Rights Reserved.
+// Copyright (c) 2003-2006 Novell, Inc. All Rights Reserved.
 //
-//		This program is free software; you can redistribute it and/or
-//		modify it under the terms of version 2 of the GNU General Public
-//		License as published by the Free Software Foundation.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; version 2.1
+// of the License.
 //
-//		This program is distributed in the hope that it will be useful,
-//		but WITHOUT ANY WARRANTY; without even the implied warranty of
-//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-//		GNU General Public License for more details.
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Library Lesser General Public License for more details.
 //
-//		You should have received a copy of the GNU General Public License
-//		along with this program; if not, contact Novell, Inc.
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, contact Novell, Inc.
 //
-//		To contact Novell about this file by physical or electronic mail,
-//		you may find current contact information at www.novell.com
+// To contact Novell about this file by physical or electronic mail, 
+// you may find current contact information at www.novell.com.
 //
-// $Id$
+// $Id: $
 //------------------------------------------------------------------------------
 
 /// \file
@@ -664,8 +664,8 @@
 	
 	/****************************************************************************
 	Desc:	Language constants
-	IMPORTANT NOTE: If langes are added or changed, the corresponding definitions
-	in java and C# must also be updated.
+	IMPORTANT NOTE: If languages are added or changed, the corresponding 
+	 					 definitions in java and C# must also be updated.
 	****************************************************************************/
 	
 	/// \addtogroup flm_languages
@@ -1953,10 +1953,10 @@
 		virtual ~F_SuperFileHdl();
 	
 		RCODE FLMAPI setup(
-			IF_SuperFileClient *		pSuperFileClient,
-			IF_FileHdlCache *			pFileHdlCache,
-			FLMUINT						uiFileOpenFlags,
-			FLMUINT						uiFileCreateFlags);
+			IF_SuperFileClient *	pSuperFileClient,
+			IF_FileHdlCache *		pFileHdlCache,
+			FLMUINT					uiFileOpenFlags,
+			FLMUINT					uiFileCreateFlags);
 	
 		RCODE FLMAPI createFile(
 			FLMUINT					uiFileNumber,
@@ -2012,13 +2012,13 @@
 		RCODE FLMAPI flush( void);
 	
 		FINLINE void FLMAPI setExtendSize(
-			FLMUINT		uiExtendSize)
+			FLMUINT					uiExtendSize)
 		{
 			m_uiExtendSize = uiExtendSize;
 		}
 	
 		FINLINE void FLMAPI setMaxAutoExtendSize(
-			FLMUINT		uiMaxAutoExtendSize)
+			FLMUINT					uiMaxAutoExtendSize)
 		{
 			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
 		}
