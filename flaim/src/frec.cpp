@@ -2,25 +2,26 @@
 // Desc:	Methods for the FlmRecord class
 // Tabs:	3
 //
-//		Copyright (c) 1999-2000,2002-2006 Novell, Inc. All Rights Reserved.
+// Copyright (c) 1999-2000, 2002-2007 Novell, Inc. All Rights Reserved.
 //
-//		This program is free software; you can redistribute it and/or
-//		modify it under the terms of version 2 of the GNU General Public
-//		License as published by the Free Software Foundation.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; version 2.1
+// of the License.
 //
-//		This program is distributed in the hope that it will be useful,
-//		but WITHOUT ANY WARRANTY; without even the implied warranty of
-//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-//		GNU General Public License for more details.
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Library Lesser General Public License for more details.
 //
-//		You should have received a copy of the GNU General Public License
-//		along with this program; if not, contact Novell, Inc.
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, contact Novell, Inc.
 //
-//		To contact Novell about this file by physical or electronic mail,
-//		you may find current contact information at www.novell.com
+// To contact Novell about this file by physical or electronic mail, 
+// you may find current contact information at www.novell.com.
 //
-// $Id: frec.cpp 12334 2006-01-23 12:45:35 -0700 (Mon, 23 Jan 2006) dsanders $
-//-------------------------------------------------------------------------
+// $Id$
+//------------------------------------------------------------------------------
 
 #include "flaimsys.h"
 
@@ -184,8 +185,7 @@ RCODE FlmRecord::clear(
 
 	if( isCached())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_ILLEGAL_OP);
+		rc = RC_SET_AND_ASSERT( FERR_ILLEGAL_OP);
 		goto Exit;
 	}
 
@@ -206,6 +206,7 @@ RCODE FlmRecord::clear(
 		gv_FlmSysData.RCacheMgr.pRecBufAlloc->freeBuf(
 			fieldIdTableByteSize(), &m_pucFieldIdTable);
 	}
+	
 	m_uiFlags = 0;
 	m_uiContainerID = 0;
 	m_uiRecordID = 0;
@@ -341,10 +342,9 @@ RCODE FlmRecord::setINT(
 	FLMUINT			uiEncDataLen = 0;
 	FLMUINT			uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -402,10 +402,9 @@ RCODE FlmRecord::setINT64(
 	FLMUINT			uiEncDataLen = 0;
 	FLMUINT			uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -463,10 +462,9 @@ RCODE FlmRecord::setUINT(
 	FLMUINT			uiEncDataLen = 0;
 	FLMUINT			uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -523,10 +521,9 @@ RCODE FlmRecord::setUINT64(
 	FLMUINT			uiEncDataLen = 0;
 	FLMUINT			uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -581,10 +578,9 @@ RCODE FlmRecord::setRecPointer(
 	FLMUINT		uiEncDataLen = 0;
 	FLMUINT		uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -626,10 +622,9 @@ RCODE FlmRecord::setUnicode(
 	FLMUINT		uiEncDataLen = 0;
 	FLMUINT		uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -701,10 +696,9 @@ RCODE FlmRecord::setNative(
 	FLMUINT			uiEncDataLen = 0;
 	FLMUINT			uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -773,10 +767,9 @@ RCODE FlmRecord::setBinary(
 	FLMUINT			uiEncDataLen = 0;
 	FLMUINT			uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -841,10 +834,9 @@ RCODE FlmRecord::setBlob(
 	FLMUINT			uiEncDataLen = 0;
 	FLMUINT			uiEncFlags = 0;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -912,10 +904,9 @@ RCODE FlmRecord::insert(
 	FlmField *	pTmpField;
 	FLMUINT		uiLevel;
 
-	if( isReadOnly() || isCached() || !uiFieldID)
+	if( !isMutable() || !uiFieldID)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -950,8 +941,7 @@ RCODE FlmRecord::insert(
 		{
 			if( (pField = prevField( pField)) == NULL)
 			{
-				flmAssert( 0);
-				rc = RC_SET( FERR_ILLEGAL_OP);
+				rc = RC_SET_AND_ASSERT( FERR_ILLEGAL_OP);
 				goto Exit;
 			}
 
@@ -1099,10 +1089,9 @@ RCODE FlmRecord::insertLast(
 	FlmField *	pField = NULL;
 	FlmField *	pLastField;
 	
-	if( isReadOnly() || isCached() || !uiFieldID)
+	if( !isMutable() || !uiFieldID)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -1158,10 +1147,9 @@ RCODE FlmRecord::remove(
 {
 	RCODE				rc = FERR_OK;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -1310,7 +1298,7 @@ void FlmRecord::setRightTruncated(
 	FlmField *	pField,
 	FLMBOOL		bTrueFalse)
 {
-	flmAssert( !isCached() && !isReadOnly());
+	flmAssert( isMutable());
 
 	if( bTrueFalse)
 	{
@@ -1329,7 +1317,7 @@ void FlmRecord::setLeftTruncated(
 	FlmField *	pField,
 	FLMBOOL		bTrueFalse)
 {
-	flmAssert( !isCached() && !isReadOnly());
+	flmAssert( isMutable());
 
 	if( bTrueFalse)
 	{
@@ -1372,10 +1360,9 @@ RCODE FlmRecord::preallocSpace(
 	FlmRecord *		pThis = this;
 	FLMBOOL			bHeapAlloc = FALSE;
 
-	if( isCached() || isReadOnly())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_ILLEGAL_OP);
+		rc = RC_SET_AND_ASSERT( FERR_ILLEGAL_OP);
 		goto Exit;
 	}
 
@@ -1466,10 +1453,9 @@ RCODE FlmRecord::compressMemory( void)
 	FlmRecord *		pThis = this;
 	FLMBOOL			bHeapAlloc = FALSE;
 
-	if( isReadOnly() || isCached())
+	if( !isMutable())
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_ILLEGAL_OP);
+		rc = RC_SET_AND_ASSERT( FERR_ILLEGAL_OP);
 		goto Exit;
 	}
 
@@ -2103,8 +2089,7 @@ RCODE	FlmRecord::createField(
 	FlmRecord *		pThis = this;
 	FLMBOOL			bHeapAlloc = FALSE;
 
-	flmAssert( !isReadOnly());
-	flmAssert( !isCached());
+	flmAssert( isMutable());
 
 	pvPrevField = getFieldVoid( pPrevField);
 	pPrevField = NULL;
@@ -2199,8 +2184,7 @@ RCODE FlmRecord::removeFields(
 	FLMUINT			uiFieldsRemoved = 0;
 	FlmField * 		pFieldTable = getFieldTable();
 
-	flmAssert( !isReadOnly());
-	flmAssert( !isCached());
+	flmAssert( isMutable());
 
 	// Setup the common case first of removing a single field.
 
@@ -2287,8 +2271,7 @@ RCODE	FlmRecord::getNewDataPtr(
 	FlmRecord *		pThis = this;
 	FLMBOOL			bHeapAlloc = FALSE;
 	
-	flmAssert( !isCached());
-	flmAssert( !isReadOnly());
+	flmAssert( isMutable());
 
 #ifdef FLM_PICKET_FENCE
 	uiPicketFenceSize = (bNewEncrypted ? FLD_PICKET_FENCE_SIZE : 0);
@@ -2299,8 +2282,7 @@ RCODE	FlmRecord::getNewDataPtr(
 
 	if (uiEncId > FLM_RESERVED_TAG_NUMS)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_BAD_ENCDEF_ID);
+		rc = RC_SET_AND_ASSERT( FERR_BAD_ENCDEF_ID);
 		goto Exit;
 	}
 
@@ -2859,9 +2841,9 @@ FLMINT FlmRecord::Release(
 	FLMINT		iRefCnt = 0;
 	FLMBOOL		bUnlockMutex = FALSE;
 	
-	if( isCached() && getRefCount() == 2)
+	if( !bMutexLocked && isCached() && getRefCount() == 2)
 	{
-		if( !bMutexLocked)
+		if( m_bHolesInData || getFreeMemory())
 		{
 			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
 			bMutexLocked = TRUE;
@@ -2874,7 +2856,23 @@ FLMINT FlmRecord::Release(
 	if( !iRefCnt)
 	{
 		flmAssert( !isCached());
+		
+		// Need to make sure the mutex is locked prior to
+		// calling delete in case a memory defragmentation
+		// is taking place concurrently.  We don't want
+		// canRelocate() to call getRefCount() on an object
+		// that is in the process of being destructed.
+		// Certain platforms set an object's v-table pointer
+		// to NULL in the destructor just prior to freeing 
+		// the object's memory.
 
+		if( !bMutexLocked)
+		{
+			f_mutexLock( gv_FlmSysData.RCacheMgr.hMutex);
+			bMutexLocked = TRUE;
+			bUnlockMutex = TRUE;
+		}
+		
 		m_uiFlags |= RCA_OK_TO_DELETE;
 		if (!bMutexLocked)
 		{
@@ -3018,8 +3016,7 @@ RCODE FlmRecord::importRecord(
 	char			ucBuffer[ 1024];
 	char *		pucData = &ucBuffer[ 0];
 
-	flmAssert( !isCached());
-	flmAssert( !isReadOnly());
+	flmAssert( isMutable());
 	
 	return( importTree( pFileHdl, &pucData,
 		sizeof( ucBuffer), pNameTable, this));
@@ -3033,8 +3030,7 @@ RCODE FlmRecord::importRecord(
 	FLMUINT				uiBufSize,
 	F_NameTable *		pNameTable)
 {
-	flmAssert( !isCached());
-	flmAssert( !isReadOnly());
+	flmAssert( isMutable());
 	
 	return( importTree( NULL, (char **)ppBuffer, uiBufSize, pNameTable, this));
 }
@@ -3698,8 +3694,7 @@ RCODE FlmRecord::importRecord(
 	FLMUINT		uiFlags;
 
 	flmAssert( pNode);
-	flmAssert( !isCached());
-	flmAssert( !isReadOnly());
+	flmAssert( isMutable());
 	
 	clear();
 
@@ -4151,13 +4146,11 @@ RCODE FlmRecord::setFieldLevel(
 	FlmField *		pField,
 	FLMUINT			uiLevel)
 {
-	flmAssert( !isCached());
-	flmAssert( !isReadOnly());
+	flmAssert( isMutable());
 	
 	if( uiLevel > 7)
 	{
-		flmAssert( 0);
-		return( RC_SET( FERR_BAD_FIELD_LEVEL));
+		return( RC_SET_AND_ASSERT( FERR_BAD_FIELD_LEVEL));
 	}
 
 	pField->ui8TypeAndLevel &= 0x1F;
@@ -4204,8 +4197,7 @@ void FlmRecord::setFieldDataType(
 	FlmField *		pField,
 	FLMUINT			uiDataType)
 {
-	flmAssert( !isCached());
-	flmAssert( !isReadOnly());
+	flmAssert( isMutable());
 	
 	pField->ui8TypeAndLevel &= 0xF8;
 
@@ -4224,14 +4216,13 @@ void FlmRecord::setFieldDataType(
 Desc:	Function to determine if the field is encrypted.
 *****************************************************************************/
 FLMBOOL FlmRecord::isEncryptedField(
-	FlmField *			pField
-	)
+	FlmField *		pField)
 {
-	FLMBOOL		bResult = FALSE;
-	FLMUINT		uiFlags;
-	FLMBYTE *	pucBuffer;
+	FLMBOOL			bResult = FALSE;
+	FLMUINT			uiFlags;
+	FLMBYTE *		pucBuffer;
 
-	if (!pField)
+	if( !pField)
 	{
 		goto Exit;
 	}
@@ -4927,31 +4918,27 @@ RCODE FlmRecord::checkField(
 
 	if (!uiEncID)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
 	if (uiEncID > FLM_RESERVED_TAG_NUMS)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_BAD_ENCDEF_ID);
+		rc = RC_SET_AND_ASSERT( FERR_BAD_ENCDEF_ID);
 		goto Exit;
 	}
 
 	ui32DataLen = FB2UD( &pucFldBuffer[ FLD_ENC_DATA_LEN_OFFSET]);
 	if (!ui32DataLen)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
 	ui32EncDataLen = FB2UD( &pucFldBuffer[ FLD_ENC_ENCRYPTED_DATA_LEN_OFFSET]);
 	if (!ui32EncDataLen)
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
@@ -4977,15 +4964,13 @@ RCODE FlmRecord::checkField(
 
 	if ( f_memcmp( pucDataFence, FLD_RAW_FENCE, FLD_PICKET_FENCE_SIZE / 2))
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 
 	if ( f_memcmp( pucEncFence, FLD_ENC_FENCE, FLD_PICKET_FENCE_SIZE / 2))
 	{
-		flmAssert( 0);
-		rc = RC_SET( FERR_FAILURE);
+		rc = RC_SET_AND_ASSERT( FERR_FAILURE);
 		goto Exit;
 	}
 #else
@@ -6177,8 +6162,7 @@ RCODE flmAddField(
 					rc = pRecord->setUINT64( pvField, *((FLMUINT64 *)(pvData)));
 					break;
 				default:
-					flmAssert( 0);
-					rc = RC_SET( FERR_INVALID_PARM);
+					rc = RC_SET_AND_ASSERT( FERR_INVALID_PARM);
 					goto Exit;
 			}
 			break;
@@ -6257,8 +6241,7 @@ RCODE flmModField(
 					rc = pRecord->setUINT64( pvField, *((FLMUINT64 *)(pvData)));
 					break;
 				default:
-					flmAssert( 0);
-					rc = RC_SET( FERR_INVALID_PARM);
+					rc = RC_SET_AND_ASSERT( FERR_INVALID_PARM);
 					goto Exit;
 			}
 			break;
@@ -6380,4 +6363,3 @@ RCODE flmDecrField(
 	
 	return( rc);
 }
-

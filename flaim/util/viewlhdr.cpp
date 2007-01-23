@@ -2,29 +2,30 @@
 // Desc:	View log header.
 // Tabs:	3
 //
-//		Copyright (c) 1992-2001,2003-2006 Novell, Inc. All Rights Reserved.
+// Copyright (c) 1992-2001, 2003-2007 Novell, Inc. All Rights Reserved.
 //
-//		This program is free software; you can redistribute it and/or
-//		modify it under the terms of version 2 of the GNU General Public
-//		License as published by the Free Software Foundation.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; version 2.1
+// of the License.
 //
-//		This program is distributed in the hope that it will be useful,
-//		but WITHOUT ANY WARRANTY; without even the implied warranty of
-//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-//		GNU General Public License for more details.
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Library Lesser General Public License for more details.
 //
-//		You should have received a copy of the GNU General Public License
-//		along with this program; if not, contact Novell, Inc.
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, contact Novell, Inc.
 //
-//		To contact Novell about this file by physical or electronic mail,
-//		you may find current contact information at www.novell.com
+// To contact Novell about this file by physical or electronic mail, 
+// you may find current contact information at www.novell.com.
 //
-// $Id: viewlhdr.cpp 12334 2006-01-23 12:45:35 -0700 (Mon, 23 Jan 2006) dsanders $
-//-------------------------------------------------------------------------
+// $Id$
+//------------------------------------------------------------------------------
 
 #include "view.h"
 
-/* Menu items */
+// Menu items
 
 #define LOG_HEADER_MENU_AVAIL_BLOCK       1
 #define LOG_HEADER_MENU_BACKCHAIN_BLOCK   2
