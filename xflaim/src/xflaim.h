@@ -1,26 +1,26 @@
 //------------------------------------------------------------------------------
 // Desc:	XFLAIM public definitions and interfaces
-//
 // Tabs:	3
 //
-//		Copyright (c) 2003-2006 Novell, Inc. All Rights Reserved.
+// Copyright (c) 2003-2007 Novell, Inc. All Rights Reserved.
 //
-//		This program is free software; you can redistribute it and/or
-//		modify it under the terms of version 2 of the GNU General Public
-//		License as published by the Free Software Foundation.
+// This library is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; version 2.1
+// of the License.
 //
-//		This program is distributed in the hope that it will be useful,
-//		but WITHOUT ANY WARRANTY; without even the implied warranty of
-//		MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-//		GNU General Public License for more details.
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Library Lesser General Public License for more details.
 //
-//		You should have received a copy of the GNU General Public License
-//		along with this program; if not, contact Novell, Inc.
+// You should have received a copy of the GNU Lesser General Public
+// License along with this library; if not, contact Novell, Inc.
 //
-//		To contact Novell about this file by physical or electronic mail,
-//		you may find current contact information at www.novell.com
+// To contact Novell about this file by physical or electronic mail, 
+// you may find current contact information at www.novell.com.
 //
-// $Id: xflaim.h 3123 2006-01-24 17:19:50 -0700 (Tue, 24 Jan 2006) ahodgkinson $
+// $Id$
 //------------------------------------------------------------------------------
 
 #ifndef XFLAIM_H
@@ -104,7 +104,6 @@
 	#define XFLM_DEFAULT_KEEP_RFL_FILES_FLAG		FALSE
 		FLMBOOL		bLogAbortedTransToRfl;
 	#define XFLM_DEFAULT_LOG_ABORTED_TRANS_FLAG	FALSE
-
 		FLMUINT32	ui32DefaultLanguage;
 	#define XFLM_DEFAULT_LANG							(FLM_US_LANG)
 	} XFLM_CREATE_OPTS, F_CREATE_OPTS;
@@ -880,22 +879,22 @@
 		FLMUINT64		ui64FileSize;
 		FLMUINT32		ui32NumLFs;
 		FLMUINT32		ui32CurrLF;
-		FLMUINT32		ui32LfNumber;					/* Logical File Pass */
+		FLMUINT32		ui32LfNumber;						// Logical file
 		FLMUINT32		ui32LfType;
 		FLMUINT64		ui64BytesExamined;
-		FLMUINT32		ui32NumProblemsFixed;		/* Number of corruptions repaired */
-		FLMUINT64		ui64NumDomNodes;				/* in the current Lf */
-		FLMUINT64		ui64NumDomLinksVerified;	/* in the current Lf */
-		FLMUINT64		ui64NumBrokenDomLinks;		/* in the current Lf */
+		FLMUINT32		ui32NumProblemsFixed;			// Number of corruptions repaired
+		FLMUINT64		ui64NumDomNodes;					// in the current Lf
+		FLMUINT64		ui64NumDomLinksVerified;		// in the current Lf
+		FLMUINT64		ui64NumBrokenDomLinks;			// in the current Lf
 
-		/* Index check progress */
+		// Index check progress
 
-		FLMUINT64		ui64NumKeys;				/* Number of keys in the result set */
-		FLMUINT64		ui64NumDuplicateKeys;	/* Number of duplicate keys generated */
-		FLMUINT64		ui64NumKeysExamined;		/* Number of keys checked */
-		FLMUINT64		ui64NumKeysNotFound;		/* Keys in index but missing from document */
-		FLMUINT64		ui64NumDocKeysNotFound;	/* Keys in documents but missing from indexes */
-		FLMUINT64		ui64NumConflicts;			/* # of non-corruption conflicts */
+		FLMUINT64		ui64NumKeys;						// Number of keys in the result set
+		FLMUINT64		ui64NumDuplicateKeys;			// Number of duplicate keys generated
+		FLMUINT64		ui64NumKeysExamined;				// Number of keys checked
+		FLMUINT64		ui64NumKeysNotFound;				// Keys in index but missing from document
+		FLMUINT64		ui64NumDocKeysNotFound;			// Keys in documents but missing from indexes
+		FLMUINT64		ui64NumConflicts;					// # of non-corruption conflicts
 	} XFLM_PROGRESS_CHECK_INFO;
 
 	/**************************************************************************
@@ -4123,11 +4122,11 @@
 			IF_QueryValFunc **	ppNewObj) = 0;
 	};
 	
-	/*============================================================================
+	/****************************************************************************
 	Desc:	Abstract base class which provides the interface that
 			XFLAIM uses to allow an application to embed a node source
 			inside an XPATH component.
-	============================================================================*/
+	****************************************************************************/
 	flminterface IF_QueryNodeSource : public F_Object
 	{
 	public:
