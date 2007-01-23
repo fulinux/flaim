@@ -21,7 +21,7 @@
 // To contact Novell about this file by physical or electronic mail, 
 // you may find current contact information at www.novell.com.
 //
-// $Id: ftk.h 3123 2006-01-24 17:19:50 -0700 (Tue, 24 Jan 2006) ahodgkinson $
+// $Id$
 //------------------------------------------------------------------------------
 
 #ifndef FTKSYS_H

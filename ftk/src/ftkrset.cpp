@@ -20,7 +20,7 @@
 // To contact Novell about this file by physical or electronic mail, 
 // you may find current contact information at www.novell.com.
 //
-// $Id: frset.cpp 3114 2006-01-19 13:22:45 -0700 (Thu, 19 Jan 2006) dsanders $
+// $Id$
 //------------------------------------------------------------------------------
 
 #include "ftksys.h"

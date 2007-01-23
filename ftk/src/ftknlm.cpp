@@ -20,7 +20,7 @@
 // To contact Novell about this file by physical or electronic mail, 
 // you may find current contact information at www.novell.com.
 //
-// $Id: fnlm.cpp 12362 2006-03-09 12:11:37 -0700 (Thu, 09 Mar 2006) dsanders $
+// $Id$
 //-------------------------------------------------------------------------
 
 #include "ftksys.h"
