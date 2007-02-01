@@ -28,6 +28,20 @@
 
 #include "flaim.h"
 
+#if defined( FLM_WIN)
+	// Conversion from XXX to YYY, possible loss of data
+	#pragma warning( disable : 4244) 
+
+	// Local variable XXX may be used without having been initialized
+	#pragma warning( disable : 4701)
+
+	// Function XXX not inlined
+	#pragma warning( disable : 4710) 
+
+	// Unreferenced inline function has been removed
+	#pragma warning (disable : 4514)
+#endif
+
 void flmUtilParseParams(
 	char *			pszCommandBuffer,
 	FLMINT			iMaxArgs,
