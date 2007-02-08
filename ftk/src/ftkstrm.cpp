@@ -1815,15 +1815,15 @@ Exit:
 Desc:	Reads decoded binary from the base64 ASCII source stream.
 *****************************************************************************/
 RCODE FLMAPI F_Base64DecoderIStream::read(
-	void *					pvBuffer,
-	FLMUINT					uiBytesToRead,
-	FLMUINT *				puiBytesRead)
+	void *			pvBuffer,
+	FLMUINT			uiBytesToRead,
+	FLMUINT *		puiBytesRead)
 {
-	RCODE			rc = NE_FLM_OK;
-	FLMBYTE *	pucOutBuf = (FLMBYTE *)pvBuffer;
-	FLMBYTE		ucQuadBuffer[ 4];
-	FLMUINT		uiOffset;
-	FLMUINT		uiBytesToCopy;
+	RCODE				rc = NE_FLM_OK;
+	FLMBYTE *		pucOutBuf = (FLMBYTE *)pvBuffer;
+	FLMBYTE			ucQuadBuffer[ 4];
+	FLMUINT			uiOffset;
+	FLMUINT			uiBytesToCopy;
 	
 	if( puiBytesRead)
 	{
@@ -1847,34 +1847,39 @@ RCODE FLMAPI F_Base64DecoderIStream::read(
 				if( RC_BAD( rc = m_pIStream->read( 
 					&ucQuadBuffer[ uiOffset], 1, NULL)))
 				{
-					if( rc != NE_FLM_EOF_HIT)
+					if( rc != NE_FLM_EOF_HIT || !uiOffset)
 					{
 						goto Exit;
 					}
+					
+					// Handle input that has not been padded correctly
 
-					if( uiOffset)
-					{
-						rc = RC_SET( NE_FLM_BAD_BASE64_ENCODING);
-					}
-
-					goto Exit;
+					ucQuadBuffer[ uiOffset] = ASCII_EQUAL;
 				}
 				
 				if( gv_ucBase64DecodeTable[ ucQuadBuffer[ uiOffset]] == 0xFF)
 				{
 					FLMBYTE	ucTmp = ucQuadBuffer[ uiOffset];
 
-					if( ucTmp == ASCII_TAB || ucTmp == ASCII_SPACE ||
+					if( ucTmp == 0 || ucTmp == ASCII_TAB || ucTmp == ASCII_SPACE ||
 						ucTmp == ASCII_NEWLINE || ucTmp == ASCII_CR)
 					{
 						continue;
 					}
-
+					
 					rc = RC_SET( NE_FLM_BAD_BASE64_ENCODING);
 					goto Exit;
 				}
 
 				uiOffset++;
+			}
+
+			// If we didn't get anything except padding, assume we are at the end
+			// of an incorrectly encoded buffer.
+			
+			if( ucQuadBuffer[ 0] == ASCII_EQUAL)
+			{
+				goto Exit;
 			}
 			
 			m_ucBuffer[ 0] = 
@@ -3321,7 +3326,6 @@ RCODE FLMAPI FlmWriteToOStream(
 	RCODE				rc = NE_FLM_OK;
 	FLMBYTE			ucBuffer[ 512];
 	FLMUINT			uiBufferSize = sizeof( ucBuffer);
-	FLMUINT			uiBytesToWrite;
 	FLMUINT			uiBytesRead;
 
 	for (;;)
@@ -3331,19 +3335,23 @@ RCODE FLMAPI FlmWriteToOStream(
 		{
 			if( rc != NE_FLM_EOF_HIT)
 			{
+				if( uiBytesRead)
+				{
+					(void)pOStream->write( ucBuffer, uiBytesRead);					
+				}
+				
 				goto Exit;
 			}
 
 			rc = NE_FLM_OK;
 
-			if (!uiBytesRead)
+			if( !uiBytesRead)
 			{
 				goto Exit;
 			}
 		}
 
-		uiBytesToWrite = uiBytesRead;
-		if( RC_BAD( rc = pOStream->write( ucBuffer, uiBytesToWrite)))
+		if( RC_BAD( rc = pOStream->write( ucBuffer, uiBytesRead)))
 		{
 			goto Exit;
 		}
@@ -3353,3 +3361,50 @@ Exit:
 
 	return( rc);
 }
+
+/******************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmReadFully(
+	IF_IStream *	pIStream,
+	F_DynaBuf *		pDynaBuf)
+{
+	RCODE				rc = NE_FLM_OK;
+	FLMBYTE			ucBuffer[ 512];
+	FLMUINT			uiBufferSize = sizeof( ucBuffer);
+	FLMUINT			uiBytesRead;
+
+	for (;;)
+	{
+		if( RC_BAD( rc = pIStream->read( 
+			ucBuffer, uiBufferSize, &uiBytesRead)))
+		{
+			if( rc != NE_FLM_EOF_HIT)
+			{
+				if( uiBytesRead)
+				{
+					(void)pDynaBuf->appendData( ucBuffer, uiBytesRead);
+				}
+				
+				goto Exit;
+			}
+
+			rc = NE_FLM_OK;
+
+			if( !uiBytesRead)
+			{
+				goto Exit;
+			}
+		}
+
+		if( RC_BAD( rc = pDynaBuf->appendData( ucBuffer, uiBytesRead)))
+		{
+			goto Exit;
+		}
+	}
+
+Exit:
+
+	return( rc);
+}
+

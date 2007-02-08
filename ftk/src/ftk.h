@@ -2,7 +2,7 @@
 // Desc:	FLAIM's cross-platform toolkit public definitions and interfaces
 // Tabs:	3
 //
-// Copyright (c) 2003-2006 Novell, Inc. All Rights Reserved.
+// Copyright (c) 2003-2007 Novell, Inc. All Rights Reserved.
 //
 // This library is free software; you can redistribute it and/or
 // modify it under the terms of the GNU Lesser General Public
@@ -1470,6 +1470,10 @@
 		IF_IStream *				pIStream,
 		IF_OStream *				pOStream);
 			
+	RCODE FLMAPI FlmReadFully(
+		IF_IStream *				pIStream,
+		F_DynaBuf *					pDynaBuf);
+	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -7134,3 +7138,4 @@
 	#endif
 
 #endif // FTK_H
+

@@ -3338,7 +3338,7 @@ RCODE F_FileHdl::allocFileAsyncClient(
 
 	*ppAsyncClient = pAsyncClient;
 	pAsyncClient = NULL;
-	
+
 Exit:
 
 	if( bMutexLocked)

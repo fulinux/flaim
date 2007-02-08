@@ -589,7 +589,7 @@ RCODE F_FileHdl::lowLevelRead(
 		if( aio_read( pAIO) != 0)
 	#endif
 		{
-			if( errno == EAGAIN || errno == ENOSYS)
+			if( errno == EAGAIN || errno == ENOSYS || errno == EINVAL)
 			{
 				FLMINT		iBytesRead;
 				
@@ -804,7 +804,7 @@ RCODE F_FileHdl::lowLevelWrite(
 		if( aio_write( pAIO) != 0)
 	#endif
 		{
-			if( errno == EAGAIN || errno == ENOSYS)
+			if( errno == EAGAIN || errno == ENOSYS || errno == EINVAL)
 			{
 				FLMINT		iBytesWritten;
 
