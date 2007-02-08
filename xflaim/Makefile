@@ -2342,7 +2342,6 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)package devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: XFLAIM static library and header file\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
-	$(ec)$(gprintf) "Provides: $(package_proj_name)-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)description devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "XFLAIM is an embeddable cross-platform XML database engine that\n" >> $(spec_file)

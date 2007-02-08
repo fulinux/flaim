@@ -1726,7 +1726,6 @@ spec: dircheck
 	$(ec)$(gprintf) "$(percent)package devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: FTK static library and header file\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
-	$(ec)$(gprintf) "Provides: $(package_proj_name)-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)description devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "FTK is the FLAIM cross-platform toolkit.\n" >> $(spec_file)
