@@ -1189,6 +1189,7 @@ RCODE F_XMLImport::processAttributeList( void)
 		{
 			goto Exit;
 		}
+		
 		if( !gv_XFlmSysData.pXml->isNameChar( peekChar()))
 		{
 			break;
@@ -1198,6 +1199,7 @@ RCODE F_XMLImport::processAttributeList( void)
 		uiSavedOffset = m_uiCurrLineOffset;
 		uiSavedFilePos = m_uiCurrLineFilePos;
 		uiSavedLineBytes = m_uiCurrLineBytes;
+		
 		if( RC_BAD( rc = getQualifiedName( &uiChars,
 			&puzPrefix, &puzLocal, &bNamespaceDecl,
 			&bDefaultNamespaceDecl)))
@@ -1209,6 +1211,7 @@ RCODE F_XMLImport::processAttributeList( void)
 		{
 			goto Exit;
 		}
+		
 		pAttr->uiLineNum = uiSavedLineNum;
 		pAttr->uiLineOffset = uiSavedOffset;
 		pAttr->uiLineFilePos = uiSavedFilePos;
@@ -1223,9 +1226,10 @@ RCODE F_XMLImport::processAttributeList( void)
 		{
 			goto Exit;
 		}
-		if (bNamespaceDecl)
+		
+		if( bNamespaceDecl)
 		{
-			if (bDefaultNamespaceDecl)
+			if( bDefaultNamespaceDecl)
 			{
 				pAttr->uiFlags |= F_DEFAULT_NS_DECL;
 			}
@@ -1339,9 +1343,23 @@ RCODE F_XMLImport::processAttributeList( void)
 			{
 				rc = NE_XFLM_OK;
 			}
+			
+			// Cannot bind anything to 'xml' prefix.  It, by definition, is always
+			// bound to the XML namespace
+			
+			if( f_unicmp( &pAttr->puzLocalName[ 6], gv_puzXMLPrefix) == 0)
+			{
+				setErrInfo( pAttr->uiLineNum,
+						pAttr->uiLineOffset,
+						XML_ERR_XML_PREFIX_REDEFINITION,
+						pAttr->uiLineFilePos,
+						pAttr->uiLineBytes);
+				rc = RC_SET( NE_XFLM_INVALID_XML);
+				goto Exit;
+			}
 
 			if( RC_BAD( rc = pushNamespace( 
-				&pAttr->puzLocalName [6], pAttr->puzVal)))
+				&pAttr->puzLocalName[ 6], pAttr->puzVal)))
 			{
 				goto Exit;
 			}
@@ -2737,8 +2755,7 @@ RCODE F_XMLImport::getQualifiedName(
 	FLMUNICODE **	ppuzPrefix,
 	FLMUNICODE **	ppuzLocal,
 	FLMBOOL *		pbNamespaceDecl,
-	FLMBOOL *		pbDefaultNamespaceDecl
-	)
+	FLMBOOL *		pbDefaultNamespaceDecl)
 {
 	RCODE				rc = NE_XFLM_OK;
 	FLMUINT			uiCharCount = 0;
@@ -2748,7 +2765,7 @@ RCODE F_XMLImport::getQualifiedName(
 	FLMBOOL			bFoundColon = FALSE;
 
 	*pbNamespaceDecl = FALSE;
-	if (pbDefaultNamespaceDecl)
+	if( pbDefaultNamespaceDecl)
 	{
 		*pbDefaultNamespaceDecl = FALSE;
 	}
@@ -2770,13 +2787,13 @@ RCODE F_XMLImport::getQualifiedName(
 	}
 
 	m_uChars[ uiCharCount++] = uChar;
-	for (;;)
+	for( ;;)
 	{
-		if ((uChar = getChar()) == 0)
+		if( (uChar = getChar()) == 0)
 		{
 			break;
 		}
-		if (!gv_XFlmSysData.pXml->isNameChar( uChar))
+		if( !gv_XFlmSysData.pXml->isNameChar( uChar))
 		{
 			ungetChar();
 			break;
@@ -2805,7 +2822,7 @@ RCODE F_XMLImport::getQualifiedName(
 			// into the prefix - the xmlns: should simply be part of
 			// the local name.
 			
-			if (uiCharCount != 5 || !isXMLNS( m_uChars))
+			if( uiCharCount != 5 || !isXMLNS( m_uChars))
 			{
 				uChar = 0;
 				puzPrefix = &m_uChars [0];
@@ -2826,11 +2843,12 @@ RCODE F_XMLImport::getQualifiedName(
 	*ppuzPrefix = puzPrefix;
 	*ppuzLocal = puzLocal;
 	
-	if (!puzPrefix && !*pbNamespaceDecl && uiCharCount == 5 &&
+	if( !puzPrefix && !*pbNamespaceDecl && uiCharCount == 5 &&
 		 isXMLNS( m_uChars))
 	{
 		*pbNamespaceDecl = TRUE;
-		if (pbDefaultNamespaceDecl)
+		
+		if( pbDefaultNamespaceDecl)
 		{
 			*pbDefaultNamespaceDecl = TRUE;
 		}
@@ -2970,7 +2988,7 @@ RCODE F_XMLImport::processEncodingDecl( void)
 	{
 		setErrInfo( m_uiCurrLineNum,
 				m_uiCurrLineOffset,
-				XML_ERR_UNSUPPORTED_ENCODING,
+				XML_ERR_ENCODING_NOT_SUPPORTED,
 				m_uiCurrLineFilePos,
 				m_uiCurrLineBytes);
 		rc = RC_SET( NE_XFLM_INVALID_XML);
@@ -4405,11 +4423,11 @@ RCODE F_XMLImport::addAttributesToElement(
 		{
 			FLMUINT	uiPrefixId;
 			
-			// Create the prefix (stored in &puzLocalName [6]) if it doesn't 
+			// Create the prefix (stored in &puzLocalName[ 6]) if it doesn't 
 			// already exist
 
 			if( RC_BAD( rc = m_pDb->m_pDict->getPrefixId( m_pDb,
-				&pAttr->puzLocalName [6], &uiPrefixId)))
+				&pAttr->puzLocalName[ 6], &uiPrefixId)))
 			{
 				if( rc != NE_XFLM_NOT_FOUND)
 				{
@@ -4418,7 +4436,7 @@ RCODE F_XMLImport::addAttributesToElement(
 
 				uiPrefixId = 0;
 				if( RC_BAD( rc = m_pDb->createPrefixDef( TRUE,
-					&pAttr->puzLocalName [6], &uiPrefixId)))
+					&pAttr->puzLocalName[ 6], &uiPrefixId)))
 				{
 					goto Exit;
 				}
@@ -4524,6 +4542,37 @@ RCODE F_XMLImport::addAttributesToElement(
 					
 					goto Exit;
 				}
+				
+				// Handle the special case of the "xml" prefix.  This prefix, by
+				// definition is bound to a specific URI.  If the prefix hasn't
+				// been added to the schema yet, go ahead and add it.				
+				
+				if( f_unicmp( pAttr->puzPrefix, gv_puzXMLPrefix) == 0)
+				{
+					FLMUINT	uiPrefixId;
+					
+					if( RC_BAD( rc = m_pDb->m_pDict->getPrefixId( m_pDb,
+						pAttr->puzPrefix, &uiPrefixId)))
+					{
+						if( rc != NE_XFLM_NOT_FOUND)
+						{
+							goto Exit;
+						}
+						
+						if( !(m_uiFlags & FLM_XML_EXTEND_DICT_FLAG))
+						{
+							rc = RC_SET( NE_XFLM_UNDEFINED_ATTRIBUTE_NAME);
+							goto Exit;
+						}
+		
+						uiPrefixId = 0;
+						if( RC_BAD( rc = m_pDb->createPrefixDef( TRUE,
+							pAttr->puzPrefix, &uiPrefixId)))
+						{
+							goto Exit;
+						}
+					}
+				}
 			}
 			else
 			{
@@ -4542,7 +4591,7 @@ RCODE F_XMLImport::addAttributesToElement(
 				{
 					goto Exit;
 				}
-
+				
 				if( !(m_uiFlags & FLM_XML_EXTEND_DICT_FLAG) ||
 					(pNamespace && 
 					 f_unicmp( pNamespace->getURIPtr(), gv_uzXFLAIMNamespace) == 0))

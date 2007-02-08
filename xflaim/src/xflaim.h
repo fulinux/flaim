@@ -139,7 +139,7 @@
 		XML_ERR_ILLEGAL_COLON_IN_NAME,		// 26	Illegal second ":" found in name.  Name already has a colon.
 		XML_ERR_EXPECTING_VERSION,				// 27	Expecting "version"
 		XML_ERR_INVALID_VERSION_NUM,			// 28	Invalid version number - only 1.0 is supported.
-		XML_ERR_UNSUPPORTED_ENCODING,			// 29	Unsupported encoding - must be "UTF-8" or "us-ascii"
+		XML_ERR_ENCODING_NOT_SUPPORTED,		// 29	Unsupported encoding - must be "UTF-8" or "us-ascii"
 		XML_ERR_EXPECTING_YES_OR_NO,			// 30	Expecting "yes" or "no"
 		XML_ERR_EXPECTING_QUOTE_BEFORE_EOL,	// 31	Expecting quote character - unexpected end of line
 		XML_ERR_EXPECTING_SEMI,					// 32	Expecting ";"
@@ -157,6 +157,7 @@
 		XML_ERR_CREATING_DATA_NODE,			// 44 Error returned from createNode in processPI
 		XML_ERR_CREATING_ROOT_ELEMENT,		// 45 Error returned from createRootElement in processSTag
 		XML_ERR_CREATING_ELEMENT_NODE,		// 46 Error returned from createNode in processSTag
+		XML_ERR_XML_PREFIX_REDEFINITION,		// 47 Cannot re-define xml namespace prefix 
 		// IMPORTANT NOTE:  If new codes are added, please update gv_XMLParseErrors in fshell.cpp
 		XML_NUM_ERRORS
 	} XMLParseError;

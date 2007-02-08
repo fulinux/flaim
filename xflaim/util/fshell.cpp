@@ -72,7 +72,7 @@ XSHELL_ERROR_CODE_MAP gv_XMLParseErrors[
 		flmErrorCodeEntry( XML_ERR_ILLEGAL_COLON_IN_NAME),
 		flmErrorCodeEntry( XML_ERR_EXPECTING_VERSION),
 		flmErrorCodeEntry( XML_ERR_INVALID_VERSION_NUM),
-		flmErrorCodeEntry( XML_ERR_UNSUPPORTED_ENCODING),
+		flmErrorCodeEntry( XML_ERR_ENCODING_NOT_SUPPORTED),
 		flmErrorCodeEntry( XML_ERR_EXPECTING_YES_OR_NO),
 		flmErrorCodeEntry( XML_ERR_EXPECTING_QUOTE_BEFORE_EOL),
 		flmErrorCodeEntry( XML_ERR_EXPECTING_SEMI),
@@ -89,7 +89,8 @@ XSHELL_ERROR_CODE_MAP gv_XMLParseErrors[
 		flmErrorCodeEntry( XML_ERR_CREATING_PI_NODE),
 		flmErrorCodeEntry( XML_ERR_CREATING_DATA_NODE),
 		flmErrorCodeEntry( XML_ERR_CREATING_ROOT_ELEMENT),
-		flmErrorCodeEntry( XML_ERR_CREATING_ELEMENT_NODE)
+		flmErrorCodeEntry( XML_ERR_CREATING_ELEMENT_NODE),
+		flmErrorCodeEntry( XML_ERR_XML_PREFIX_REDEFINITION)
 };
 
 #define FSMI_ENTRY_ELEMENT												2
