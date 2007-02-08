@@ -2183,7 +2183,7 @@ public:
 
 	RCODE setValue(
 		F_Db *				pDb,
-		FLMUINT				uiColumnNum,
+		F_COLUMN *			pColumn,
 		const FLMBYTE *	pucValue,
 		FLMUINT				uiValueLen);
 	

@@ -54,6 +54,10 @@ class F_ColumnDataRelocator;
 class F_ColumnListRelocator;
 class F_BTreeIStreamPool;
 class SQLQuery;
+class SQLEnv;
+class SQLConnection;
+class SQLDesc;
+class SQLStatement;
 
 /****************************************************************************
 Desc:	Tests to see if database is NOT in native platform format.
@@ -1143,6 +1147,10 @@ friend class F_ColumnDataRelocator;
 friend class F_ColumnListRelocator;	
 friend class F_BlockRelocator;
 friend class SQLQuery;
+friend class SQLEnv;
+friend class SQLConnection;
+friend class SQLDesc;
+friend class SQLStatement;
 };
 
 typedef struct QUERY_HDR

@@ -65,10 +65,144 @@ typedef RCODE (* SQL_STATUS_HOOK)(
 	void *			pvArg3,
 	void *			pvUserData);
 
+//------------------------------------------------------------------------------
+// Desc: Base object that defines methods which must be present for all ODBC
+//			handle objects.
+//------------------------------------------------------------------------------
+class ODBCObject : public F_Object
+{
+public:
+
+	ODBCObject()
+	{
+		m_hMutex = F_MUTEX_NULL;
+		m_pszStateInfo = NULL;
+		m_uiErrMsgLen = 0;
+		m_bHaveError = FALSE;
+		m_uiNumDiagRecs = 0;
+	}
+	
+	virtual ~ODBCObject()
+	{
+		if (m_hMutex != F_MUTEX_NULL)
+		{
+			f_mutexDestroy( &m_hMutex);
+		}
+	}
+	
+	FINLINE FLMINT FLMAPI AddRef( void)
+	{
+		return( f_atomicInc( &m_refCnt);
+	}
+
+	FINLINE FLMINT FLMAPI Release( void)
+	{
+		FLMINT	iRefCnt;
+		
+		if ((iRefCnt = f_atomicDec( &m_refCnt)) == 0)
+		{
+			delete this;
+		}
+		return( iRefCnt);
+	}
+
+	FINLINE RCODE setupObject( void)
+	{
+		return( f_mutexCreate( &m_hMutex));
+	}
+	
+	FINLINE void lockObject( void)
+	{
+		f_mutexLock( m_hMutex);
+	}
+	
+	FINLINE void unlockObject( void)
+	{
+		f_mutexUnlock( m_hMutex);
+	}
+	
+	FINLINE const char * getStateInfo( void)
+	{
+		return( m_pszStateInfo);
+	}
+	
+	FINLINE FLMUINT getErrMsgLen( void)
+	{
+		return( m_uiErrMsgLen);
+	}
+	
+	FINLINE const char * getErrMsg( void)
+	{
+		if (m_uiErrMsgLen)
+		{
+			return( &m_szErrMsg [0]);
+		}
+		else
+		{
+			return( NULL);
+		}
+	}
+	
+	FINLINE RCODE getRCODE( void)
+	{
+		return( m_rc);
+	}
+	
+	FINLINE FLMBOOL haveError( void)
+	{
+		return( m_bHaveError);
+	}
+	
+	FINLINE void clearState( void)
+	{
+		m_bHaveError = FALSE;
+		m_uiNumDiagRecs = 0;
+	}
+	
+	FINLINE void setStateInfo(
+		const char *	pszStateInfo)
+	{
+		m_pszStateInfo = pszStateInfo;
+		m_uiErrMsgLen = 0;
+		m_rc = NE_SFLM_OK;
+		m_bHaveError = TRUE;
+	}
+	
+	FINLINE void setGeneralErrMsg(
+		const char *	pszErrMsg,
+		RCODE				rc = NE_SFLM_OK)
+	{
+		m_pszStateInfo = "HY000";
+		m_uiErrMsgLen = f_strlen( pszErrMsg);
+		
+		// Copy null terminator character too.
+		
+		f_memcpy( m_szErrMsg, pszErrMsg, m_uiErrMsgLen + 1);
+		m_rc = rc;
+		m_bHaveError = TRUE;
+	}
+
+	// Must be implemented by inheriting class.
+	
+	virtual FLMBOOL canRelease( void) = 0;
+	
+private:
+
+	F_MUTEX			m_hMutex;
+	const char *	m_pszLastStateInfo;
+	char *			m_szErrMsg [200];
+	FLMUINT			m_uiErrMsgLen;
+	RCODE				m_rc;
+	FLMUINT			m_bHaveError;
+	FLMUINT			m_uiNumDiagRecs;
+}
+
 /*============================================================================
-Desc:	SQL statement class.  Parses and executes SQL statements.
+Desc:	SQL statement class.  Parses and executes SQL statements.  This object
+		type is returned for ODBC for handles of type SQL_HANDLE_STMT or
+		SQLHSTMT.
 ============================================================================*/
-class SQLStatement : public F_Object
+class SQLStatement : public ODBCObject
 {
 public:
 
@@ -77,6 +211,8 @@ public:
 	SQLStatement();
 
 	virtual ~SQLStatement();
+	
+	FLMBOOL canRelease( void);
 
 	RCODE setupStatement( void);
 
@@ -86,6 +222,18 @@ public:
 		IF_IStream *	pStream,
 		F_Db *			pDb,
 		SQL_STATS *		pSQLStats);
+		
+	FINLINE FLMBOOL canRelease( void)
+	{
+		// VISIT: Need to determine whether or not this is possible.
+		
+		return( TRUE);
+	}
+
+	SQLConnection * getConnection( void)
+	{
+		return( m_pConnection);
+	}
 
 private:
 
@@ -250,7 +398,8 @@ private:
 	RCODE getDataType(
 		eDataType *	peDataType,
 		FLMUINT *	puiMax,
-		FLMUINT *	puiEncDefNum);
+		FLMUINT *	puiEncDefNum,
+		FLMUINT *	puiFlags);
 		
 	RCODE processCreateTable( void);
 	
@@ -311,9 +460,15 @@ private:
 	void *						m_pvCallbackData;
 	SQL_STATS					m_sqlStats;
 	F_Pool						m_tmpPool;
+	SQLConnection *			m_pConnection;
+	SQLStatement *				m_pNextInConnection;
+	SQLStatement *				m_pPrevInConnection;
 
 friend class F_Db;
 friend class F_Database;
+friend class SQLConnection;
+friend class SQLEnv;
+friend class SQLDesc;
 };
 
 RCODE resolveColumnName(

@@ -1601,7 +1601,7 @@ RCODE SQLStatement::parseCriteria(
 				{
 					goto Exit;
 				}
-
+				
 				break;
 			case '+':
 			

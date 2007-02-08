@@ -106,11 +106,17 @@ typedef struct F_TABLE
 	FLMBOOL			bSystemTable;		// System table - cannot be dropped or altered by
 												// an application.
 	FLMUINT			uiNumColumns;		// Number of columns in the table.
+	FLMUINT			uiNumReqColumns;	// Number of columns that are required to
+												// have values.
 	F_COLUMN *		pColumns;			// Contains all columns for the table.
 	F_NameTable *	pColumnNames;		// Contains all column names for the table
 	LFILE				lfInfo;				// Logical file information.
 	FLMUINT			uiFirstIndexNum;	// Number of first index on this table
 } F_TABLE;
+
+#define MAX_INDEX_COLUMNS		((SFLM_MAX_KEY_SIZE - FLM_MAX_NUM_BUF_SIZE) / 2)
+#define MAX_ORDER_BY_COLUMNS	MAX_INDEX_COLUMNS
+#define MAX_SELECT_TABLES	50
 
 /*****************************************************************************
 Desc:	Index definition

@@ -141,7 +141,7 @@ RCODE F_Db::updateRow(
 				}
 			}
 		}
-		if (RC_BAD( rc = pRow->setValue( this, pColumnValue->uiColumnNum,
+		if (RC_BAD( rc = pRow->setValue( this, pColumn,
 													pColumnValue->pucColumnValue,
 													pColumnValue->uiValueLen)))
 		{

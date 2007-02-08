@@ -146,7 +146,6 @@ Exit:
 //------------------------------------------------------------------------------
 RCODE SQLStatement::processSelect( void)
 {
-#define MAX_SELECT_TABLES	15
 	RCODE					rc = NE_SFLM_OK;
 	FLMBOOL				bStartedTrans = FALSE;
 	char					szToken [MAX_SQL_TOKEN_SIZE + 1];
@@ -495,6 +494,16 @@ Get_Index:
 			if (RC_BAD( rc = getName( szName, sizeof( szName),
 									&uiNameLen, &uiTokenLineOffset)))
 			{
+				goto Exit;
+			}
+			if (uiNumOrderByColumns == MAX_ORDER_BY_COLUMNS)
+			{
+				setErrInfo( m_uiCurrLineNum,
+						uiTokenLineOffset,
+						SQL_ERR_TOO_MANY_ORDER_BY_COLUMNS,
+						m_uiCurrLineFilePos,
+						m_uiCurrLineBytes);
+				rc = RC_SET( NE_SFLM_INVALID_SQL);
 				goto Exit;
 			}
 			

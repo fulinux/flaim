@@ -580,6 +580,19 @@ RCODE SQLStatement::processCreateIndex(
 			goto Exit;
 		}
 		
+		// See if too many columns have been specified.
+		
+		if (uiNumIxColumns == MAX_INDEX_COLUMNS)
+		{
+			setErrInfo( m_uiCurrLineNum,
+					uiTokenLineOffset,
+					SQL_ERR_TOO_MANY_INDEX_COLUMNS,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
+		}
+		
 		// Allocate an index column def structure
 		
 		if (RC_BAD( rc = m_tmpPool.poolAlloc( sizeof( F_INDEX_COL_DEF),
@@ -841,7 +854,7 @@ Invalid_Ix_Option:
 			}
 		}
 		
-		if (f_stricmp( szToken, "offline") == 0)
+		if (f_stricmp( szToken, SFLM_INDEX_SUSPENDED_STR) == 0)
 		{
 			
 			// Ignore offline option if suspended was specified.
@@ -851,16 +864,16 @@ Invalid_Ix_Option:
 				uiFlags |= IXD_OFFLINE;
 			}
 		}
-		else if (f_stricmp( szToken, "suspended") == 0)
+		else if (f_stricmp( szToken, SFLM_INDEX_SUSPENDED_STR) == 0)
 		{
 			uiFlags &= (~(IXD_OFFLINE));
 			uiFlags |= IXD_SUSPENDED;
 		}
-		else if (f_stricmp( szToken, "abspos") == 0)
+		else if (f_stricmp( szToken, SFLM_ABS_POS_OPTION_STR) == 0)
 		{
 			uiFlags |= IXD_ABS_POS;
 		}
-		else if (f_stricmp( szToken, "encrypt_with") == 0)
+		else if (f_stricmp( szToken, SFLM_ENCRYPT_WITH_STR) == 0)
 		{
 			if (RC_BAD( rc = getEncDefName( TRUE, szEncDefName, sizeof( szEncDefName),
 										&uiEncDefNameLen, &pEncDef)))

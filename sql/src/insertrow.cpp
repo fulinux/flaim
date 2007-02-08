@@ -38,6 +38,7 @@ RCODE F_Db::insertRow(
 	F_TABLE *			pTable;
 	F_COLUMN *			pColumn;
 	FLMBOOL				bStartedTrans = FALSE;
+	FLMUINT				uiNumReqColumns;
 	
 	// Make sure we are in an update transaction.
 	
@@ -63,7 +64,7 @@ RCODE F_Db::insertRow(
 	
 	// Set the column values into the row.
 	
-	for (pColumnValue = pColumnValues;
+	for (pColumnValue = pColumnValues, uiNumReqColumns = 0;
 		  pColumnValue;
 		  pColumnValue = pColumnValue->pNext)
 	{
@@ -105,12 +106,25 @@ RCODE F_Db::insertRow(
 				}
 			}
 		}
-		if (RC_BAD( rc = pRow->setValue( this, pColumnValue->uiColumnNum,
+		if (!(pColumn->uiFlags & COL_NULL_ALLOWED))
+		{
+			uiNumReqColumns++;
+		}
+		
+		if (RC_BAD( rc = pRow->setValue( this, pColumn,
 													pColumnValue->pucColumnValue,
 													pColumnValue->uiValueLen)))
 		{
 			goto Exit;
 		}
+	}
+	
+	// See if we got all of the required columns
+	
+	if (uiNumReqColumns != pTable->uiNumReqColumns)
+	{
+		rc = RC_SET( NE_SFLM_MISSING_REQUIRED_COLUMN);
+		goto Exit;
 	}
 	
 	// Do whatever indexing needs to be done.

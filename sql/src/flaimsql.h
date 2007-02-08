@@ -147,6 +147,10 @@ typedef enum
 	SQL_ERR_EXPECTING_BY,					///< 67 = Expecting "BY" keyword.
 	SQL_ERR_INDEX_NOT_DEFINED_FOR_TABLE,///< 68 = Index specified is not associated with the specified table.
 	SQL_ERR_EXPECTING_INDEX_OR_NOINDEX,	///< 69 = Expecting INDEX or NOINDEX keyword.
+	SQL_ERR_TOO_MANY_INDEX_COLUMNS,		///< 70 = Too many columns specified in CREATE INDEX statement.
+	SQL_ERR_TOO_MANY_ORDER_BY_COLUMNS,	///< 71 = Too many columns specified in the ORDER BY clause.
+	SQL_ERR_EXPECTING_NULL,					///< 72 = Expecting "NULL" keyword.
+	SQL_ERR_INVALID_CHAR_IN_NAME,			///< 73 = Invalid character found in quoted name identifier.
 
 	// IMPORTANT NOTE:  If new codes are added, please update gv_SQLParseErrors in fshell.cpp
 	SQL_NUM_ERRORS
@@ -160,6 +164,7 @@ typedef struct
 	FLMUINT			uiErrLineNum;		///< Line number where error occurred.
 	FLMUINT			uiErrLineOffset;	///< Offset in line where error occurred.| NOTE: This is a zero-based offset.
 	SQLParseError	eErrorType;			///< Parsing error that occurred.
+	
 	FLMUINT			uiErrLineFilePos;	///< Absolute offset in the file (or buffer) where the line containing the error occurred.
 	FLMUINT			uiErrLineBytes;	///< Number of bytes in the line that contains the error.
 } SQL_STATS;
@@ -381,139 +386,161 @@ typedef enum
 // Predefined table names and numbers
 
 #define SFLM_TBLNUM_ENCDEFS								1
-#define SFLM_TBLNAM_ENCDEFS								"flmtbl_encdefs"
+#define SFLM_TBLNAM_ENCDEFS								"FLMTBL_ENCDEFS"
 #define SFLM_TBLNUM_TABLES									2
-#define SFLM_TBLNAM_TABLES									"flmtbl_tables"
+#define SFLM_TBLNAM_TABLES									"FLMTBL_TABLES"
 #define SFLM_TBLNUM_COLUMNS								3
-#define SFLM_TBLNAM_COLUMNS								"flmtbl_columns"
+#define SFLM_TBLNAM_COLUMNS								"FLMTBL_COLUMNS"
 #define SFLM_TBLNUM_INDEXES								4
-#define SFLM_TBLNAM_INDEXES								"flmtbl_indexes"
+#define SFLM_TBLNAM_INDEXES								"FLMTBL_INDEXES"
 #define SFLM_TBLNUM_INDEX_COMPONENTS					5
-#define SFLM_TBLNAM_INDEX_COMPONENTS					"flmtbl_index_components"
+#define SFLM_TBLNAM_INDEX_COMPONENTS					"FLMTBL_INDEX_COMPONENTS"
 #define SFLM_TBLNUM_BLOCK_CHAINS							6
-#define SFLM_TBLNAM_BLOCK_CHAINS							"flmtbl_block_chains"
+#define SFLM_TBLNAM_BLOCK_CHAINS							"FLMTBL_BLOCK_CHAINS"
 
 // Predefined index names and numbers
 
 #define SFLM_IXNUM_ENCDEF_NAME							1
-#define SFLM_IXNAM_ENCDEF_NAME							"flmix_encdef_name"
+#define SFLM_IXNAM_ENCDEF_NAME							"FLMIX_ENCDEF_NAME"
 #define SFLM_IXNUM_TABLE_NAME								2
-#define SFLM_IXNAM_TABLE_NAME								"flmix_table_name"
+#define SFLM_IXNAM_TABLE_NAME								"FLMIX_TABLE_NAME"
 #define SFLM_IXNUM_TABLE_ENCDEF_NUM						3
-#define SFLM_IXNAM_TABLE_ENCDEF_NUM						"flmix_table_encdef_num"
+#define SFLM_IXNAM_TABLE_ENCDEF_NUM						"FLMIX_TABLE_ENCDEF_NUM"
 #define SFLM_IXNUM_COLUMN_TABLE_NUM						4
-#define SFLM_IXNAM_COLUMN_TABLE_NUM						"flmix_column_table_num"
+#define SFLM_IXNAM_COLUMN_TABLE_NUM						"FLMIX_COLUMN_TABLE_NUM"
 #define SFLM_IXNUM_COLUMN_ENCDEF_NUM					5
-#define SFLM_IXNAM_COLUMN_ENCDEF_NUM					"flmix_column_encdef_num"
+#define SFLM_IXNAM_COLUMN_ENCDEF_NUM					"FLMIX_COLUMN_ENCDEF_NUM"
 #define SFLM_IXNUM_INDEX_NAME								6
-#define SFLM_IXNAM_INDEX_NAME								"flmix_index_name"
+#define SFLM_IXNAM_INDEX_NAME								"FLMIX_INDEX_NAME"
 #define SFLM_IXNUM_INDEX_TABLE_NUM						7
-#define SFLM_IXNAM_INDEX_TABLE_NUM						"flmix_index_table_num"
+#define SFLM_IXNAM_INDEX_TABLE_NUM						"FLMIX_INDEX_TABLE_NUM"
 #define SFLM_IXNUM_INDEX_ENCDEF_NUM						8
-#define SFLM_IXNAM_INDEX_ENCDEF_NUM						"flmix_index_encdef_num"
+#define SFLM_IXNAM_INDEX_ENCDEF_NUM						"FLMIX_INDEX_ENCDEF_NUM"
 #define SFLM_IXNUM_INDEX_COMP_INDEX_NUM				9
-#define SFLM_IXNAM_INDEX_COMP_INDEX_NUM				"flmix_index_comp_index_num"
+#define SFLM_IXNAM_INDEX_COMP_INDEX_NUM				"FLMIX_INDEX_COMP_INDEX_NUM"
 
 // Column names and numbers for the encryption definitions table
 
 #define SFLM_COLNUM_ENCDEFS_ENCDEF_NAME				1
-#define SFLM_COLNAM_ENCDEFS_ENCDEF_NAME				"encdef_name"
+#define SFLM_COLNAM_ENCDEFS_ENCDEF_NAME				"ENCDEF_NAME"
 #define SFLM_COLNUM_ENCDEFS_ENCDEF_NUM					2
-#define SFLM_COLNAM_ENCDEFS_ENCDEF_NUM					"encdef_num"
+#define SFLM_COLNAM_ENCDEFS_ENCDEF_NUM					"ENCDEF_NUM"
 #define SFLM_COLNUM_ENCDEFS_ENC_ALGORITHM				3
-#define SFLM_COLNAM_ENCDEFS_ENC_ALGORITHM				"enc_algorithm"
+#define SFLM_COLNAM_ENCDEFS_ENC_ALGORITHM				"ENC_ALGORITHM"
 #define SFLM_COLNUM_ENCDEFS_ENC_KEY_SIZE				4
-#define SFLM_COLNAM_ENCDEFS_ENC_KEY_SIZE				"enc_key_size"
+#define SFLM_COLNAM_ENCDEFS_ENC_KEY_SIZE				"ENC_KEY_SIZE"
 #define SFLM_COLNUM_ENCDEFS_ENC_KEY						5
-#define SFLM_COLNAM_ENCDEFS_ENC_KEY						"enc_key"
+#define SFLM_COLNAM_ENCDEFS_ENC_KEY						"ENC_KEY"
 #define SFLM_ENCDEFS_NUM_COLUMNS							5
 
 // Column names and numbers for the tables table
 
 #define SFLM_COLNUM_TABLES_TABLE_NAME					1
-#define SFLM_COLNAM_TABLES_TABLE_NAME					"table_name"
+#define SFLM_COLNAM_TABLES_TABLE_NAME					"TABLE_NAME"
 #define SFLM_COLNUM_TABLES_TABLE_NUM					2
-#define SFLM_COLNAM_TABLES_TABLE_NUM					"table_num"
+#define SFLM_COLNAM_TABLES_TABLE_NUM					"TABLE_NUM"
 #define SFLM_COLNUM_TABLES_ENCDEF_NUM					3
-#define SFLM_COLNAM_TABLES_ENCDEF_NUM					"encdef_num"
+#define SFLM_COLNAM_TABLES_ENCDEF_NUM					"ENCDEF_NUM"
 #define SFLM_COLNUM_TABLES_NUM_COLUMNS					4
-#define SFLM_COLNAM_TABLES_NUM_COLUMNS					"num_columns"
+#define SFLM_COLNAM_TABLES_NUM_COLUMNS					"NUM_COLUMNS"
 #define SFLM_TABLES_NUM_COLUMNS							4
 
 // Column names and numbers for the columns table
 
 #define SFLM_COLNUM_COLUMNS_TABLE_NUM					1
-#define SFLM_COLNAM_COLUMNS_TABLE_NUM					"table_num"
+#define SFLM_COLNAM_COLUMNS_TABLE_NUM					"TABLE_NUM"
 #define SFLM_COLNUM_COLUMNS_COLUMN_NAME				2
-#define SFLM_COLNAM_COLUMNS_COLUMN_NAME				"column_name"
+#define SFLM_COLNAM_COLUMNS_COLUMN_NAME				"COLUMN_NAME"
 #define SFLM_COLNUM_COLUMNS_COLUMN_NUM					3
-#define SFLM_COLNAM_COLUMNS_COLUMN_NUM					"column_num"
+#define SFLM_COLNAM_COLUMNS_COLUMN_NUM					"COLUMN_NUM"
 #define SFLM_COLNUM_COLUMNS_DATA_TYPE					4
-#define SFLM_COLNAM_COLUMNS_DATA_TYPE					"data_type"
+#define SFLM_COLNAM_COLUMNS_DATA_TYPE					"DATA_TYPE"
 #define SFLM_COLNUM_COLUMNS_MAX_LEN						5
-#define SFLM_COLNAM_COLUMNS_MAX_LEN						"max_len"
+#define SFLM_COLNAM_COLUMNS_MAX_LEN						"MAX_LEN"
 #define SFLM_COLNUM_COLUMNS_ENCDEF_NUM					6
-#define SFLM_COLNAM_COLUMNS_ENCDEF_NUM					"encdef_num"
+#define SFLM_COLNAM_COLUMNS_ENCDEF_NUM					"ENCDEF_NUM"
 #define SFLM_COLNUM_COLUMNS_READ_ONLY					7
-#define SFLM_COLNAM_COLUMNS_READ_ONLY					"read_only"
+#define SFLM_COLNAM_COLUMNS_READ_ONLY					"READ_ONLY"
 #define SFLM_COLNUM_COLUMNS_NULL_ALLOWED				8
-#define SFLM_COLNAM_COLUMNS_NULL_ALLOWED				"null_allowed"
+#define SFLM_COLNAM_COLUMNS_NULL_ALLOWED				"NULL_ALLOWED"
 #define SFLM_COLUMNS_NUM_COLUMNS							8
 
 // Column names and numbers for the indexes table
 
 #define SFLM_COLNUM_INDEXES_INDEX_NAME					1
-#define SFLM_COLNAM_INDEXES_INDEX_NAME					"index_name"
+#define SFLM_COLNAM_INDEXES_INDEX_NAME					"INDEX_NAME"
 #define SFLM_COLNUM_INDEXES_INDEX_NUM					2
-#define SFLM_COLNAM_INDEXES_INDEX_NUM					"index_num"
+#define SFLM_COLNAM_INDEXES_INDEX_NUM					"INDEX_NUM"
 #define SFLM_COLNUM_INDEXES_TABLE_NUM					3
-#define SFLM_COLNAM_INDEXES_TABLE_NUM					"table_num"
+#define SFLM_COLNAM_INDEXES_TABLE_NUM					"TABLE_NUM"
 #define SFLM_COLNUM_INDEXES_ENCDEF_NUM					4
-#define SFLM_COLNAM_INDEXES_ENCDEF_NUM					"encdef_num"
+#define SFLM_COLNAM_INDEXES_ENCDEF_NUM					"ENCDEF_NUM"
 #define SFLM_COLNUM_INDEXES_LANGUAGE					5
-#define SFLM_COLNAM_INDEXES_LANGUAGE					"language"
+#define SFLM_COLNAM_INDEXES_LANGUAGE					"LANGUAGE"
 #define SFLM_COLNUM_INDEXES_NUM_KEY_COMPONENTS		6
-#define SFLM_COLNAM_INDEXES_NUM_KEY_COMPONENTS		"num_key_components"
+#define SFLM_COLNAM_INDEXES_NUM_KEY_COMPONENTS		"NUM_KEY_COMPONENTS"
 #define SFLM_COLNUM_INDEXES_NUM_DATA_COMPONENTS		7
-#define SFLM_COLNAM_INDEXES_NUM_DATA_COMPONENTS		"num_data_components"
+#define SFLM_COLNAM_INDEXES_NUM_DATA_COMPONENTS		"NUM_DATA_COMPONENTS"
 #define SFLM_COLNUM_INDEXES_LAST_ROW_INDEXED			8
-#define SFLM_COLNAM_INDEXES_LAST_ROW_INDEXED			"last_row_indexed"
+#define SFLM_COLNAM_INDEXES_LAST_ROW_INDEXED			"LAST_ROW_INDEXED"
 #define SFLM_COLNUM_INDEXES_INDEX_STATE				9
-#define SFLM_COLNAM_INDEXES_INDEX_STATE				"index_state"
+#define SFLM_COLNAM_INDEXES_INDEX_STATE				"INDEX_STATE"
 #define SFLM_COLNUM_INDEXES_KEEP_ABS_POS_INFO		10
-#define SFLM_COLNAM_INDEXES_KEEP_ABS_POS_INFO		"keep_abs_pos_info"
+#define SFLM_COLNAM_INDEXES_KEEP_ABS_POS_INFO		"KEEP_ABS_POS_INFO"
 #define SFLM_COLNUM_INDEXES_KEYS_UNIQUE				11
-#define SFLM_COLNAM_INDEXES_KEYS_UNIQUE				"keys_unique"
+#define SFLM_COLNAM_INDEXES_KEYS_UNIQUE				"KEYS_UNIQUE"
 #define SFLM_INDEXES_NUM_COLUMNS							11
 
 // Column names and numbers for the index components table
 
 #define SFLM_COLNUM_INDEX_COMP_INDEX_NUM				1
-#define SFLM_COLNAM_INDEX_COMP_INDEX_NUM				"index_num"
+#define SFLM_COLNAM_INDEX_COMP_INDEX_NUM				"INDEX_NUM"
 #define SFLM_COLNUM_INDEX_COMP_COLUMN_NUM				2
-#define SFLM_COLNAM_INDEX_COMP_COLUMN_NUM				"column_num"
+#define SFLM_COLNAM_INDEX_COMP_COLUMN_NUM				"COLUMN_NUM"
 #define SFLM_COLNUM_INDEX_COMP_KEY_COMPONENT			3
-#define SFLM_COLNAM_INDEX_COMP_KEY_COMPONENT			"key_component"
+#define SFLM_COLNAM_INDEX_COMP_KEY_COMPONENT			"KEY_COMPONENT"
 #define SFLM_COLNUM_INDEX_COMP_DATA_COMPONENT		4
-#define SFLM_COLNAM_INDEX_COMP_DATA_COMPONENT		"data_component"
+#define SFLM_COLNAM_INDEX_COMP_DATA_COMPONENT		"DATA_COMPONENT"
 #define SFLM_COLNUM_INDEX_COMP_INDEX_ON				5
-#define SFLM_COLNAM_INDEX_COMP_INDEX_ON				"index_on"
+#define SFLM_COLNAM_INDEX_COMP_INDEX_ON				"INDEX_ON"
 #define SFLM_COLNUM_INDEX_COMP_COMPARE_RULES			6
-#define SFLM_COLNAM_INDEX_COMP_COMPARE_RULES			"compare_rules"
+#define SFLM_COLNAM_INDEX_COMP_COMPARE_RULES			"COMPARE_RULES"
 #define SFLM_COLNUM_INDEX_COMP_SORT_DESCENDING		7
-#define SFLM_COLNAM_INDEX_COMP_SORT_DESCENDING		"sort_descending"
+#define SFLM_COLNAM_INDEX_COMP_SORT_DESCENDING		"SORT_DESCENDING"
 #define SFLM_COLNUM_INDEX_COMP_SORT_MISSING_HIGH	8
-#define SFLM_COLNAM_INDEX_COMP_SORT_MISSING_HIGH	"sort_missing_high"
+#define SFLM_COLNAM_INDEX_COMP_SORT_MISSING_HIGH	"SORT_MISSING_HIGH"
 #define SFLM_COLNUM_INDEX_COMP_LIMIT					9
-#define SFLM_COLNAM_INDEX_COMP_LIMIT					"limit"
+#define SFLM_COLNAM_INDEX_COMP_LIMIT					"LIMIT"
 #define SFLM_INDEX_COMP_NUM_COLUMNS						9
 
 // Column names and numbers for the block chains table
 
 #define SFLM_COLNUM_BLOCK_CHAINS_BLOCK_ADDRESS		1
-#define SFLM_COLNAM_BLOCK_CHAINS_BLOCK_ADDRESS		"block_address"
+#define SFLM_COLNAM_BLOCK_CHAINS_BLOCK_ADDRESS		"BLOCK_ADDRESS"
 #define SFLM_BLOCK_CHAINS_NUM_COLUMNS					1
 
+#define SFLM_DATA_DIR_STR									"data_dir"
+#define SFLM_DATA_DIR_STR_LEN								8
+#define SFLM_RFL_DIR_STR									"rfl_dir"
+#define SFLM_RFL_DIR_STR_LEN								7
+#define SFLM_PASSWORD_STR									"password"
+#define SFLM_PASSWORD_STR_LEN								8
+#define SFLM_ALLOW_LIMITED_STR							"allow_limited"
+#define SFLM_ALLOW_LIMITED_STR_LEN						13
+#define SFLM_BLOCK_SIZE_STR								"block_size"
+#define SFLM_BLOCK_SIZE_STR_LEN							10
+#define SFLM_MIN_RFL_SIZE_STR								"min_rfl_size"
+#define SFLM_MIN_RFL_SIZE_STR_LEN						12
+#define SFLM_MAX_RFL_SIZE_STR								"max_rfl_size"
+#define SFLM_MAX_RFL_SIZE_STR_LEN						12
+#define SFLM_KEEP_RFL_STR									"keep_rfl"
+#define SFLM_KEEP_RFL_STR_LEN								8
+#define SFLM_LOG_ABORTED_TRANS_STR						"log_aborted_trans"
+#define SFLM_LOG_ABORTED_TRANS_STR_LEN					17
+#define SFLM_LANGUAGE_STR									"language"
+#define SFLM_LANGUAGE_STR_LEN								8
+#define SFLM_ENCRYPT_WITH_STR								"encrypt_with"
+#define SFLM_ENCRYPT_WITH_STR_LEN						12
 #define SFLM_STRING_OPTION_STR							"string"
 #define SFLM_STRING_OPTION_STR_LEN						6
 #define SFLM_INTEGER_OPTION_STR							"integer"
@@ -1285,6 +1312,9 @@ typedef struct
 #define NE_SFLM_INVALID_SQL							0xE05C	///< 0xE05C = SQL statement is invalid.
 #define NE_SFLM_STRING_TOO_LONG						0xE05D	///< 0xE05D = String specified for column exceeds maximum length for column.
 #define NE_SFLM_BINARY_TOO_LONG						0xE05E	///< 0xE05E = Binary value specified for column exceeds maximum length for column.
+#define NE_SFLM_NULL_NOT_ALLOWED_IN_COLUMN		0xE05F	///< 0xE05F = Column does not allow storing of NULL values.
+#define NE_SFLM_COLUMN_IS_READ_ONLY					0xE060	///< 0xE060 = Column cannot be modified.
+#define NE_SFLM_MISSING_REQUIRED_COLUMN			0xE061	///< 0xE061 = Required column is missing from column list on INSERT statement.\  Required columns are those that are marked as NOT NULL.
 
 // Dictionary definition errors.
 

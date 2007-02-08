@@ -3313,8 +3313,10 @@ RCODE F_Row::setBinary(
 	const void *		pvValue,
 	FLMUINT				uiValueLen)
 {
-	RCODE	rc = NE_SFLM_OK;
-
+	RCODE			rc = NE_SFLM_OK;
+	F_TABLE *	pTable;
+	F_COLUMN *	pColumn;
+	
 	if (RC_BAD( rc = allocColumnDataSpace( pDb, uiColumnNum, uiValueLen, FALSE)))
 	{
 		goto Exit;
@@ -3445,19 +3447,38 @@ Desc:
 ******************************************************************************/
 RCODE F_Row::setValue(
 	F_Db *					pDb,
-	FLMUINT					uiColumnNum,
+	F_COLUMN *				pColumn,
 	const FLMBYTE *		pucValue,
 	FLMUINT					uiValueLen)
 {
 	RCODE	rc = NE_SFLM_OK;
+	
+	// Make sure this is not a read-only column
+	
+	if (pColumn->uiFlags & COL_READ_ONLY)
+	{
+		rc = RC_SET( NE_SFLM_COLUMN_IS_READ_ONLY);
+		goto Exit;
+	}
 
-	if (RC_BAD( rc = allocColumnDataSpace( pDb, uiColumnNum, uiValueLen, FALSE)))
+	// If a length of zero is specified, we have a NULL value.  Make sure
+	// that is legal.
+	
+	if (!uiValueLen &&
+		 !(pColumn->uiFlags & COL_NULL_ALLOWED))
+	{
+		rc = RC_SET( NE_SFLM_NULL_NOT_ALLOWED_IN_COLUMN);
+		goto Exit;
+	}
+
+		
+	if (RC_BAD( rc = allocColumnDataSpace( pDb, pColumn->uiColumnNum, uiValueLen, FALSE)))
 	{
 		goto Exit;
 	}
 	if (uiValueLen)
 	{
-		FLMBYTE *	pucTmp = getColumnDataPtr( uiColumnNum);
+		FLMBYTE *	pucTmp = getColumnDataPtr( pColumn->uiColumnNum);
 		
 		f_memcpy( pucTmp, pucValue, uiValueLen);
 	}

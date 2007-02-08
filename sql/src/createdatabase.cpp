@@ -573,7 +573,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 		
 		for (;;)
 		{
-			if (f_stricmp( szToken, "data_dir") == 0)
+			if (f_stricmp( szToken, SFLM_DATA_DIR_STR) == 0)
 			{
 				if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szDataDirName,
 										sizeof( szDataDirName),
@@ -582,7 +582,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 					goto Exit;
 				}
 			}
-			else if (f_stricmp( szToken, "rfl_dir") == 0)
+			else if (f_stricmp( szToken, SFLM_RFL_DIR_STR) == 0)
 			{
 				if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szRflDirName,
 										sizeof( szRflDirName),
@@ -591,7 +591,7 @@ RCODE SQLStatement::processCreateDatabase( void)
 					goto Exit;
 				}
 			}
-			else if (f_stricmp( szToken, "block_size") == 0)
+			else if (f_stricmp( szToken, SFLM_BLOCK_SIZE_STR) == 0)
 			{
 				if (RC_BAD( rc = getUINT( TRUE, &createOpts.uiBlockSize)))
 				{
@@ -608,35 +608,35 @@ RCODE SQLStatement::processCreateDatabase( void)
 					goto Exit;
 				}
 			}
-			else if (f_stricmp( szToken, "min_rfl_size") == 0)
+			else if (f_stricmp( szToken, SFLM_MIN_RFL_SIZE_STR) == 0)
 			{
 				if (RC_BAD( rc = getUINT( TRUE, &createOpts.uiMinRflFileSize)))
 				{
 					goto Exit;
 				}
 			}
-			else if (f_stricmp( szToken, "max_rfl_size") == 0)
+			else if (f_stricmp( szToken, SFLM_MAX_RFL_SIZE_STR) == 0)
 			{
 				if (RC_BAD( rc = getUINT( TRUE, &createOpts.uiMaxRflFileSize)))
 				{
 					goto Exit;
 				}
 			}
-			else if (f_stricmp( szToken, "keep_rfl") == 0)
+			else if (f_stricmp( szToken, SFLM_KEEP_RFL_STR) == 0)
 			{
 				if (RC_BAD( rc = getBool( TRUE, &createOpts.bKeepRflFiles)))
 				{
 					goto Exit;
 				}
 			}
-			else if (f_stricmp( szToken, "log_aborted_trans") == 0)
+			else if (f_stricmp( szToken, SFLM_LOG_ABORTED_TRANS_STR) == 0)
 			{
 				if (RC_BAD( rc = getBool( TRUE, &createOpts.bLogAbortedTransToRfl)))
 				{
 					goto Exit;
 				}
 			}
-			else if (f_stricmp( szToken, "language") == 0)
+			else if (f_stricmp( szToken, SFLM_LANGUAGE_STR) == 0)
 			{
 				if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szLanguage,
 										sizeof( szLanguage),

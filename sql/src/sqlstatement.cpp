@@ -36,6 +36,9 @@ SQLStatement::SQLStatement()
 	m_pucCurrLineBuf = NULL;
 	m_uiCurrLineBufMaxBytes = 0;
 	m_pXml = NULL;
+	m_pConnection = NULL;
+	m_pNextInConnection = NULL;
+	m_pPrevInConnection = NULL;
 	resetStatement();
 }
 
@@ -50,6 +53,10 @@ SQLStatement::~SQLStatement()
 	{
 		f_free( &m_pucCurrLineBuf);
 	}
+
+	// Better not be associated with a connection at this point.
+	
+	flmAssert( !m_pConnection);
 
 	m_tmpPool.poolFree();
 }
@@ -1338,6 +1345,7 @@ RCODE SQLStatement::getName(
 	RCODE			rc = NE_SFLM_OK;
 	FLMUINT		uiCharCount = 0;
 	FLMBYTE		ucChar;
+	FLMBYTE		ucQuoteChar;
 	
 	if (RC_BAD( rc = skipWhitespace( FALSE)))
 	{
@@ -1348,6 +1356,19 @@ RCODE SQLStatement::getName(
 	
 	uiNameBufSize--;
 	*puiTokenLineOffset = m_uiCurrLineOffset;
+	
+	// If the first character is a quote, it means we are going to
+	// preserve case.
+	
+	ucChar = getChar();
+	if (ucChar == '"' || ucChar == '\'')
+	{
+		ucQuoteChar = ucChar;
+	}
+	else
+	{
+		ucQuoteChar = 0;
+	}
 
 	// Get the first character - must be between A and Z
 
@@ -1377,6 +1398,10 @@ RCODE SQLStatement::getName(
 		{
 			break;
 		}
+		if (ucQuoteChar && ucChar == ucQuoteChar)
+		{
+			break;
+		}
 		if ((ucChar >= 'a' && ucChar <= 'z') ||
 			 (ucChar >= 'A' && ucChar <= 'Z') ||
 			 (ucChar >= '0' && ucChar <= '9') ||
@@ -1392,7 +1417,27 @@ RCODE SQLStatement::getName(
 				rc = RC_SET( NE_SFLM_INVALID_SQL);
 				goto Exit;
 			}
-			pszName [uiCharCount++] = (char)ucChar;
+			
+			// Convert name to upper case unless the name is quoted.
+			
+			if (ucChar >= 'a' && ucChar <= 'z' && !ucQuoteChar)
+			{
+				pszName [uiCharCount++] = (char)(ucChar - 'a' + 'A');
+			}
+			else
+			{
+				pszName [uiCharCount++] = (char)ucChar;
+			}
+		}
+		else if (ucQuoteChar)
+		{
+			setErrInfo( m_uiCurrLineNum,
+					m_uiCurrLineOffset - 1,
+					SQL_ERR_INVALID_CHAR_IN_NAME,
+					m_uiCurrLineFilePos,
+					m_uiCurrLineBytes);
+			rc = RC_SET( NE_SFLM_INVALID_SQL);
+			goto Exit;
 		}
 		else
 		{

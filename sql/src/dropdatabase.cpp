@@ -373,7 +373,7 @@ RCODE SQLStatement::processDropDatabase( void)
 			}
 		}
 		
-		if (f_stricmp( szToken, "data_dir") == 0)
+		if (f_stricmp( szToken, SFLM_DATA_DIR_STR) == 0)
 		{
 			if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szDataDirName,
 									sizeof( szDataDirName),
@@ -382,7 +382,7 @@ RCODE SQLStatement::processDropDatabase( void)
 				goto Exit;
 			}
 		}
-		else if (f_stricmp( szToken, "data_dir") == 0)
+		else if (f_stricmp( szToken, SFLM_RFL_DIR_STR) == 0)
 		{
 			if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szRflDirName,
 									sizeof( szRflDirName),

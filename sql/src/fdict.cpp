@@ -997,6 +997,10 @@ RCODE F_Dict::addColumn(
 	pColumn->uiEncDefNum = uiEncDefNum;
 	pColumn->pFirstIcd = NULL;
 	pColumn->pFirstDataIcd = NULL;
+	if (!(uiFlags & COL_NULL_ALLOWED))
+	{
+		pTable->uiNumReqColumns++;
+	}
 	
 Exit:
 

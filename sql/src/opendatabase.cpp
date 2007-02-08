@@ -2002,7 +2002,7 @@ RCODE SQLStatement::processOpenDatabase( void)
 			}
 		}
 		
-		if (f_stricmp( szToken, "data_dir") == 0)
+		if (f_stricmp( szToken, SFLM_DATA_DIR_STR) == 0)
 		{
 			if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szDataDirName,
 									sizeof( szDataDirName),
@@ -2011,7 +2011,7 @@ RCODE SQLStatement::processOpenDatabase( void)
 				goto Exit;
 			}
 		}
-		else if (f_stricmp( szToken, "data_dir") == 0)
+		else if (f_stricmp( szToken, SFLM_RFL_DIR_STR) == 0)
 		{
 			if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szRflDirName,
 									sizeof( szRflDirName),
@@ -2020,7 +2020,7 @@ RCODE SQLStatement::processOpenDatabase( void)
 				goto Exit;
 			}
 		}
-		else if (f_stricmp( szToken, "password") == 0)
+		else if (f_stricmp( szToken, SFLM_PASSWORD_STR) == 0)
 		{
 			if (RC_BAD( rc = getUTF8String( TRUE, TRUE, (FLMBYTE *)szPassword,
 									sizeof( szPassword),
@@ -2029,7 +2029,7 @@ RCODE SQLStatement::processOpenDatabase( void)
 				goto Exit;
 			}
 		}
-		else if (f_stricmp( szToken, "allow_limited") == 0)
+		else if (f_stricmp( szToken, SFLM_ALLOW_LIMITED_STR) == 0)
 		{
 			uiFlags |= SFLM_ALLOW_LIMITED_MODE;
 		}

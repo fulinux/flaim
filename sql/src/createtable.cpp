@@ -283,7 +283,8 @@ Exit:
 RCODE SQLStatement::getDataType(
 	eDataType *	peDataType,
 	FLMUINT *	puiMax,
-	FLMUINT *	puiEncDefNum)
+	FLMUINT *	puiEncDefNum,
+	FLMUINT *	puiFlags)
 {
 	RCODE			rc = NE_SFLM_OK;
 	char			szToken [MAX_SQL_TOKEN_SIZE + 1];
@@ -403,27 +404,41 @@ Invalid_Data_Type:
 		goto Exit;
 	}
 	
-	// See if they specified any encryption.
+	// See if they specified any encryption or not null
 	
-	if (RC_BAD( rc = haveToken( "encrypt_with", FALSE)))
+	for (;;)
 	{
-		if (rc == NE_SFLM_NOT_FOUND)
+		if (RC_BAD( rc = getToken( szToken, sizeof( szToken), FALSE,
+									&uiTokenLineOffset, NULL)))
 		{
-			rc = NE_SFLM_OK;
+			goto Exit;
+		}
+		
+		if (f_stricmp( szToken, SFLM_ENCRYPT_WITH_STR) == 0)
+		{
+			if (RC_BAD( rc = getEncDefName( TRUE, szEncDefName, sizeof( szEncDefName),
+										&uiEncDefNameLen, &pEncDef)))
+			{
+				goto Exit;
+			}
+			*puiEncDefNum = pEncDef->uiEncDefNum;
+		}
+		else if (f_stricmp( szToken, "not") == 0)
+		{
+			if (RC_BAD( rc = haveToken( "null", FALSE, SQL_ERR_EXPECTING_NULL)))
+			{
+				goto exit;
+			}
+			(*puiFlags) &= (~(COL_NULL_ALLOWED));
 		}
 		else
 		{
-			goto Exit;
+			
+			// Process the token on the outside
+			
+			m_uiCurrLineOffset = uiTokenLineOffset;
+			break;
 		}
-	}
-	else
-	{
-		if (RC_BAD( rc = getEncDefName( TRUE, szEncDefName, sizeof( szEncDefName),
-									&uiEncDefNameLen, &pEncDef)))
-		{
-			goto Exit;
-		}
-		*puiEncDefNum = pEncDef->uiEncDefNum;
 	}
 	
 Exit:
@@ -546,7 +561,8 @@ RCODE SQLStatement::processCreateTable( void)
 		
 		if (RC_BAD( rc = getDataType( &pColumnDef->eColumnDataType,
 												&pColumnDef->uiMaxLen,
-												&pColumnDef->uiEncDefNum)))
+												&pColumnDef->uiEncDefNum,
+												&pColumnDef->uiFlags)))
 		{
 			goto Exit;
 		}
@@ -585,7 +601,7 @@ RCODE SQLStatement::processCreateTable( void)
 	// See if an encryption definition was specified
 	
 	uiEncDefNum = 0;
-	if (RC_BAD( rc = haveToken( "encrypt_with", TRUE)))
+	if (RC_BAD( rc = haveToken( SFLM_ENCRYPT_WITH_STR, TRUE)))
 	{
 		if (rc == NE_SFLM_NOT_FOUND || rc == NE_SFLM_EOF_HIT)
 		{
