@@ -12606,10 +12606,10 @@ Desc:	Get first node/document that passes query expression.
 RCODE FLMAPI F_Query::getFirst(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
-	FLMUINT			uiTimeLimit
-	)
+	FLMUINT			uiTimeLimit)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE				rc = NE_XFLM_OK;
+	FLMBOOL			bStartedTrans = FALSE;
 	
 	// If we are building on a background thread and this is not the
 	// background thread, we need to get the results from the result
@@ -12650,8 +12650,11 @@ RCODE FLMAPI F_Query::getFirst(
 
 	if (m_pDb->m_eTransType == XFLM_NO_TRANS)
 	{
-		rc = RC_SET( NE_XFLM_NO_TRANS_ACTIVE);
-		goto Exit;
+		if( RC_BAD( rc = m_pDb->checkTransaction(
+			XFLM_READ_TRANS, &bStartedTrans)))
+		{
+			goto Exit;
+		}
 	}
 
 	// See if we have a transaction going which should be aborted.
@@ -12703,6 +12706,7 @@ RCODE FLMAPI F_Query::getFirst(
 		m_uiTimeLimit = FLM_MILLI_TO_TIMER_UNITS( uiTimeLimit);
 		m_uiStartTime = FLM_GET_TIMER();
 	}
+	
 	if (m_bScan)
 	{
 
@@ -12783,6 +12787,11 @@ Exit:
 		m_pCurrNode = *ppNode;
 		m_pCurrNode->AddRef();
 	}
+	
+	if( bStartedTrans)
+	{
+		m_pDb->transAbort();
+	}
 
 	m_uiTimeLimit = 0;
 	return( rc);
@@ -12794,10 +12803,10 @@ Desc:	Get last node/document that passes query expression.
 RCODE FLMAPI F_Query::getLast(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
-	FLMUINT			uiTimeLimit
-	)
+	FLMUINT			uiTimeLimit)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE				rc = NE_XFLM_OK;
+	FLMBOOL			bStartedTrans = FALSE;
 
 	// If we are building on a background thread and this is not the
 	// background thread, we need to get the results from the result
@@ -12838,8 +12847,11 @@ RCODE FLMAPI F_Query::getLast(
 
 	if (m_pDb->m_eTransType == XFLM_NO_TRANS)
 	{
-		rc = RC_SET( NE_XFLM_NO_TRANS_ACTIVE);
-		goto Exit;
+		if( RC_BAD( rc = m_pDb->checkTransaction(
+			XFLM_READ_TRANS, &bStartedTrans)))
+		{
+			goto Exit;
+		}
 	}
 
 	// See if we have a transaction going which should be aborted.
@@ -12970,6 +12982,11 @@ Exit:
 		m_pCurrNode->AddRef();
 	}
 	
+	if( bStartedTrans)
+	{
+		m_pDb->transAbort();
+	}
+	
 	m_uiTimeLimit = 0;
 	return( rc);
 }
@@ -12982,11 +12999,11 @@ RCODE FLMAPI F_Query::getNext(
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit,
 	FLMUINT			uiNumToSkip,
-	FLMUINT *		puiNumSkipped
-	)
+	FLMUINT *		puiNumSkipped)
 {
-	RCODE		rc = NE_XFLM_OK;
-	FLMUINT	uiNumSkipped;
+	RCODE				rc = NE_XFLM_OK;
+	FLMUINT			uiNumSkipped;
+	FLMBOOL			bStartedTrans = FALSE;
 	
 	// If we are building on a background thread and this is not the
 	// background thread, we need to get the results from the result
@@ -13018,8 +13035,11 @@ RCODE FLMAPI F_Query::getNext(
 
 	if (m_pDb->m_eTransType == XFLM_NO_TRANS)
 	{
-		rc = RC_SET( NE_XFLM_NO_TRANS_ACTIVE);
-		goto Exit;
+		if( RC_BAD( rc = m_pDb->checkTransaction(
+			XFLM_READ_TRANS, &bStartedTrans)))
+		{
+			goto Exit;
+		}
 	}
 
 	// See if we have a transaction going which should be aborted.
@@ -13143,6 +13163,11 @@ Exit:
 		m_pCurrNode->AddRef();
 	}
 	
+	if( bStartedTrans)
+	{
+		m_pDb->transAbort();
+	}
+	
 	m_uiTimeLimit = 0;
 	return( rc);
 }
@@ -13155,11 +13180,11 @@ RCODE FLMAPI F_Query::getPrev(
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit,
 	FLMUINT			uiNumToSkip,
-	FLMUINT *		puiNumSkipped
-	)
+	FLMUINT *		puiNumSkipped)
 {
-	RCODE		rc = NE_XFLM_OK;
-	FLMUINT	uiNumSkipped;
+	RCODE				rc = NE_XFLM_OK;
+	FLMUINT			uiNumSkipped;
+	FLMBOOL			bStartedTrans = FALSE;
 		
 	// If we are building on a background thread and this is not the
 	// background thread, we need to get the results from the result
@@ -13191,8 +13216,11 @@ RCODE FLMAPI F_Query::getPrev(
 
 	if (m_pDb->m_eTransType == XFLM_NO_TRANS)
 	{
-		rc = RC_SET( NE_XFLM_NO_TRANS_ACTIVE);
-		goto Exit;
+		if( RC_BAD( rc = m_pDb->checkTransaction(
+			XFLM_READ_TRANS, &bStartedTrans)))
+		{
+			goto Exit;
+		}
 	}
 
 	// See if we have a transaction going which should be aborted.
@@ -13316,6 +13344,11 @@ Exit:
 		m_pCurrNode->AddRef();
 	}
 	
+	if( bStartedTrans)
+	{
+		m_pDb->transAbort();
+	}
+	
 	m_uiTimeLimit = 0;
 	return( rc);
 }
@@ -13327,7 +13360,8 @@ RCODE FLMAPI F_Query::getCurrent(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ppNode)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE					rc = NE_XFLM_OK;
+	FLMBOOL				bStartedTrans = FALSE;
 	
 	// If we are building on a background thread and this is not the
 	// background thread, we need to get the results from the result
@@ -13358,8 +13392,11 @@ RCODE FLMAPI F_Query::getCurrent(
 
 	if (m_pDb->m_eTransType == XFLM_NO_TRANS)
 	{
-		rc = RC_SET( NE_XFLM_NO_TRANS_ACTIVE);
-		goto Exit;
+		if( RC_BAD( rc = m_pDb->checkTransaction(
+			XFLM_READ_TRANS, &bStartedTrans)))
+		{
+			goto Exit;
+		}
 	}
 
 	// See if we have a transaction going which should be aborted.
@@ -13431,6 +13468,11 @@ Exit:
 		}
 	}
 
+	if( bStartedTrans)
+	{
+		m_pDb->transAbort();
+	}
+	
 	m_uiTimeLimit = 0;
 	return( rc);
 }
@@ -13803,12 +13845,12 @@ Exit:
 Desc:	Set an index for the query.
 ****************************************************************************/
 RCODE FLMAPI F_Query::getIndex(
-	IF_Db *		ifpDb,
-	FLMUINT *	puiIndex,
-	FLMBOOL *	pbHaveMultiple
-	)
+	IF_Db *			ifpDb,
+	FLMUINT *		puiIndex,
+	FLMBOOL *		pbHaveMultiple)
 {
-	RCODE	rc = NE_XFLM_OK;
+	RCODE				rc = NE_XFLM_OK;
+	FLMBOOL			bStartedTrans = FALSE;
 
 	if (m_bIndexSet)
 	{
@@ -13852,8 +13894,11 @@ RCODE FLMAPI F_Query::getIndex(
 
 		if (m_pDb->m_eTransType == XFLM_NO_TRANS)
 		{
-			rc = RC_SET( NE_XFLM_NO_TRANS_ACTIVE);
-			goto Exit;
+			if( RC_BAD( rc = m_pDb->checkTransaction(
+				XFLM_READ_TRANS, &bStartedTrans)))
+			{
+				goto Exit;
+			}
 		}
 
 		if (RC_BAD( rc = optimize()))
@@ -13931,6 +13976,11 @@ RCODE FLMAPI F_Query::getIndex(
 
 Exit:
 
+	if( bStartedTrans)
+	{
+		m_pDb->transAbort();
+	}
+	
 	return( rc);
 }
 
