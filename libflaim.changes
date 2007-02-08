@@ -1,4 +1,21 @@
 -------------------------------------------------------------------
+Thu Feb  8 14:20:19 MST 2007 - dsanders@novell.com
+
+- Changes to support Ubuntu packages, including 64-bit.
+- Needed to lock the record cache mutex in FlmRecord::Release just before deleting the object to prevent a race condition.
+- Changed license to LGPL.
+- Updated copyright.
+- Added pragmas for windows to remove compiler warnings for VC6 compiler.
+- Fixed keyword substitution tokens.
+- Added FlmReadFully() and enhanced the base64 decoder.
+- Removed commands in makefile that was outputting provides to the spec file.
+
+-------------------------------------------------------------------
+Fri Feb  2 00:51:49 CET 2007 - ro@suse.de
+
+- remove self-provides from devel package 
+
+-------------------------------------------------------------------
 Thu Nov 16 16:15:33 MST 2006 - dsanders@novell.com
 
 - Removed .exe files from package.

@@ -1,4 +1,19 @@
 -------------------------------------------------------------------
+Thu Feb  8 14:20:19 MST 2007 - dsanders@novell.com
+
+- Changed license to LGPL.
+- Fixed keyword substitution tokens.
+- Added code to automatically start a read transaction (if needed) when iterating over a result set.
+- Added code to handle the 'xml' namespace prefix.
+- Added FlmReadFully() and enhanced the base64 decoder.
+- Removed commands in makefile that was outputting provides to the spec file.
+
+-------------------------------------------------------------------
+Fri Feb  2 00:52:07 CET 2007 - ro@suse.de
+
+- remove self-provides from devel package 
+
+-------------------------------------------------------------------
 Thu Nov 16 16:10:12 MST 2006 - dsanders@novell.com
 
 - Removed .exe files from package.
