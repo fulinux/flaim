@@ -39,12 +39,12 @@
 
 project_name = xflaim
 project_display_name = XFLAIM
-project_brief_desc = An extensible, flexible, adaptable, embeddable XML database engine
+project_brief_desc = Embeddable XML Database Engine
 
 # -- Maintainers --
 
-ahodgkinson_info = Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>
-dsanders_info = Daniel Sanders (Sr. Software Engineer) <dsanders@novell.com>
+ahodgkinson_info = Andrew Hodgkinson
+dsanders_info = Daniel Sanders
 
 # -- Versions --
 
@@ -2317,12 +2317,12 @@ spec: dircheck
 	$(ec)$(gprintf) "Creating spec file ...\n"
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" > $(spec_file)
 	$(ec)$(gprintf) "$(percent)define prefix $(install_prefix)\n" >> $(spec_file)
-	$(ec)$(gprintf) "BuildRequires: gcc-c++ libstdc++ libstdc++-devel java2-devel-packages mono-devel\n" >> $(spec_file)
+	$(ec)$(gprintf) "BuildRequires: gcc-c++ java2-devel-packages libstdc++ libstdc++-devel mono-devel\n" >> $(spec_file)
 	$(ec)$(gprintf) "Summary: $(project_brief_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "URL: http://forge.novell.com/modules/xfmod/project/$(question)flaim\n" >> $(spec_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Release: $(package_release_num)\n" >> $(spec_file)
-	$(ec)$(gprintf) "License: GPL\n" >> $(spec_file)
+	$(ec)$(gprintf) "License: GNU Lesser General Public License (LGPL)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Vendor: Novell, Inc.\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
 	$(ec)$(gprintf) "Source: $(package_proj_name_and_ver).tar.gz\n" >> $(spec_file)
@@ -2340,7 +2340,7 @@ spec: dircheck
 	$(ec)$(gprintf) "    $(ahodgkinson_info)\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)package devel\n" >> $(spec_file)
-	$(ec)$(gprintf) "Summary: XFLAIM static library and header file\n" >> $(spec_file)
+	$(ec)$(gprintf) "Summary: $(project_brief_desc)\n" >> $(spec_file)
 	$(ec)$(gprintf) "Group: Development/Libraries/C and C++\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)description devel\n" >> $(spec_file)
@@ -2355,7 +2355,6 @@ spec: dircheck
 	$(ec)$(gprintf) "    Andrew Hodgkinson\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)prep\n" >> $(spec_file)
-	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)setup -q\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)build\n" >> $(spec_file)
@@ -2383,6 +2382,7 @@ endif
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/xflaim_csharp.xml\n" >> $(spec_file)
 	$(ec)$(gprintf) "\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent)files devel\n" >> $(spec_file)
+	$(ec)$(gprintf) "$(percent)defattr(-,root,root)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name).so\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/$(lib_prefix)$(project_name)$(static_lib_suffix)\n" >> $(spec_file)
 	$(ec)$(gprintf) "$(percent){prefix}/$(percent){_lib}/pkgconfig/$(pkgconfig_file_name)\n" >> $(spec_file)
@@ -2439,7 +2439,7 @@ ubuntusrc: srcdist
 	$(ec)$(gprintf) "Creating Ubuntu changelog file ...\n"
 	$(ec)$(gprintf) "$(package_proj_name) ($(package_version_ubuntu)) $(package_distro_ubuntu); urgency=low\n\n" > $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)$(gprintf) "  * Package update for Ubuntu.\n\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
-	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) " -- Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>  " >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)822-date >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)$(gprintf) "\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)cat ChangeLog.ubuntu >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
