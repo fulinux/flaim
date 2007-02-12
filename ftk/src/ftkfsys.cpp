@@ -3398,7 +3398,7 @@ RCODE F_FileHdl::directRead(
 		// one (if not already allocated), and use it.
 
 		if ((ui64ReadOffset & m_ui64NotOnSectorBoundMask) ||
-			 (((FLMUINT64)pucDestBuffer) & m_ui64NotOnSectorBoundMask) ||
+			 (((FLMUINT64)((FLMUINT)pucDestBuffer)) & m_ui64NotOnSectorBoundMask) ||
 			 (((FLMUINT64)uiBytesToRead & m_ui64NotOnSectorBoundMask)))
 		{
 			if( m_bRequireAlignedIO)
