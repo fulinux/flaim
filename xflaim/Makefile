@@ -677,16 +677,6 @@ ifneq (,$(findstring docs,$(MAKECMDGOALS)))
 	endif
 endif
 
-ifneq (,$(findstring java,$(MAKECMDGOALS)))
-	calc_svn_revision = 1
-	local_mods_ok = 1
-endif
-
-ifneq (,$(findstring xedit,$(MAKECMDGOALS)))
-	calc_svn_revision = 1
-	local_mods_ok = 1
-endif
-
 ifneq (,$(findstring changelog,$(MAKECMDGOALS)))
 
 	calc_svn_revision = 1
