@@ -113,6 +113,7 @@ submake_targets =
 netware_ring_0_target =
 sparc_generic =
 debian_arch = unknown
+with_openssl =
 
 # -- Enable command echoing --
 
@@ -511,6 +512,11 @@ endif
 
 ifneq (,$(findstring sparcgeneric,$(MAKECMDGOALS)))
 	sparc_generic = yes
+endif
+
+ifneq (,$(findstring openssl,$(MAKECMDGOALS)))
+	submake_targets += openssl
+	with_openssl = yes
 endif
 
 # -- Helper functions --
@@ -948,8 +954,7 @@ ifdef win_target
 
 	# Libraries that our various components need to link against
 
-	lib_link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib advapi32.lib
-	exe_link_libs = $(lib_link_libs)
+	link_libs = imagehlp.lib user32.lib rpcrt4.lib wsock32.lib advapi32.lib
 
 	# Convert the list of defines into a proper set of command-line params
 
@@ -1156,6 +1161,12 @@ ifdef unix_target
 		ccflags += -g
 	endif
 
+	# Use OpenSSL
+	
+	ifdef with_openssl
+		ccdefs += FLM_OPENSSL
+	endif
+
 	# Convert the list of defines into a proper set of command-line params
 
 	ifdef ccdefs
@@ -1183,12 +1194,14 @@ ifdef unix_target
 		endif
 	endif
 
-	lib_link_libs = -lpthread
-	exe_link_libs = -lpthread
+	link_libs = -lpthread
 
 	ifeq ($(target_os_family),linux)
-		lib_link_libs += -lrt -lstdc++ -ldl -lncurses
-		exe_link_libs += -lrt -lstdc++ -ldl -lncurses
+		link_libs += -lrt -lstdc++ -ldl -lncurses
+		ifdef with_openssl
+			link_libs +=  -lssl -lcrypto -ldl -lz
+		endif
+		
 		shared_link_flags += -shared -Wl,-Bsymbolic -fpic \
 			-Wl,-soname,$(@F) -o $@
 	endif
@@ -1206,8 +1219,7 @@ ifdef unix_target
 			endif
 		endif
 
-		lib_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
-		exe_link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
+		link_libs += -lm -lc -ldl -lsocket -lnsl -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),aix)
@@ -1219,22 +1231,19 @@ ifdef unix_target
 			libr_flags = -X32
 		endif
 		
-		lib_link_libs += -lm -lc -lcurses
-		exe_link_libs += -lm -lc -lcurses
+		link_libs += -lm -lc -lcurses
 	endif
 
 	ifeq ($(target_os_family),hpux)
 		ifeq ($(target_word_size),64)
 			link_flags += +DD64
 		endif
-		lib_link_libs += -lm -lc -lrt -lcurses
-		exe_link_libs += -lm -lc -lrt -lcurses
+		link_libs += -lm -lc -lrt -lcurses
 	endif
 
 	ifeq ($(target_os_family),osx)
 		shared_lib_suffix = -$(major_version).$(so_current).dylib
-		lib_link_libs += -lstdc++ -ldl -lncurses
-		exe_link_libs += -lstdc++ -ldl -lncurses
+		link_libs += -lstdc++ -ldl -lncurses
 		shared_link_flags += -dynamiclib
 		shared_link_flags += -current_version $(major_version).$(so_current).$(so_revision)
 		shared_link_flags += -compatibility_version $(major_version).$(so_current).0
@@ -1874,11 +1883,11 @@ endif
 $(xflaim_shared_lib) : $(xflaim_obj) $(ftk_obj) $(xflaim_jni_obj) $(xflaim_csharp_obj)
 	$(ec)$(gprintf) "Building $@ ...\n"
 ifdef win_target
-	$(ec)$(shared_linker) $(call hostpath,$+) $(shared_link_flags) $(lib_link_libs)
+	$(ec)$(shared_linker) $(call hostpath,$+) $(shared_link_flags) $(link_libs)
 endif
 ifdef unix_target
 	$(ec)rm -f $@
-	$(ec)$(shared_linker) $+ $(shared_link_flags) $(lib_link_libs)
+	$(ec)$(shared_linker) $+ $(shared_link_flags) $(link_libs)
 endif
 
 # -- xflaim.lib import library --
@@ -1890,7 +1899,7 @@ $(xflaim_shared_imp_lib) : $(xflaim_shared_lib)
 
 ifndef flm_exe_link_cmd
    define flm_exe_link_cmd
-		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(exe_link_libs)
+		$(ec)$(exe_linker) $(exe_link_flags) $(allprereqs) $(link_libs)
    endef
 endif
 
@@ -2391,7 +2400,7 @@ pkgconfig: dircheck
 	$(ec)$(gprintf) "Name: $(package_proj_name)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Description: $(project_brief_desc)\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Version: $(version)\n" >> $(pkgconfig_file)
-	$(ec)$(gprintf) "Libs: $(lib_link_libs) -lxflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
+	$(ec)$(gprintf) "Libs: $(link_libs) -lxflaim -L$(dollar){libdir}\n" >> $(pkgconfig_file)
 	$(ec)$(gprintf) "Cflags: -I$(dollar){includedir}\n" >> $(pkgconfig_file)
 
 # -- SRCRPM --
@@ -2579,6 +2588,10 @@ nlm:
 
 .PHONY : ring0
 ring0:
+	$(ec)$(gprintf) ""
+	
+.PHONY : openssl
+openssl:
 	$(ec)$(gprintf) ""
 	
 .PHONY : verbose
