@@ -97,6 +97,131 @@ FLMBYTE gv_ucBase64EncodeTable[ 64] =
 	ASCII_EIGHT,   ASCII_NINE,    ASCII_PLUS,    ASCII_SLASH
 };
 
+/***************************************************************************
+Desc:
+***************************************************************************/
+class FLMEXP F_StreamPrintfClient : public IF_PrintfClient
+{
+public:
+
+	F_StreamPrintfClient( IF_OStream * pOStream)		
+	{
+		m_pOStream = pOStream;
+		m_pOStream->AddRef();
+		m_rc = NE_FLM_OK;
+		m_uiBufOffset = 0;
+	}
+	
+	virtual ~F_StreamPrintfClient()
+	{
+		if( m_pOStream)
+		{
+			m_pOStream->Release();
+			m_pOStream = NULL;
+		}
+	}
+
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar,
+		FLMUINT			uiCount)
+	{
+		FLMUINT			uiTmpCount;
+		FLMINT			iBytesOutput = (FLMINT)uiCount;
+		
+		while( uiCount)
+		{
+			uiTmpCount = uiCount;
+			
+			if( m_uiBufOffset + uiTmpCount > sizeof( m_szOutBuf))
+			{
+				uiTmpCount = sizeof( m_szOutBuf) - m_uiBufOffset;
+			}
+			
+			f_memset( &m_szOutBuf[ m_uiBufOffset], cChar, uiTmpCount);
+			
+			m_uiBufOffset += uiTmpCount;
+			uiCount -= uiTmpCount;
+			
+			if( m_uiBufOffset == sizeof( m_szOutBuf))
+			{
+				flushBuffer();
+			}
+		}
+		
+		return( iBytesOutput);
+	}
+
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar)
+	{
+		m_szOutBuf[ m_uiBufOffset++] = cChar;
+		
+		if( m_uiBufOffset == sizeof( m_szOutBuf))
+		{
+			flushBuffer();
+		}
+		
+		return( 1);
+	}
+		
+	FINLINE FLMINT FLMAPI outputStr(
+		const char *	pszStr,
+		FLMUINT			uiLen)
+	{
+		FLMUINT			uiTmpLen;
+		FLMINT			iBytesOutput = (FLMINT)uiLen;
+		
+		while( uiLen)
+		{
+			uiTmpLen = uiLen;
+			
+			if( m_uiBufOffset + uiTmpLen > sizeof( m_szOutBuf))
+			{
+				uiTmpLen = sizeof( m_szOutBuf) - m_uiBufOffset;
+			}
+			
+			f_memcpy( &m_szOutBuf[ m_uiBufOffset], pszStr, uiTmpLen);
+			
+			m_uiBufOffset += uiTmpLen;
+			uiLen -= uiTmpLen;
+			pszStr += uiTmpLen;
+			
+			if( m_uiBufOffset == sizeof( m_szOutBuf))
+			{
+				flushBuffer();
+			}
+		}
+		
+		return( iBytesOutput);
+	}
+		
+	FINLINE FLMINT FLMAPI colorFormatter(
+		char,				// cFormatChar,
+		eColorType,		// eColor,
+		FLMUINT)			// uiFlags)
+	{
+		return( 0);
+	}
+
+	FINLINE RCODE flushBuffer( void)
+	{
+		if( RC_OK( m_rc) && m_uiBufOffset)
+		{
+			m_rc = m_pOStream->write( m_szOutBuf, m_uiBufOffset, NULL);
+		}
+		
+		m_uiBufOffset = 0;
+		return( m_rc);
+	}
+	
+private:
+
+	RCODE							m_rc;
+	char							m_szOutBuf[ 256];
+	FLMUINT						m_uiBufOffset;
+	IF_OStream *				m_pOStream;
+};
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -112,7 +237,7 @@ public:
 	
 	virtual ~F_TCPStream( void);
 
-	RCODE openConnection(
+	RCODE openStream(
 		const char *	pucHostAddress,
 		FLMUINT			uiPort,
 		FLMUINT			uiConnectTimeout	= 3,
@@ -203,6 +328,60 @@ private:
 	unsigned long	m_ulRemoteAddr;
 };
 	
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_OPENSSL
+class F_SSLIOStream : public IF_SSLIOStream
+{
+public:
+
+	F_SSLIOStream()
+	{
+		m_pBio = NULL;
+		m_pContext = NULL;
+		m_pSSL = NULL;
+		m_pPeerCertificate = NULL;
+		m_pszPeerCertText = NULL;
+		m_szPeerName[ 0] = 0;
+	}
+	
+	virtual ~F_SSLIOStream()
+	{
+		closeStream();
+	}
+	
+	RCODE FLMAPI openStream(
+		const char *			pszTrustStore,
+		const char *			pszHost,
+		FLMUINT					uiPort = 443,
+		FLMUINT					uiFlags = 0);
+	
+	RCODE FLMAPI read(
+		void *					pvBuffer,
+		FLMUINT					uiBytesToRead,
+		FLMUINT *				puiBytesRead = NULL);
+		
+	RCODE FLMAPI write(
+		const void *			pvBuffer,
+		FLMUINT					uiBytesToWrite,
+		FLMUINT *				puiBytesWritten = NULL);
+		
+	const char * FLMAPI getPeerCertificateText( void);
+		
+	RCODE FLMAPI closeStream( void);
+	
+private:
+
+	BIO *							m_pBio;
+	SSL_CTX *					m_pContext;
+	SSL *							m_pSSL;
+	X509 *						m_pPeerCertificate;
+	char *						m_pszPeerCertText;
+	char							m_szPeerName[ 256];
+};
+#endif
+
 /*****************************************************************************
 Desc:
 ******************************************************************************/
@@ -631,6 +810,81 @@ Exit:
 	}
 
 	return( rc);
+}
+		
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmAllocSSLIOStream( 
+	IF_IOStream **			ppIOStream)
+{
+#ifdef FLM_OPENSSL
+
+	if( (*ppIOStream = f_new F_SSLIOStream) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+	
+#else
+
+	F_UNREFERENCED_PARM( ppIOStream);
+	return( RC_SET( NE_FLM_NOT_IMPLEMENTED));
+	
+#endif
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmOpenSSLIOStream(
+	const char *			pszTrustStore,
+	const char *			pszHost,
+	FLMUINT					uiPort,
+	FLMUINT					uiFlags,
+	IF_IOStream **			ppIOStream)
+{
+#ifdef FLM_OPENSSL
+
+	RCODE							rc = NE_FLM_OK;
+	F_SSLIOStream *			pIOStream = NULL;
+	
+	if( (pIOStream = f_new F_SSLIOStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIOStream->openStream( pszTrustStore, pszHost,
+		uiPort, uiFlags)))
+	{
+		goto Exit;
+	}
+	
+	*ppIOStream = pIOStream;
+	pIOStream = NULL;
+	
+Exit:
+
+	if( pIOStream)
+	{
+		pIOStream->Release();
+	}
+	
+	return( rc);
+	
+#else
+
+	F_UNREFERENCED_PARM( pszTrustStore);
+	F_UNREFERENCED_PARM( pszHost);
+	F_UNREFERENCED_PARM( uiPort);
+	F_UNREFERENCED_PARM( uiFlags);
+	F_UNREFERENCED_PARM( ppIOStream);
+	
+	return( RC_SET( NE_FLM_NOT_IMPLEMENTED));
+	
+#endif
 }
 		
 /****************************************************************************
@@ -2710,7 +2964,7 @@ F_TCPStream::~F_TCPStream( void)
 /********************************************************************
 Desc: Opens a new connection
 *********************************************************************/
-RCODE F_TCPStream::openConnection(
+RCODE F_TCPStream::openStream(
 	const char  *		pucHostName,
 	FLMUINT				uiPort,
 	FLMUINT				uiConnectTimeout,
@@ -3316,6 +3570,287 @@ Exit:
 	return( NE_FLM_OK);
 }
 
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_OPENSSL
+RCODE FLMAPI F_SSLIOStream::openStream(
+	const char *			pszTrustStore,
+	const char *			pszHost,
+	FLMUINT					uiPort,
+	FLMUINT					uiFlags)
+{
+	RCODE						rc = NE_FLM_OK;
+	char						szPort[ 32];
+	X509_NAME *				pPeerName;
+	EVP_PKEY *				pPublicKey = NULL;
+	BIO *						pMemBIO = NULL;
+	FLMUINT					uiCertTextLen;
+	const char *			pszCertText;
+	
+	if( !uiPort)
+	{
+		uiPort = 443;
+	}
+	
+	// Setup the connection to use SSLv2, SSLv3, or TLSv1 depending on
+	// the capabilities of the peer
+	
+	if( (m_pContext = SSL_CTX_new( SSLv23_client_method())) == NULL)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	if( pszTrustStore)
+	{
+		if( !SSL_CTX_load_verify_locations( m_pContext, pszTrustStore, NULL))
+		{
+			rc = RC_SET( NE_FLM_CONNECT_FAIL);
+			goto Exit;
+		}
+	}
+
+	if( (m_pBio = BIO_new_ssl_connect( m_pContext)) == NULL)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	BIO_get_ssl( m_pBio, &m_pSSL);
+	if( m_pSSL == NULL)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	SSL_set_mode( m_pSSL, SSL_MODE_AUTO_RETRY);
+	BIO_set_conn_hostname( m_pBio, pszHost);
+	
+	f_sprintf( szPort, "%u", (unsigned)uiPort);
+	BIO_set_conn_port( m_pBio, szPort);
+
+	if( BIO_do_connect( m_pBio) <= 0)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+
+	if( SSL_get_verify_result( m_pSSL) != X509_V_OK)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	if( (m_pPeerCertificate = SSL_get_peer_certificate( m_pSSL)) == NULL)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	if( (pPeerName = X509_get_subject_name( m_pPeerCertificate)) == NULL)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	if( (X509_NAME_get_text_by_NID( pPeerName, NID_commonName, 
+		m_szPeerName, sizeof( m_szPeerName))) == -1)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	if( f_stricmp( pszHost, m_szPeerName) != 0)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	// Get the peer's certificate text
+	
+	if( (pMemBIO = BIO_new( BIO_s_mem())) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( (pPublicKey = X509_get_pubkey( m_pPeerCertificate)) == NULL)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+	
+	if( pPublicKey->type != EVP_PKEY_RSA)
+	{
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
+	}
+		
+	if( (PEM_write_bio_X509( pMemBIO, m_pPeerCertificate)) == 0)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( (uiCertTextLen = BIO_get_mem_data( pMemBIO, &pszCertText)) == 0)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = f_alloc( uiCertTextLen + 1, &m_pszPeerCertText)))
+	{
+		goto Exit;
+	}
+	
+	f_memcpy( m_pszPeerCertText, pszCertText, uiCertTextLen + 1);
+	
+Exit:
+
+	if( pMemBIO)
+	{
+		BIO_free( pMemBIO);
+	}
+	
+	if( pPublicKey)
+	{
+		EVP_PKEY_free( pPublicKey);
+	}
+	
+	if( RC_BAD( rc))
+	{
+		closeStream();
+	}
+	
+	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_OPENSSL
+RCODE FLMAPI F_SSLIOStream::read(
+	void *					pvBuffer,
+	FLMUINT					uiBytesToRead,
+	FLMUINT *				puiBytesRead)
+{
+	RCODE						rc = NE_FLM_OK;
+	int						iBytesRead;
+	FLMUINT					uiTotalBytesRead = 0;
+	char *					pucBuffer = (char *)pvBuffer;
+	
+	while( uiBytesToRead)
+	{
+		if( (iBytesRead = BIO_read( m_pBio, &pucBuffer[ uiTotalBytesRead],
+			uiBytesToRead)) <= 0)
+		{
+			if( !BIO_should_retry( m_pBio))
+			{
+				rc = RC_SET( NE_FLM_EOF_HIT);
+				goto Exit;
+			}
+			
+			continue;
+		}
+		
+		uiTotalBytesRead += iBytesRead;
+		uiBytesToRead -= iBytesRead;
+	}
+	
+Exit:
+
+	if( puiBytesRead)
+	{
+		*puiBytesRead = uiTotalBytesRead;
+	}
+
+	return( rc);
+}
+#endif
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_OPENSSL
+RCODE FLMAPI F_SSLIOStream::write(
+	const void *			pvBuffer,
+	FLMUINT					uiBytesToWrite,
+	FLMUINT *				puiBytesWritten)
+{
+	RCODE						rc = NE_FLM_OK;
+	int						iBytesWritten = 0;
+	
+	if( !uiBytesToWrite)
+	{
+		goto Exit;
+	}
+	
+	if( (iBytesWritten = BIO_write( m_pBio, pvBuffer, uiBytesToWrite)) <= 0)
+	{
+		iBytesWritten = 0;
+		rc = RC_SET( NE_FLM_SOCKET_WRITE_FAIL);
+		goto Exit;
+	}
+	
+Exit:
+
+	if( puiBytesWritten)
+	{
+		*puiBytesWritten = (FLMUINT)iBytesWritten;
+	}
+
+	return( rc);
+}
+#endif
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FLM_OPENSSL
+RCODE FLMAPI F_SSLIOStream::closeStream( void)
+{
+	if( m_pBio)
+	{
+		BIO_free_all( m_pBio);
+		m_pBio = NULL;
+		m_pSSL = NULL;
+	}
+	
+	if( m_pPeerCertificate)
+	{
+		X509_free( m_pPeerCertificate);
+		m_pPeerCertificate = NULL;
+	}
+	
+	if( m_pszPeerCertText)
+	{
+		f_free( &m_pszPeerCertText);
+	}
+	
+	if( m_pContext)
+	{
+		SSL_CTX_free( m_pContext);
+		m_pContext = NULL;
+	}
+	
+	m_szPeerName[ 0] = 0;
+
+	return( NE_FLM_OK);
+}
+#endif
+
+/******************************************************************************
+Desc:
+******************************************************************************/
+#ifdef FLM_OPENSSL
+const char * FLMAPI F_SSLIOStream::getPeerCertificateText( void)
+{
+	return( m_pszPeerCertText);
+}
+#endif
+
 /******************************************************************************
 Desc: Read all data from input stream and write to the output stream.
 ******************************************************************************/
@@ -3406,5 +3941,91 @@ RCODE FLMAPI FlmReadFully(
 Exit:
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI FlmReadLine(
+	IF_IStream *			pIStream,
+	F_DynaBuf *				pBuffer)
+{
+	RCODE						rc = NE_FLM_OK;
+	char						ucTmpBuf[ 32];
+	
+	pBuffer->truncateData( 0);
+	
+	for( ;;)
+	{
+		if( RC_BAD( rc = pIStream->read( ucTmpBuf, 1, NULL)))
+		{
+			goto Exit;
+		}
+		
+		if( ucTmpBuf[ 0] != ASCII_CR)
+		{
+			if( RC_BAD( rc = pBuffer->appendByte( ucTmpBuf[ 0])))
+			{
+				goto Exit;
+			}
+		}
+		else
+		{
+			if( RC_BAD( rc = pIStream->read( ucTmpBuf, 1, NULL)))
+			{
+				goto Exit;
+			}
+			
+			if( ucTmpBuf[ 0] != ASCII_LF)
+			{
+				rc = RC_SET( NE_FLM_SYNTAX);
+				goto Exit;
+			}
+			
+			break;
+		}
+	}
+	
+Exit:
+
+	if( pBuffer->getDataLength())
+	{
+		if( RC_BAD( rc = pBuffer->appendByte( 0)))
+		{
+			goto Exit;
+		}
+	}
+			
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_printf(
+	IF_OStream *		pOStream,
+	const char *		pszFormatStr, ...)
+{
+	f_va_list						args;
+	F_StreamPrintfClient			printfClient( pOStream);
+
+	f_va_start( args, pszFormatStr);
+	f_vprintf( &printfClient, pszFormatStr, &args);
+	f_va_end( args);
+	return( printfClient.flushBuffer());
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_vprintf(
+	IF_OStream *		pOStream,
+	const char *		pszFormatStr,
+	f_va_list *			args)
+{
+	F_StreamPrintfClient			printfClient( pOStream);
+
+	f_vprintf( &printfClient, pszFormatStr, args);
+	return( printfClient.flushBuffer());
 }
 

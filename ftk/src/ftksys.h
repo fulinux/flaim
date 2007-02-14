@@ -183,6 +183,12 @@
 		#define INVALID_SOCKET		-1
 	
 	#endif
+	
+	#ifdef FLM_OPENSSL
+		#include <openssl/ssl.h>
+		#include <openssl/err.h>
+		#include <openssl/bio.h>
+	#endif
 
 	#if defined( __va_copy)
 		#define  f_va_copy(to, from) __va_copy(to, from)
@@ -307,6 +313,80 @@
 	} eBufferMgrList;
 		
 	#define F_DEFAULT_CBDATA_SLOTS		16
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	class F_Printf : public F_Object
+	{
+	public:
+	
+		F_Printf( IF_PrintfClient * pClient)
+		{
+			m_pClient = pClient;
+			m_pClient->AddRef();
+			m_iBytesOutput = 0;
+		}
+		
+		virtual ~F_Printf()
+		{
+			if( m_pClient)
+			{
+				m_pClient->Release();
+				m_pClient = NULL;
+			}
+		}
+	
+		void processFieldInfo(
+			const char **		ppszFormat,
+			FLMUINT *			puiWidth,
+			FLMUINT *			puiPrecision,
+			FLMUINT *			puiFlags,
+			f_va_list *			args);
+		
+		void stringFormatter(
+			char					cFormatChar,
+			FLMUINT				uiWidth,
+			FLMUINT				uiPrecision,
+			FLMUINT				uiFlags,
+			f_va_list *			args);
+		
+		void charFormatter(
+			char					cFormatChar,
+			f_va_list *			args);
+		
+		void errorFormatter(
+			f_va_list *			args);
+		
+		void notHandledFormatter( void);
+		
+		void numberFormatter(
+			char					cFormatChar,
+			FLMUINT				uiWidth,
+			FLMUINT				uiPrecision,
+			FLMUINT				uiFlags,
+			f_va_list *			args);
+		
+		FLMINT parseArgs(
+			const char *		pszFormat,
+			f_va_list *			args);
+		
+		void processFormatString(
+			FLMUINT				uiLen,
+			...);
+			
+		FLMUINT printNumber(
+			FLMUINT64			ui64Val,
+			FLMUINT				uiBase,
+			FLMBOOL				bUpperCase,
+			FLMBOOL				bCommas,
+			char *				pszBuf);
+			
+	private:
+	
+		IF_PrintfClient *		m_pClient;
+		FLMINT					m_iBytesOutput;
+	};
 	
 	/****************************************************************************
 	Desc:

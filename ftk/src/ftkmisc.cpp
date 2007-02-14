@@ -223,6 +223,14 @@ RCODE FLMAPI ftkStartup( void)
 	}
 #endif
 
+#if defined( FLM_OPENSSL)
+	// Initialize OpenSSL
+
+	SSL_load_error_strings();
+	SSL_library_init();	
+	ERR_load_BIO_strings();
+#endif
+
 	// Setup logger
 
 	if (RC_BAD( rc = f_loggerInit()))
@@ -3052,3 +3060,83 @@ void f_freeFileAsyncClientList( void)
 	
 	F_FileHdl::m_uiAvailAsyncCount = 0;
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_stripCRLF( 
+	const FLMBYTE *	pucSourceBuf,
+	FLMUINT				uiSourceLength,
+	F_DynaBuf *			pDestBuf)
+{
+	RCODE					rc = NE_FLM_OK;
+	FLMUINT				uiLoop;
+	FLMBYTE				ucSourceChar;
+	
+	for( uiLoop = 0; uiLoop < uiSourceLength; uiLoop++)
+	{
+		ucSourceChar = pucSourceBuf[ uiLoop];
+		
+		if( ucSourceChar != ASCII_CR && ucSourceChar != ASCII_NEWLINE)
+		{
+			if( RC_BAD( rc = pDestBuf->appendByte( ucSourceChar)))
+			{
+				goto Exit;
+			}
+			
+			if( !ucSourceChar)
+			{
+				break;
+			}
+		}
+	}
+	
+Exit:
+
+	return( rc);
+}	
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI f_base64Encode(
+	const char *		pData,
+	FLMUINT				uiDataLength,
+	F_DynaBuf *			pBuffer)
+{
+	RCODE					rc = NE_FLM_OK;
+	IF_PosIStream *	pBufferStream = NULL;
+	IF_IStream *		pEncodedStream = NULL;
+	
+	if( RC_BAD( rc = FlmOpenBufferIStream( pData, 
+		uiDataLength, &pBufferStream)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FlmOpenBase64EncoderIStream( pBufferStream, 
+		FALSE, &pEncodedStream)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = FlmReadFully( pEncodedStream, pBuffer)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	if( pEncodedStream)
+	{
+		pEncodedStream->Release();
+	}
+
+	if( pBufferStream)
+	{
+		pBufferStream->Release();
+	}
+
+	return( rc);
+}
+

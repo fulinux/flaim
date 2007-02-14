@@ -26,6 +26,126 @@
 #include "ftksys.h"
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+class FLMEXP F_BufferPrintfClient : public IF_PrintfClient
+{
+public:
+
+	F_BufferPrintfClient( char * pszDestBuffer)
+	{
+		m_pszDestBuffer = pszDestBuffer;
+	}
+	
+	virtual ~F_BufferPrintfClient()
+	{
+	}
+	
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar)
+	{
+		*m_pszDestBuffer++ = cChar;
+		return( 1);
+	}
+		
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar,
+		FLMUINT			uiCount)
+	{
+		f_memset( m_pszDestBuffer, cChar, uiCount);
+		m_pszDestBuffer += uiCount;
+		
+		return( (FLMINT)uiCount);
+	}
+
+	FINLINE FLMINT FLMAPI outputStr(
+		const char *	pszStr,
+		FLMUINT			uiLen)
+	{
+		f_memcpy( m_pszDestBuffer, pszStr, uiLen);
+		m_pszDestBuffer += uiLen;
+		
+		return( (FLMINT)uiLen);
+	}
+		
+	FINLINE FLMINT FLMAPI colorFormatter(
+		char,				// cFormatChar,
+		eColorType,		// eColor,
+		FLMUINT)			// uiFlags)
+	{
+		return( 0);
+	}
+	
+private:
+
+	char *				m_pszDestBuffer;
+};
+		
+/****************************************************************************
+Desc:
+****************************************************************************/
+class FLMEXP F_DynaPrintfClient : public IF_PrintfClient
+{
+public:
+
+	F_DynaPrintfClient() : m_dynaBuf( m_ucBuffer, sizeof( m_ucBuffer))
+	{
+	}
+	
+	virtual ~F_DynaPrintfClient()
+	{
+	}
+	
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar)
+	{
+		m_dynaBuf.appendByte( cChar);
+		return( 1);
+	}
+		
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar,
+		FLMUINT			uiCount)
+	{
+		FLMINT			iBytesOutput = (FLMINT)uiCount;
+		
+		while( uiCount)
+		{
+			m_dynaBuf.appendByte( cChar);
+			uiCount--;
+		}
+		
+		return( iBytesOutput);
+	}
+
+	FINLINE FLMINT FLMAPI outputStr(
+		const char *	pszStr,
+		FLMUINT			uiLen)
+	{
+		m_dynaBuf.appendData( pszStr, uiLen);
+		return( (FLMINT)uiLen);
+	}
+		
+	FINLINE FLMINT FLMAPI colorFormatter(
+		char,				// cFormatChar,
+		eColorType,		// eColor,
+		FLMUINT)			// uiFlags)
+	{
+		return( 0);
+	}
+	
+	FINLINE const char * getBufferPtr( void)
+	{
+		return( (const char *)m_dynaBuf.getBufferPtr());
+	}
+	
+private:
+
+	FLMBYTE				m_ucBuffer[ 256];
+	F_DynaBuf			m_dynaBuf;			
+};
+
+/****************************************************************************
 Desc:		Parameter 'format' points to text following a '%' sign. Process
 			legal field information.	Leave 'format' pointing at the format
 			specifier char.
@@ -42,6 +162,7 @@ void F_Printf::processFieldInfo(
 	// Process flags
 
 	*puiFlags = 0;
+	
 	for( ;;)
 	{
 		switch( *pszFormat)
@@ -82,6 +203,7 @@ NoMoreFlags:
 	// Process width
 
 	*puiWidth = 0;
+	
 	if( *pszFormat == '*')
 	{
 		*puiWidth = f_va_arg( *args, unsigned int);
@@ -99,9 +221,11 @@ NoMoreFlags:
 	// Process precision
 
 	*puiPrecision = 0;
+	
 	if( *pszFormat == '.')
 	{
 		pszFormat++;
+		
 		if( *pszFormat == '*')
 		{
 			*puiPrecision = f_va_arg( *args, unsigned int);
@@ -115,6 +239,7 @@ NoMoreFlags:
 	}
 
 	// Size modifiers
+
 	switch( *pszFormat)
 	{
 		case 'I':
@@ -153,7 +278,7 @@ NoMoreFlags:
 Desc:		Handle text portions of the format string
 ****************************************************************************/
 void F_Printf::processFormatString(
-	FLMUINT					uiLen,
+	FLMUINT					uiLen, 
 	...)
 {
 	f_va_list	args;
@@ -169,15 +294,17 @@ void F_Printf::processFormatString(
 /****************************************************************************
 Desc:		Parse arguments in format string, calling appropriate handlers
 ****************************************************************************/
-void F_Printf::parseArgs(
+FLMINT F_Printf::parseArgs(
 	const char *		pszFormat,
 	f_va_list *			args)
 {
-	char				cFormatChar;
-	FLMUINT			uiFlags;
-	FLMUINT			uiWidth;
-	FLMUINT			uiPrecision;
-	const char *	pszTextStart = pszFormat;
+	char					cFormatChar;
+	FLMUINT				uiFlags;
+	FLMUINT				uiWidth;
+	FLMUINT				uiPrecision;
+	const char *		pszTextStart = pszFormat;
+
+	m_iBytesOutput = 0;
 
 	while( (cFormatChar = *pszFormat++) != 0)
 	{
@@ -217,14 +344,8 @@ void F_Printf::parseArgs(
 
 			case 'B':
 			case 'F':
-			
-				// If we are not outputting a log message, colors are simply
-				// stripped out.
-				
-				if (m_pLogMsg)
-				{
-					colorFormatter( cFormatChar, (eColorType)uiWidth, uiFlags);
-				}
+				m_iBytesOutput += m_pClient->colorFormatter( cFormatChar, 
+					(eColorType)uiWidth, uiFlags);
 				break;
 				
 			case 's':
@@ -242,10 +363,12 @@ void F_Printf::parseArgs(
 				notHandledFormatter();
 				break;
 		}
+		
 		pszTextStart = pszFormat;
 	}
 
 	processFormatString( (FLMUINT)(pszFormat - pszTextStart - 1), pszTextStart);
+	return( m_iBytesOutput);
 }
 
 /****************************************************************************
@@ -264,20 +387,21 @@ void F_Printf::stringFormatter(
 	FLMUNICODE *		pUnicode;
 	const char *		pszStr = f_va_arg( *args, char *);
 
-	if (!pszStr)
+	if( !pszStr)
 	{
 		uiOutputLen = f_strlen( pszNullPointerStr);
 	}
-	else if (cFormatChar == 'S')
+	else if( cFormatChar == 'S')
 	{
 		uiOutputLen = *pszStr++;
 	}
 	else
 	{
-		if (cFormatChar == 'U')
+		if( cFormatChar == 'U')
 		{
 			uiOutputLen = 0;
 			pUnicode = (FLMUNICODE *)pszStr;
+			
 			while( *pUnicode)
 			{
 				if( *pUnicode >= 32 && *pUnicode <= 127)
@@ -288,6 +412,7 @@ void F_Printf::stringFormatter(
 				{
 					uiOutputLen += 7;
 				}
+				
 				pUnicode++;
 			}
 		}
@@ -297,24 +422,25 @@ void F_Printf::stringFormatter(
 		}
 	}
 
-	if (uiPrecision > 0 && uiOutputLen > uiPrecision)
+	if( uiPrecision > 0 && uiOutputLen > uiPrecision)
 	{
 		uiOutputLen = uiPrecision;
 	}
 
 	uiCount = uiWidth - uiOutputLen;
 
-	if (uiOutputLen < uiWidth && !(uiFlags & FLM_PRINTF_MINUS_FLAG))
+	if( uiOutputLen < uiWidth && !(uiFlags & FLM_PRINTF_MINUS_FLAG))
 	{
 		// Right justify
-		memsetChar( ' ', uiCount);
+		
+		m_iBytesOutput += m_pClient->outputChar( ' ', uiCount);
 	}
 
 	if( !pszStr)
 	{
-		outputStr( pszNullPointerStr, uiOutputLen);
+		m_iBytesOutput += m_pClient->outputStr( pszNullPointerStr, uiOutputLen);
 	}
-	else if (cFormatChar == 'U')
+	else if( cFormatChar == 'U')
 	{
 		FLMUINT		uiBytesOutput = 0;
 
@@ -323,7 +449,7 @@ void F_Printf::stringFormatter(
 		{
 			if( *pUnicode >= 32 && *pUnicode <= 127)
 			{
-				outputChar( (char)(*pUnicode));
+				m_iBytesOutput += m_pClient->outputChar( (char)(*pUnicode));
 				uiBytesOutput++;
 			}
 			else
@@ -339,95 +465,25 @@ void F_Printf::stringFormatter(
 				szTmpBuf[ uiTmpLen] = ']';
 				szTmpBuf[ uiTmpLen + 1] = 0;
 				
-				if ((uiBytesOutput = uiTmpLen + 2) > uiOutputLen)
+				if( (uiBytesOutput = uiTmpLen + 2) > uiOutputLen)
 				{
 					uiBytesOutput = uiOutputLen;
 				}
 
-				outputStr( szTmpBuf, uiBytesOutput); 
+				m_iBytesOutput += m_pClient->outputStr( szTmpBuf, uiBytesOutput); 
 			}
 		}
 	}
 	else
 	{
-		outputStr( pszStr, uiOutputLen);
+		m_iBytesOutput += m_pClient->outputStr( pszStr, uiOutputLen);
 	}
 
 	if (uiOutputLen < uiWidth && (uiFlags & FLM_PRINTF_MINUS_FLAG))
 	{
 		// Left justify
 
-		memsetChar( ' ', uiCount);
-	}
-}
-
-/****************************************************************************
-Desc:	Output the current log buffer - only called when logging.
-****************************************************************************/
-void F_Printf::outputLogBuffer( void)
-{
-	if (m_uiCharOffset)
-	{
-		m_szLogBuf [m_uiCharOffset] = 0;
-		
-		m_pLogMsg->appendString( m_szLogBuf);
-		
-		// Reset to start filling from the beginning of the buffer.
-		
-		m_uiCharOffset = 0;
-	}
-}
-
-/****************************************************************************
-Desc:		Change colors - may only push or pop a color on to the color stack.
-****************************************************************************/
-void F_Printf::colorFormatter(
-	char			cFormatChar,
-	eColorType	eColor,
-	FLMUINT		uiFlags)
-{
-	
-	// Color formatting is ignored if there is not a log message object.
-	
-	if (m_pLogMsg)
-	{
-		
-		// Before changing colors, output the current log buffer.
-		
-		outputLogBuffer();
-	
-		if (cFormatChar == 'F')	// Foreground color
-		{
-			if (uiFlags & FLM_PRINTF_PLUS_FLAG)
-			{
-				m_pLogMsg->pushForegroundColor();
-			}
-			else if (uiFlags & FLM_PRINTF_MINUS_FLAG)
-			{
-				m_pLogMsg->popForegroundColor();
-			}
-			else if (m_eCurrentForeColor != eColor)
-			{
-				m_eCurrentForeColor = eColor;
-				m_pLogMsg->changeColor( m_eCurrentForeColor, m_eCurrentBackColor);
-			}
-		}
-		else	// cFormatChar == 'B' - background color
-		{
-			if (uiFlags & FLM_PRINTF_PLUS_FLAG)
-			{
-				m_pLogMsg->pushBackgroundColor();
-			}
-			else if (uiFlags & FLM_PRINTF_MINUS_FLAG)
-			{
-				m_pLogMsg->popBackgroundColor();
-			}
-			else if (m_eCurrentBackColor != eColor)
-			{
-				m_eCurrentBackColor = eColor;
-				m_pLogMsg->changeColor( m_eCurrentForeColor, m_eCurrentBackColor);
-			}
-		}
+		m_iBytesOutput += m_pClient->outputChar( ' ', uiCount);
 	}
 }
 
@@ -441,10 +497,10 @@ FLMUINT F_Printf::printNumber(
 	FLMBOOL			bCommas,
 	char *			pszBuf)
 {
-	char			cChar;
-	FLMUINT		uiOffset = 0;
-	FLMUINT		uiDigitCount = 0;
-	FLMUINT		uiLoop;
+	char				cChar;
+	FLMUINT			uiOffset = 0;
+	FLMUINT			uiDigitCount = 0;
+	FLMUINT			uiLoop;
 
 	// We don't support commas on bases other than 10
 
@@ -498,20 +554,20 @@ void F_Printf::numberFormatter(
 	FLMUINT				uiFlags,
 	f_va_list *			args)
 {
-	FLMUINT		uiPrefix = FLM_PREFIX_NONE;
-	FLMUINT		uiLength;
-	FLMUINT		uiBase = 10;
-	char			cNumberBuffer[ 64];
-	FLMBOOL		bUpperCase = FALSE;
-	FLMBOOL		bCommas = FALSE;
-	FLMUINT64	ui64Val;
+	FLMUINT				uiPrefix = FLM_PREFIX_NONE;
+	FLMUINT				uiLength;
+	FLMUINT				uiBase = 10;
+	char					cNumberBuffer[ 64];
+	FLMBOOL				bUpperCase = FALSE;
+	FLMBOOL				bCommas = FALSE;
+	FLMUINT64			ui64Val;
 
-	if (cFormatChar == 'p')
+	if( cFormatChar == 'p')
 	{
 		ui64Val = (FLMUINT64)((FLMUINT)f_va_arg( *args, void *));
 		uiFlags |= FLM_PRINTF_POUND_FLAG;
 	}
-	else if (cFormatChar != 'd')
+	else if( cFormatChar != 'd')
 	{
 		// Unsigned number
 
@@ -536,15 +592,15 @@ void F_Printf::numberFormatter(
 	{
 		// Signed number
 
-		if (uiFlags & FLM_PRINTF_SHORT_FLAG)
+		if( uiFlags & FLM_PRINTF_SHORT_FLAG)
 		{
 			ui64Val = (FLMUINT64)((FLMINT64)f_va_arg( *args, int));
 		}
-		else if (uiFlags & (FLM_PRINTF_LONG_FLAG | FLM_PRINTF_DOUBLE_FLAG))
+		else if( uiFlags & (FLM_PRINTF_LONG_FLAG | FLM_PRINTF_DOUBLE_FLAG))
 		{
 			ui64Val = (FLMUINT64)((FLMINT64)f_va_arg( *args, long int));
 		}
-		else if (uiFlags & FLM_PRINTF_INT64_FLAG)
+		else if( uiFlags & FLM_PRINTF_INT64_FLAG)
 		{
 			ui64Val = (FLMUINT64)f_va_arg( *args, FLMINT64);
 		}
@@ -554,7 +610,7 @@ void F_Printf::numberFormatter(
 		}
 	}
 
-	switch (cFormatChar)
+	switch( cFormatChar)
 	{
 		case 'd':
 		{
@@ -588,7 +644,7 @@ void F_Printf::numberFormatter(
 		case 'X':
 		case 'p':
 		{
-			if ((uiFlags & FLM_PRINTF_POUND_FLAG) && ui64Val)
+			if( (uiFlags & FLM_PRINTF_POUND_FLAG) && ui64Val)
 			{
 				uiPrefix = FLM_PREFIX_POUND;
 				if( uiWidth > 1)
@@ -601,58 +657,58 @@ void F_Printf::numberFormatter(
 		}
 	}
 
-	if (cFormatChar == 'X')
+	if( cFormatChar == 'X')
 	{
 		bUpperCase = TRUE;
 	}
 
-	if ((uiFlags & FLM_PRINTF_COMMA_FLAG) && uiBase == 10)
+	if( (uiFlags & FLM_PRINTF_COMMA_FLAG) && uiBase == 10)
 	{
 		bCommas = TRUE;
 	}
 
 	uiLength = printNumber( ui64Val, uiBase, bUpperCase, bCommas, cNumberBuffer);
 
-	if (uiWidth < uiLength)
+	if( uiWidth < uiLength)
 	{
 		uiWidth = uiLength;
 	}
 
-	if (uiFlags & FLM_PRINTF_ZERO_FLAG)
+	if( uiFlags & FLM_PRINTF_ZERO_FLAG)
 	{
 		// Zero fill
 
 		uiPrecision = uiWidth;
 	}
-	else if (!(uiFlags & FLM_PRINTF_MINUS_FLAG))
+	else if( !(uiFlags & FLM_PRINTF_MINUS_FLAG))
 	{
 		// Right justify
 
-		while (uiWidth > uiLength && uiWidth > uiPrecision)
+		while( uiWidth > uiLength && uiWidth > uiPrecision)
 		{
-			outputChar( ' ');
+			m_iBytesOutput += m_pClient->outputChar( ' ');
 			uiWidth--;
 		}
 	}
 
 	// Handle the prefix (if any)
 
-	switch (uiPrefix)
+	switch( uiPrefix)
 	{
 		case FLM_PREFIX_NONE:
 			break;
 
 		case FLM_PREFIX_MINUS:
-			outputChar( '-');
+			m_iBytesOutput += m_pClient->outputChar( '-');
 			break;
 
 		case FLM_PREFIX_PLUS:
-			outputChar( '+');
+			m_iBytesOutput += m_pClient->outputChar( '+');
 			break;
 
 		case FLM_PREFIX_POUND:
 		{
-			outputStr( "0x", 2);
+			m_iBytesOutput += m_pClient->outputStr( "0x", 2);
 			break;
 		}
 
@@ -663,36 +719,37 @@ void F_Printf::numberFormatter(
 
 	// Handle the precision
 
-	if (bCommas && uiPrecision && (uiPrecision % 4) == 0)
+	if( bCommas && uiPrecision && (uiPrecision % 4) == 0)
 	{
 		uiPrecision--;
 	}
 
-	while (uiLength < uiPrecision)
+	while( uiLength < uiPrecision)
 	{
-		if (bCommas && (uiPrecision % 4) == 0)
+		if( bCommas && (uiPrecision % 4) == 0)
 		{
-			outputChar( ',');
+			m_iBytesOutput += m_pClient->outputChar( ',');
 			uiPrecision--;
 			uiWidth--;
 			continue;
 		}
 
-		outputChar( '0');
+		m_iBytesOutput += m_pClient->outputChar( '0');
 		uiPrecision--;
 		uiWidth--;
 	}
 
 	// Output the number
 
-	outputStr( cNumberBuffer, uiLength);	
+	m_iBytesOutput += m_pClient->outputStr( cNumberBuffer, uiLength);	
 
-	if (uiFlags & FLM_PRINTF_MINUS_FLAG)
+	if( uiFlags & FLM_PRINTF_MINUS_FLAG)
 	{
 		// Left justify
-		if (uiWidth > uiLength)
+		
+		if( uiWidth > uiLength)
 		{
-			memsetChar( ' ', (uiWidth - uiLength));
+			m_iBytesOutput += m_pClient->outputChar( ' ', (uiWidth - uiLength));
 		}
 	}
 }
@@ -712,7 +769,7 @@ void F_Printf::charFormatter(
 	char	cChar = (char)((cFormatChar == '%')
 								? (char)'%'
 								: (char)f_va_arg( *args, int));
-	outputChar( cChar);
+	m_iBytesOutput += m_pClient->outputChar( cChar);
 }
 
 /****************************************************************************
@@ -732,119 +789,74 @@ Desc:		Unknown format handler
 void F_Printf::notHandledFormatter( void)
 {
 	f_assert( 0);
-	outputChar( '?');
-}
-
-/****************************************************************************
-Desc:		FLAIM's vsprintf
-****************************************************************************/
-FLMINT FLMAPI F_Printf::strvPrintf(
-	char *			pszDestStr,
-	const char *	pszFormat,
-	f_va_list *		args)
-{
-	m_pszDestStr = pszDestStr;
-	m_pLogMsg = NULL;
-	parseArgs( pszFormat, args);
-	*m_pszDestStr = 0;
-
-	return( (FLMINT)(m_pszDestStr - pszDestStr));
+	m_iBytesOutput += m_pClient->outputChar( '?');
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_Printf::strPrintf(
-	char *			pszDestStr,
-	const char *	pszFormat,
+FLMINT FLMAPI f_printf(
+	IF_PrintfClient *		pClient,
+	const char *			pszFormat,
 	...)
 {
 	f_va_list	args;
+	FLMINT		iBytesOutput;
+	F_Printf		printFormatter( pClient);
 
-	m_pszDestStr = pszDestStr;
-	m_pLogMsg = NULL;
-	f_va_start(args, pszFormat);
-	parseArgs( pszFormat, &args);
-	f_va_end(args);
-	*m_pszDestStr = 0;
+	f_va_start( args, pszFormat);
+	iBytesOutput = printFormatter.parseArgs( pszFormat, &args);
+	f_va_end( args);
 
-	return( (FLMINT)(m_pszDestStr - pszDestStr));
+	return( iBytesOutput);
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_Printf::logvPrintf(
-	IF_LogMessageClient *	pLogMsg,
-	const char *				pszFormat,
-	f_va_list *					args)
+FLMINT FLMAPI f_vprintf(
+	IF_PrintfClient *		pClient,
+	const char *			pszFormat,
+	f_va_list *				args)
 {
-	m_pszDestStr = NULL;
-	m_uiNumLogChars = 0;
-	m_uiCharOffset = 0;
-	m_pLogMsg = pLogMsg;
-	m_eCurrentForeColor = FLM_LIGHTGRAY;
-	m_eCurrentBackColor = FLM_BLACK;
-	m_pLogMsg->changeColor( m_eCurrentForeColor, m_eCurrentBackColor);
-	parseArgs( pszFormat, args);
-	outputLogBuffer();
-
-	return( (FLMINT)m_uiNumLogChars);
+	F_Printf		printFormatter( pClient);
+	
+	return( printFormatter.parseArgs( pszFormat, args));
 }
-			
+		
 /****************************************************************************
 Desc:
-****************************************************************************/
-FLMINT FLMAPI F_Printf::logPrintf(
-	IF_LogMessageClient *	pLogMsg,
-	const char *				pszFormat,
-	...)
-{
-	f_va_list	args;
-
-	m_pszDestStr = NULL;
-	m_uiNumLogChars = 0;
-	m_uiCharOffset = 0;
-	m_pLogMsg = pLogMsg;
-	m_eCurrentForeColor = FLM_BLACK;
-	m_eCurrentBackColor = FLM_LIGHTGRAY;
-	m_pLogMsg->changeColor( m_eCurrentForeColor, m_eCurrentBackColor);
-	f_va_start(args, pszFormat);
-	parseArgs( pszFormat, &args);
-	f_va_end(args);
-	outputLogBuffer();
-
-	return( m_uiNumLogChars);
-}
-
-/****************************************************************************
-Desc:		FLAIM's vsprintf
 ****************************************************************************/
 FLMINT FLMAPI f_vsprintf(
-	char *			pszDestStr,
+	char *			pszDestBuffer,
 	const char *	pszFormat,
 	f_va_list *		args)
 {
-	F_Printf		formatter;
+	FLMINT						iLen;
+	F_BufferPrintfClient		printfClient( pszDestBuffer);
 	
-	return( formatter.strvPrintf( pszDestStr, pszFormat, args));
+	iLen = f_vprintf( &printfClient, pszFormat, args);
+	printfClient.outputChar( 0);
+	
+	return( iLen);
 }
 	
 /****************************************************************************
 Desc:
 ****************************************************************************/
 FLMINT FLMAPI f_sprintf(
-	char *			pszDestStr,
+	char *			pszDestBuffer,
 	const char *	pszFormat,
 	...)
 {
-	FLMINT		iLen;
-	f_va_list	args;
-	F_Printf		formatter;
+	FLMINT						iLen;
+	f_va_list					args;
+	F_BufferPrintfClient		printfClient( pszDestBuffer);
 
-	f_va_start(args, pszFormat);
-	iLen = formatter.strvPrintf( pszDestStr, pszFormat, &args);
-	f_va_end(args);
+	f_va_start( args, pszFormat);
+	iLen = f_vprintf( &printfClient, pszFormat, &args);
+	f_va_end( args);
+	printfClient.outputChar( 0);
 
 	return( iLen);
 }
@@ -856,17 +868,17 @@ FLMINT FLMAPI f_printf(
 	const char *	pszFormat,
 	...)
 {
-	FLMINT			iLen;
-	f_va_list		args;
-	char				szTmpBuf[ 512];
-	F_Printf			formatter;
+	FLMINT						iLen;
+	f_va_list					args;
+	F_DynaPrintfClient		printfClient;
 
 	f_va_start( args, pszFormat);
-	iLen = formatter.strvPrintf( szTmpBuf, pszFormat, &args);
-	f_va_end(args);
+	iLen = f_vprintf( &printfClient, pszFormat, &args);
+	f_va_end( args);
+	printfClient.outputChar( 0);
 	
 #ifndef FLM_RING_ZERO_NLM
-	fprintf( stdout, szTmpBuf);
+	fprintf( stdout, printfClient.getBufferPtr());
 	fflush( stdout);
 #endif
 

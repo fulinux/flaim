@@ -29,6 +29,120 @@ static F_MUTEX					gv_hLoggerMutex = F_MUTEX_NULL;
 static FLMUINT					gv_uiPendingLogMessages = 0;
 static IF_LoggerClient *	gv_pLogger = NULL;
 
+/***************************************************************************
+Desc:
+***************************************************************************/
+class FLMEXP F_LogPrintfClient : public IF_PrintfClient
+{
+public:
+
+#define MAX_LOG_BUF_CHARS	255
+
+	F_LogPrintfClient( IF_LogMessageClient * pLogMsg)		
+	{
+		m_pLogMsg = pLogMsg;
+		m_pLogMsg->AddRef();
+	}
+	
+	virtual ~F_LogPrintfClient()
+	{
+		if( m_pLogMsg)
+		{
+			m_pLogMsg->Release();
+			m_pLogMsg = NULL;
+		}
+	}
+
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar,
+		FLMUINT			uiCount)
+	{
+		FLMUINT			uiTmpCount;
+		FLMINT			iBytesOutput = (FLMINT)uiCount;
+		
+		while( uiCount)
+		{
+			uiTmpCount = uiCount;
+			
+			if( m_uiCharOffset + uiTmpCount > MAX_LOG_BUF_CHARS)
+			{
+				uiTmpCount = MAX_LOG_BUF_CHARS - m_uiCharOffset;
+			}
+			
+			f_memset( &m_szLogBuf [m_uiCharOffset], cChar, uiTmpCount);
+			
+			m_uiCharOffset += uiTmpCount;
+			uiCount -= uiTmpCount;
+			
+			if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
+			{
+				outputLogBuffer();
+			}
+		}
+		
+		return( iBytesOutput);
+	}
+
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar)
+	{
+		m_szLogBuf[ m_uiCharOffset++] = cChar;
+		
+		if( m_uiCharOffset == MAX_LOG_BUF_CHARS)
+		{
+			outputLogBuffer();
+		}
+		
+		return( 1);
+	}
+		
+	FINLINE FLMINT FLMAPI outputStr(
+		const char *	pszStr,
+		FLMUINT			uiLen)
+	{
+		FLMUINT			uiTmpLen;
+		FLMINT			iBytesOutput = (FLMINT)uiLen;
+		
+		while( uiLen)
+		{
+			uiTmpLen = uiLen;
+			
+			if( m_uiCharOffset + uiTmpLen > MAX_LOG_BUF_CHARS)
+			{
+				uiTmpLen = MAX_LOG_BUF_CHARS - m_uiCharOffset;
+			}
+			
+			f_memcpy( &m_szLogBuf [m_uiCharOffset], pszStr, uiTmpLen);
+			
+			m_uiCharOffset += uiTmpLen;
+			uiLen -= uiTmpLen;
+			pszStr += uiTmpLen;
+			
+			if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
+			{
+				outputLogBuffer();
+			}
+		}
+		
+		return( iBytesOutput);
+	}
+		
+	FLMINT FLMAPI colorFormatter(
+		char				cFormatChar,
+		eColorType		eColor,
+		FLMUINT			uiFlags);
+
+private:
+
+	void outputLogBuffer( void);
+	
+	char							m_szLogBuf [MAX_LOG_BUF_CHARS + 1];
+	FLMUINT						m_uiCharOffset;
+	IF_LogMessageClient *	m_pLogMsg;
+	eColorType					m_eCurrentForeColor;
+	eColorType					m_eCurrentBackColor;
+};
+
 /****************************************************************************
 Desc:	Main entry point for printf functionality.
 ****************************************************************************/
@@ -36,11 +150,11 @@ void f_logPrintf(
 	IF_LogMessageClient *	pLogMessage,
 	const char *				pszFormatStr, ...)
 {
-	f_va_list	args;
-	F_Printf		formatter;
+	f_va_list					args;
+	F_LogPrintfClient			printfClient( pLogMessage);
 
 	f_va_start( args, pszFormatStr);
-	formatter.logvPrintf( pLogMessage, pszFormatStr, &args);
+	f_vprintf( &printfClient, pszFormatStr, &args);
 	f_va_end( args);
 }
 
@@ -52,9 +166,9 @@ void FLMAPI f_logVPrintf(
 	const char *				pszFormatStr,
 	f_va_list *					args)
 {
-	F_Printf		formatter;
+	F_LogPrintfClient			printfClient( pLogMessage);
 
-	formatter.logvPrintf( pLogMessage, pszFormatStr, args);
+	f_vprintf( &printfClient, pszFormatStr, args);
 }
 
 /****************************************************************************
@@ -65,7 +179,7 @@ IF_LogMessageClient * FLMAPI f_beginLogMessage(
 	FLMUINT						uiMsgType,
 	eLogMessageSeverity		eMsgSeverity)
 {
-	IF_LogMessageClient *		pNewMsg = NULL;
+	IF_LogMessageClient *	pNewMsg = NULL;
 
 	f_mutexLock( gv_hLoggerMutex);
 	
@@ -139,9 +253,9 @@ Desc:	Initialize the toolkit logger
 ****************************************************************************/
 RCODE f_loggerInit( void)
 {
-	RCODE	rc = NE_FLM_OK;
+	RCODE		rc = NE_FLM_OK;
 
-	if (RC_BAD( rc = f_mutexCreate( &gv_hLoggerMutex)))
+	if( RC_BAD( rc = f_mutexCreate( &gv_hLoggerMutex)))
 	{
 		goto Exit;
 	}
@@ -156,12 +270,13 @@ Desc:	Shutdown the toolkit logger
 ****************************************************************************/
 void f_loggerShutdown( void)
 {
-	if (gv_pLogger)
+	if( gv_pLogger)
 	{
 		gv_pLogger->Release();
 		gv_pLogger = NULL;
 	}
-	if (gv_hLoggerMutex != F_MUTEX_NULL)
+	
+	if( gv_hLoggerMutex != F_MUTEX_NULL)
 	{
 		f_mutexDestroy( &gv_hLoggerMutex);
 	}
@@ -174,14 +289,84 @@ void f_setLoggerClient(
 	IF_LoggerClient *	pLogger)
 {
 	f_mutexLock( gv_hLoggerMutex);
-	if (gv_pLogger)
+	
+	if( gv_pLogger)
 	{
 		gv_pLogger->Release();
 	}
-	if ((gv_pLogger = pLogger) != NULL)
+	
+	if( (gv_pLogger = pLogger) != NULL)
 	{
 		gv_pLogger->AddRef();
 	}
+	
 	f_mutexUnlock( gv_hLoggerMutex);
+}
+
+/****************************************************************************
+Desc:	Output the current log buffer - only called when logging.
+****************************************************************************/
+void F_LogPrintfClient::outputLogBuffer( void)
+{
+	if( m_uiCharOffset)
+	{
+		m_szLogBuf[ m_uiCharOffset] = 0;
+		m_pLogMsg->appendString( m_szLogBuf);
+		m_uiCharOffset = 0;
+	}
+}
+
+/****************************************************************************
+Desc:		Change colors - may only push or pop a color on to the color stack.
+****************************************************************************/
+FLMINT FLMAPI F_LogPrintfClient::colorFormatter(
+	char			cFormatChar,
+	eColorType	eColor,
+	FLMUINT		uiFlags)
+{
+	// Color formatting is ignored if there is not a log message object.
+	
+	if( m_pLogMsg)
+	{
+		
+		// Before changing colors, output the current log buffer.
+		
+		outputLogBuffer();
+	
+		if( cFormatChar == 'F')	// Foreground color
+		{
+			if( uiFlags & FLM_PRINTF_PLUS_FLAG)
+			{
+				m_pLogMsg->pushForegroundColor();
+			}
+			else if( uiFlags & FLM_PRINTF_MINUS_FLAG)
+			{
+				m_pLogMsg->popForegroundColor();
+			}
+			else if( m_eCurrentForeColor != eColor)
+			{
+				m_eCurrentForeColor = eColor;
+				m_pLogMsg->changeColor( m_eCurrentForeColor, m_eCurrentBackColor);
+			}
+		}
+		else	// cFormatChar == 'B' - background color
+		{
+			if( uiFlags & FLM_PRINTF_PLUS_FLAG)
+			{
+				m_pLogMsg->pushBackgroundColor();
+			}
+			else if( uiFlags & FLM_PRINTF_MINUS_FLAG)
+			{
+				m_pLogMsg->popBackgroundColor();
+			}
+			else if( m_eCurrentBackColor != eColor)
+			{
+				m_eCurrentBackColor = eColor;
+				m_pLogMsg->changeColor( m_eCurrentForeColor, m_eCurrentBackColor);
+			}
+		}
+	}
+	
+	return( 0);
 }
 

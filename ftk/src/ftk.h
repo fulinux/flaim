@@ -626,12 +626,14 @@
 	flminterface IF_FileHdl;
 	flminterface IF_FileSystem;
 	flminterface IF_FileHdlCache;
+	flminterface IF_PrintfClient;
 	flminterface IF_IStream;
 	flminterface IF_PosIStream;
 	flminterface IF_ResultSet;
 	flminterface IF_ThreadInfo;
 	flminterface IF_OStream;
 	flminterface IF_IOStream;
+	flminterface IF_SSLIOStream;
 	flminterface IF_LogMessageClient;
 	flminterface IF_Thread;
 	flminterface IF_IOBuffer;
@@ -1349,7 +1351,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface FLMEXP IF_IStream : public F_Object
+	flminterface FLMEXP IF_IStream : virtual public F_Object
 	{
 		virtual RCODE FLMAPI read(
 			void *					pvBuffer,
@@ -1462,6 +1464,16 @@
 		IF_OStream *				pOStream,
 		IF_OStream **				ppOStream);
 		
+	RCODE FLMAPI FlmAllocSSLIOStream( 
+		IF_IOStream **				ppIOStream);
+	
+	RCODE FLMAPI FlmOpenSSLIOStream(
+		const char *				pszTrustStore,
+		const char *				pszHost,
+		FLMUINT						uiPort,
+		FLMUINT						uiFlags,
+		IF_IOStream **				ppIOStream);
+	
 	RCODE FLMAPI FlmRemoveMultiFileStream(
 		const char *				pszDirectory,
 		const char *				pszBaseName);
@@ -1473,6 +1485,14 @@
 	RCODE FLMAPI FlmReadFully(
 		IF_IStream *				pIStream,
 		F_DynaBuf *					pDynaBuf);
+	
+	RCODE FLMAPI FlmReadLine(
+		IF_IStream *				pIStream,
+		F_DynaBuf *					pBuffer);
+		
+	void FLMAPI f_streamPrintf(
+		IF_OStream *				pStream,
+		const char *				pszFormatStr, ...);
 	
 	/****************************************************************************
 	Desc:
@@ -1527,7 +1547,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface FLMEXP IF_OStream : public F_Object
+	flminterface FLMEXP IF_OStream : virtual public F_Object
 	{
 		virtual RCODE FLMAPI write(
 			const void *			pvBuffer,
@@ -1545,6 +1565,32 @@
 		#if defined( FLM_WIN) && _MSC_VER < 1300
 			using IF_IStream::operator delete;
 		#endif
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface IF_SSLIOStream : public IF_IOStream
+	{
+		virtual RCODE FLMAPI openStream(
+			const char *			pszTrustStore,
+			const char *			pszHost,
+			FLMUINT					uiPort = 443,
+			FLMUINT					uiFlags = 0) = 0;
+		
+		virtual RCODE FLMAPI read(
+			void *					pvBuffer,
+			FLMUINT					uiBytesToRead,
+			FLMUINT *				puiBytesRead = NULL) = 0;
+			
+		virtual RCODE FLMAPI write(
+			const void *			pvBuffer,
+			FLMUINT					uiBytesToWrite,
+			FLMUINT *				puiBytesWritten = NULL) = 0;
+			
+		virtual const char * FLMAPI getPeerCertificateText( void) = 0;
+			
+		virtual RCODE FLMAPI closeStream( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -3005,6 +3051,7 @@
 
 	#define ASCII_TAB						0x09
 	#define ASCII_NEWLINE				0x0A
+	#define ASCII_LF						0x0A
 	#define ASCII_CR                 0x0D
 	#define ASCII_CTRLZ              0x1A
 	#define ASCII_SPACE              0x20
@@ -3801,6 +3848,24 @@
 		const char *			pszFormat,
 		...);
 		
+	FLMINT FLMAPI f_printf(
+		IF_PrintfClient *		pClient,
+		const char *			pszFormat,
+		...);
+	
+	FLMINT FLMAPI f_vprintf(
+		IF_PrintfClient *		pClient,
+		const char *			pszFormat,
+		f_va_list *				args);
+		
+	RCODE FLMAPI f_printf(
+		IF_OStream *		pOStream,
+		const char *		pszFormatStr, ...);
+		
+	RCODE FLMAPI f_vprintf(
+		IF_OStream *		pOStream,
+		const char *		pszFormatStr, ...);
+
 	/****************************************************************************
 	Desc:	Memory copying, moving, setting
 	****************************************************************************/
@@ -3914,6 +3979,11 @@
 	FLMBYTE FLMAPI f_getBase24DigitChar( 
 		FLMBYTE				ucValue);
 		
+	RCODE FLMAPI f_stripCRLF( 
+		const FLMBYTE *	pucSourceBuf,
+		FLMUINT				uiSourceLength,
+		F_DynaBuf *			pDestBuf);
+	
 	#define shiftN(data,size,distance) \
 			f_memmove((FLMBYTE *)(data) + (FLMINT)(distance), \
 			(FLMBYTE *)(data), (unsigned)(size))
@@ -3921,186 +3991,23 @@
 	/***************************************************************************
 	Desc:
 	***************************************************************************/
-	class FLMEXP F_Printf : public F_Object
+	flminterface FLMEXP IF_PrintfClient : public F_Object
 	{
-	public:
-	
-	#define MAX_LOG_BUF_CHARS	255
-	
-		F_Printf()
-		{
-		}
-		
-		virtual ~F_Printf()
-		{
-		}
-	
-		FLMINT FLMAPI strvPrintf(
-			char *			pszDestStr,
-			const char *	pszFormat,
-			f_va_list *		args);
-
-		FLMINT FLMAPI strPrintf(
-			char *			pszDestStr,
-			const char *	pszFormat,
-			...);
-	
-		FLMINT FLMAPI logvPrintf(
-			IF_LogMessageClient *	pLogMsg,
-			const char *				pszFormat,
-			f_va_list *					args);
+		virtual FLMINT FLMAPI outputChar(
+			char				cChar) = 0;
 			
-		FLMINT FLMAPI logPrintf(
-			IF_LogMessageClient *	pLogMsg,
-			const char *				pszFormat,
-			...);
+		virtual FLMINT FLMAPI outputChar(
+			char				cChar,
+			FLMUINT			uiCount) = 0;
 	
-	private:
-	
-		void processFieldInfo(
-			const char **	ppszFormat,
-			FLMUINT *		puiWidth,
-			FLMUINT *		puiPrecision,
-			FLMUINT *		puiFlags,
-			f_va_list *		args);
-	
-		void stringFormatter(
-			char				cFormatChar,
-			FLMUINT			uiWidth,
-			FLMUINT			uiPrecision,
-			FLMUINT			uiFlags,
-			f_va_list *		args);
-	
-		void colorFormatter(
+		virtual FLMINT FLMAPI outputStr(
+			const char *	pszStr,
+			FLMUINT			uiLen) = 0;
+			
+		virtual FLMINT FLMAPI colorFormatter(
 			char				cFormatChar,
 			eColorType		eColor,
-			FLMUINT			uiFlags);
-			
-		void charFormatter(
-			char				cFormatChar,
-			f_va_list *		args);
-	
-		void errorFormatter(
-			f_va_list *		args);
-	
-		void notHandledFormatter( void);
-	
-		void numberFormatter(
-			char				cFormatChar,
-			FLMUINT			uiWidth,
-			FLMUINT			uiPrecision,
-			FLMUINT			uiFlags,
-			f_va_list *		args);
-		
-		void parseArgs(
-			const char *	pszFormat,
-			f_va_list *		args);
-		
-		void processFormatString(
-			FLMUINT			uiLen,
-			...);
-			
-		FLMUINT printNumber(
-			FLMUINT64		ui64Val,
-			FLMUINT			uiBase,
-			FLMBOOL			bUpperCase,
-			FLMBOOL			bCommas,
-			char *			pszBuf);
-			
-		void outputLogBuffer( void);
-		
-		FINLINE void outputChar(
-			char				cChar)
-		{
-			if (!m_pLogMsg)
-			{
-				*m_pszDestStr++ = cChar;
-			}
-			else
-			{
-				m_szLogBuf [m_uiCharOffset++] = cChar;
-				m_uiNumLogChars++;
-				if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
-				{
-					outputLogBuffer();
-				}
-			}
-		}
-		
-		FINLINE void memsetChar(
-			char				cChar,
-			FLMUINT			uiCount)
-		{
-			if (!m_pLogMsg)
-			{
-				f_memset( m_pszDestStr, cChar, uiCount);
-				m_pszDestStr += uiCount;
-			}
-			else
-			{
-				FLMUINT	uiTmpCount;
-				
-				while (uiCount)
-				{
-					uiTmpCount = uiCount;
-					if (m_uiCharOffset + uiTmpCount > MAX_LOG_BUF_CHARS)
-					{
-						uiTmpCount = MAX_LOG_BUF_CHARS - m_uiCharOffset;
-					}
-					f_memset( &m_szLogBuf [m_uiCharOffset], cChar, uiTmpCount);
-					m_uiCharOffset += uiTmpCount;
-					m_uiNumLogChars += uiTmpCount;
-					uiCount -= uiTmpCount;
-					if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
-					{
-						outputLogBuffer();
-					}
-				}
-			}
-		}
-
-		FINLINE void outputStr(
-			const char *	pszStr,
-			FLMUINT			uiLen)
-		{
-			if (!m_pLogMsg)
-			{
-				f_memcpy( m_pszDestStr, pszStr, uiLen);
-				m_pszDestStr += uiLen;
-			}
-			else
-			{
-				FLMUINT	uiTmpLen;
-				
-				while (uiLen)
-				{
-					uiTmpLen = uiLen;
-					if (m_uiCharOffset + uiTmpLen > MAX_LOG_BUF_CHARS)
-					{
-						uiTmpLen = MAX_LOG_BUF_CHARS - m_uiCharOffset;
-					}
-					f_memcpy( &m_szLogBuf [m_uiCharOffset], pszStr, uiTmpLen);
-					m_uiCharOffset += uiTmpLen;
-					m_uiNumLogChars += uiTmpLen;
-					uiLen -= uiTmpLen;
-					pszStr += uiTmpLen;
-					if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
-					{
-						outputLogBuffer();
-					}
-				}
-			}
-		}
-		
-		// Variables used to do the printf stuff
-	
-		char							m_szLogBuf [MAX_LOG_BUF_CHARS + 1];
-		FLMUINT						m_uiNumLogChars;
-		FLMUINT						m_uiCharOffset;
-		char *						m_pszDestStr;
-		IF_LogMessageClient *	m_pLogMsg;
-		eColorType					m_eCurrentForeColor;
-		eColorType					m_eCurrentBackColor;
+			FLMUINT			uiFlags) = 0;
 	};
 	
 	/****************************************************************************
@@ -6630,6 +6537,11 @@
 		FLMBYTE				m_ucBuffer[ 8];
 	};
 
+	RCODE FLMAPI f_base64Encode(
+		const char *		pData,
+		FLMUINT				uiDataLength,
+		F_DynaBuf *			pBuffer);
+	
 	/****************************************************************************
 	Desc:	Encodes a binary input stream into ASCII base64.
 	****************************************************************************/
