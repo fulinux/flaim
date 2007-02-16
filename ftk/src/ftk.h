@@ -582,6 +582,7 @@
 	#define NE_FLM_BAD_PLATFORM_FORMAT						0xC50B			///< 0xC50B	- In-memory alignment of disk structures is incorrect
 	#define NE_FLM_LOCK_REQ_TIMEOUT							0xC50C			///< 0xC50C	- Timeout while waiting for a lock object
 	#define NE_FLM_WAIT_TIMEOUT								0xC50D			///< 0xC50D - Timeout while waiting on a semaphore, condition variable, or reader/writer lock
+	#define NE_FLM_BAD_HTTP_HEADER							0xC50E			///< 0xC50E - Invalid HTTP header format
 	
 	// Network Errors - Must be the same as they were for FLAIM
 
@@ -601,6 +602,51 @@
 	#define NE_FLM_SOCKET_ALREADY_CLOSED					0xC90D			///< 0xC90D - Connection already closed
 
 	/// @}
+
+	/****************************************************************************
+	Desc: HTTP status codes
+	****************************************************************************/
+	
+	#define FLM_HTTP_STATUS_CONTINUE							100
+	#define FLM_HTTP_STATUS_SWITCHING_PROTOCOLS			101
+	#define FLM_HTTP_STATUS_OK									200
+	#define FLM_HTTP_STATUS_CREATED							201
+	#define FLM_HTTP_STATUS_ACCEPTED							202
+	#define FLM_HTTP_STATUS_NON_AUTH_INFO					203
+	#define FLM_HTTP_STATUS_NO_CONTENT						204
+	#define FLM_HTTP_STATUS_RESET_CONTENT					205
+	#define FLM_HTTP_STATUS_PARTIAL_CONTENT				206
+	#define FLM_HTTP_STATUS_MULTIPLE_CHOICES				300
+	#define FLM_HTTP_STATUS_MOVED_PERMANENTLY				301
+	#define FLM_HTTP_STATUS_FOUND								302
+	#define FLM_HTTP_STATUS_SEE_OTHER						303
+	#define FLM_HTTP_STATUS_NOT_MODIFIED					304
+	#define FLM_HTTP_STATUS_USE_PROXY						305
+	#define FLM_HTTP_STATUS_TEMPORARY_REDIRECT			307
+	#define FLM_HTTP_STATUS_BAD_REQUEST						400
+	#define FLM_HTTP_STATUS_UNAUTHORIZED					401
+	#define FLM_HTTP_STATUS_PAYMENT_REQUIRED				402
+	#define FLM_HTTP_STATUS_FORBIDDEN						403
+	#define FLM_HTTP_STATUS_NOT_FOUND						404
+	#define FLM_HTTP_STATUS_METHOD_NOT_ALLOWED			405
+	#define FLM_HTTP_STATUS_NOT_ACCEPTABLE					406
+	#define FLM_HTTP_STATUS_PROXY_AUTH_REQUIRED			407
+	#define FLM_HTTP_STATUS_REQUEST_TIMEOUT				408
+	#define FLM_HTTP_STATUS_CONFLICT							409
+	#define FLM_HTTP_STATUS_GONE								410
+	#define FLM_HTTP_STATUS_LENGTH_REQUIRED				411
+	#define FLM_HTTP_STATUS_PRECONDITION_FAILED			412
+	#define FLM_HTTP_STATUS_ENTITY_TOO_LARGE				413
+	#define FLM_HTTP_STATUS_URI_TOO_LONG					414
+	#define FLM_HTTP_STATUS_UNSUPPORTED_MEDIA_TYPE		415
+	#define FLM_HTTP_STATUS_RANGE_NOT_SATISFIABLE		416
+	#define FLM_HTTP_STATUS_EXPECTATION_FAILED			417
+	#define FLM_HTTP_STATUS_INTERNAL_SERVER_ERROR		500
+	#define FLM_HTTP_STATUS_NOT_IMPLEMENTED				501
+	#define FLM_HTTP_STATUS_BAD_GATEWAY						502
+	#define FLM_HTTP_STATUS_SERVICE_UNAVAILABLE			503
+	#define FLM_HTTP_STATUS_GATEWAY_TIMEOUT				504
+	#define FLM_HTTP_STATUS_VERSION_NOT_SUPPORTED		505
 
 	/****************************************************************************
 	Desc: Return code functions and macros
@@ -1468,7 +1514,12 @@
 		IF_IOStream **				ppIOStream);
 	
 	RCODE FLMAPI FlmOpenSSLIOStream(
-		const char *				pszTrustStore,
+		const char *				pszHost,
+		FLMUINT						uiPort,
+		FLMUINT						uiFlags,
+		IF_IOStream **				ppIOStream);
+	
+	RCODE FLMAPI FlmOpenTCPIOStream(
 		const char *				pszHost,
 		FLMUINT						uiPort,
 		FLMUINT						uiFlags,
@@ -1573,7 +1624,6 @@
 	flminterface IF_SSLIOStream : public IF_IOStream
 	{
 		virtual RCODE FLMAPI openStream(
-			const char *			pszTrustStore,
 			const char *			pszHost,
 			FLMUINT					uiPort = 443,
 			FLMUINT					uiFlags = 0) = 0;
@@ -1593,6 +1643,57 @@
 		virtual RCODE FLMAPI closeStream( void) = 0;
 	};
 	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	
+	typedef enum
+	{
+		METHOD_GET = 0,
+		METHOD_POST,
+		METHOD_PUT
+	} eHttpMethod;
+	
+	flminterface IF_HTTPHeader : public F_Object
+	{
+		virtual RCODE FLMAPI readResponseHeader(
+			IF_IStream *				pIStream) = 0;
+			
+		virtual RCODE FLMAPI writeRequestHeader(
+			IF_OStream *				pOStream) = 0;
+			
+		virtual RCODE FLMAPI getHeaderValue(
+			const char *				pszTag,
+			F_DynaBuf *					pBuffer) = 0;
+			
+		virtual RCODE FLMAPI setHeaderValue(
+			const char *				pszTag,
+			const char *				pszValue) = 0;
+			
+		virtual RCODE FLMAPI getHeaderValue(
+			const char *				pszTag,
+			FLMUINT *					puiValue) = 0;
+			
+		virtual RCODE FLMAPI setHeaderValue(
+			const char *				pszTag,
+			FLMUINT 						uiValue) = 0;
+			
+		virtual FLMUINT FLMAPI getStatusCode( void) = 0;
+		
+		virtual RCODE FLMAPI setRequestURL(
+			const char *				pszRequestURL) = 0;
+			
+		virtual RCODE FLMAPI setMethod(
+			eHttpMethod					httpMethod) = 0;
+			
+		virtual eHttpMethod getMethod( void) = 0;
+	
+		virtual void FLMAPI resetHeader( void) = 0;
+	};
+	
+	RCODE FLMAPI FlmAllocHTTPHeader( 
+		IF_HTTPHeader **				ppHTTPHeader);
+
 	/****************************************************************************
 	/// Message severity.
 	****************************************************************************/
@@ -1625,7 +1726,17 @@
 	
 	void FLMAPI f_endLogMessage(
 		IF_LogMessageClient **	ppLogMessage);
+		
+	void FLMAPI f_logError(
+		RCODE							rc,
+		const char *				pszDoing,
+		const char *				pszFileName,
+		FLMINT						iLineNumber);
 
+	void f_logPrintf(
+		eLogMessageSeverity		msgSeverity,
+		const char *				pszFormatStr, ...);
+		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -1637,7 +1748,7 @@
 	};
 	
 	void f_setLoggerClient(
-		IF_LoggerClient *	pLogger);
+		IF_LoggerClient *			pLogger);
 
 	/****************************************************************************
 	/// This is an abstract base class that allows an application to catch 
@@ -2349,8 +2460,7 @@
 	
 		virtual RCODE FLMAPI findEntry(
 			FLMBYTE *				pucKey,
-			FLMUINT					uiKeyBufLen,
-			FLMUINT *				puiKeylen,
+			FLMUINT					uiKeyLen,
 			FLMBYTE *				pucBuffer,
 			FLMUINT					uiBufferLength,
 			FLMUINT *				puiReturnLength) = 0;
@@ -2359,6 +2469,10 @@
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyLength) = 0;
 	};
+	
+	RCODE FLMAPI FlmAllocBTreeResultSet(
+		IF_ResultSetCompare *	pCompare,
+		IF_BTreeResultSet **		ppBTreeResultSet);
 
 	/****************************************************************************
 	Desc: Random numbers
@@ -3316,6 +3430,13 @@
 		return( FALSE);
 	}
 
+	/****************************************************************************
+	Desc: String constants
+	****************************************************************************/
+	
+	#define FLM_HTTP_CONTENT_LENGTH		((const char *) "Content-Length")
+	#define FLM_HTTP_USER_AGENT			((const char *) "User-Agent")
+	
 	/****************************************************************************
 	Desc: Endian macros
 	****************************************************************************/
@@ -5306,7 +5427,7 @@
 		{
 			if( !f_isHexChar( *pszString))
 			{
-				return( TRUE);
+				return( FALSE);
 			}
 
 			pszString++;

@@ -526,7 +526,6 @@ public:
 	F_BTreeResultSet( void)
 	{
 		m_pBTree = NULL;
-		m_pCompare = NULL;
 	}
 
 	virtual ~F_BTreeResultSet()
@@ -534,11 +533,6 @@ public:
 		if( m_pBTree)
 		{
 			m_pBTree->Release();
-		}
-		
-		if( m_pCompare)
-		{
-			m_pCompare->Release();
 		}
 	}
 	
@@ -598,8 +592,7 @@ public:
 
 	RCODE FLMAPI findEntry(
 		FLMBYTE *	pucKey,
-		FLMUINT		uiKeyBufLen,
-		FLMUINT *	puiKeylen,
+		FLMUINT		uiKeyLen,
 		FLMBYTE *	pucBuffer,
 		FLMUINT		uiBufferLength,
 		FLMUINT *	puiReturnLength);
@@ -611,7 +604,6 @@ public:
 private:
 
 	IF_BTree *						m_pBTree;
-	IF_ResultSetCompare *		m_pCompare;
 };
 
 /*****************************************************************************
@@ -2297,7 +2289,7 @@ RCODE F_ResultSet::unionBlkLists(
 				}
 			}
 
-			if( RC_BAD(rc = getNextPtr( &pRightBlk, 
+			if( RC_BAD( rc = getNextPtr( &pRightBlk, 
 				&pucRightEntry, &uiRightLength)))
 			{
 				if( rc != NE_FLM_EOF_HIT)
@@ -2305,7 +2297,7 @@ RCODE F_ResultSet::unionBlkLists(
 					goto Exit;
 				}
 
-				if( RC_BAD(rc = addEntry( pucLeftEntry, uiLeftLength)))
+				if( RC_BAD( rc = addEntry( pucLeftEntry, uiLeftLength)))
 				{
 					goto Exit;
 				}
@@ -3841,17 +3833,37 @@ Desc:
 RCODE F_BTreeResultSet::setupResultSet(
 	IF_ResultSetCompare *	pCompare)
 {
-	if( m_pCompare)
+	RCODE				rc = NE_FLM_OK;
+	IF_BTree *		pBTree = NULL;
+	
+	
+	if( m_pBTree)
 	{
-		m_pCompare->Release();
+		m_pBTree->Release();
+		m_pBTree = NULL;
+	}
+	
+	if( RC_BAD( rc = FlmAllocBTree( NULL, &pBTree)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( pBTree->btCreate( 0, FALSE, TRUE, NULL, pCompare)))
+	{
+		goto Exit;
+	}
+	
+	m_pBTree = pBTree;
+	pBTree = NULL;
+		
+Exit:
+
+	if( pBTree)
+	{
+		pBTree->Release();
 	}
 
-	if( (m_pCompare = pCompare) != NULL)
-	{
-		m_pCompare->AddRef();
-	}
-
-	return( NE_FLM_OK);
+	return( rc);
 }
 		
 /****************************************************************************
@@ -3936,8 +3948,7 @@ Desc:
 ****************************************************************************/
 RCODE F_BTreeResultSet::findEntry(
 	FLMBYTE *	pucKey,
-	FLMUINT		uiKeyBufLen,
-	FLMUINT *	puiKeyLen,
+	FLMUINT		uiKeyLen,
 	FLMBYTE *	pucBuffer,
 	FLMUINT		uiBufferLength,
 	FLMUINT *	puiReturnLength)
@@ -3945,9 +3956,9 @@ RCODE F_BTreeResultSet::findEntry(
 	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiLengthRV;
 
-	f_assert( uiKeyBufLen <= FLM_MAX_KEY_SIZE);
+	f_assert( uiKeyLen <= FLM_MAX_KEY_SIZE);
 
-	if( RC_BAD( rc = m_pBTree->btLocateEntry( pucKey, uiKeyBufLen, puiKeyLen,
+	if( RC_BAD( rc = m_pBTree->btLocateEntry( pucKey, uiKeyLen, &uiKeyLen,
 		FLM_EXACT, NULL, &uiLengthRV)))
 	{
 		goto Exit;
@@ -3955,7 +3966,7 @@ RCODE F_BTreeResultSet::findEntry(
 
 	if( pucBuffer)
 	{
-		if( RC_BAD( rc = m_pBTree->btGetEntry( pucKey, *puiKeyLen,
+		if( RC_BAD( rc = m_pBTree->btGetEntry( pucKey, uiKeyLen,
 			pucBuffer, uiBufferLength, puiReturnLength)))
 		{
 			goto Exit;
@@ -4184,3 +4195,4 @@ Exit:
 
 	return( rc);
 }
+

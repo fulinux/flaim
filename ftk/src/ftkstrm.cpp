@@ -225,7 +225,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class	F_TCPStream : public IF_IStream, public IF_OStream
+class	F_TCPIOStream : public IF_IOStream
 {
 public:
 
@@ -233,13 +233,14 @@ public:
 		using IF_IStream::operator delete;
 	#endif
 
-	F_TCPStream( void);
+	F_TCPIOStream( void);
 	
-	virtual ~F_TCPStream( void);
+	virtual ~F_TCPIOStream( void);
 
 	RCODE openStream(
 		const char *	pucHostAddress,
 		FLMUINT			uiPort,
+		FLMUINT			uiFlags,
 		FLMUINT			uiConnectTimeout	= 3,
 		FLMUINT			uiDataTimeout = 15);
 
@@ -352,7 +353,6 @@ public:
 	}
 	
 	RCODE FLMAPI openStream(
-		const char *			pszTrustStore,
 		const char *			pszHost,
 		FLMUINT					uiPort = 443,
 		FLMUINT					uiFlags = 0);
@@ -815,6 +815,42 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
+RCODE FLMAPI FlmOpenTCPIOStream(
+	const char *			pszHost,
+	FLMUINT					uiPort,
+	FLMUINT					uiFlags,
+	IF_IOStream **			ppIOStream)
+{
+	RCODE							rc = NE_FLM_OK;
+	F_TCPIOStream *			pIOStream = NULL;
+	
+	if( (pIOStream = f_new F_TCPIOStream) == NULL)
+	{
+		rc = RC_SET( NE_FLM_MEM);
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pIOStream->openStream( pszHost, uiPort, uiFlags)))
+	{
+		goto Exit;
+	}
+	
+	*ppIOStream = pIOStream;
+	pIOStream = NULL;
+	
+Exit:
+
+	if( pIOStream)
+	{
+		pIOStream->Release();
+	}
+	
+	return( rc);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
 RCODE FLMAPI FlmAllocSSLIOStream( 
 	IF_IOStream **			ppIOStream)
 {
@@ -839,7 +875,6 @@ RCODE FLMAPI FlmAllocSSLIOStream(
 Desc:
 ******************************************************************************/
 RCODE FLMAPI FlmOpenSSLIOStream(
-	const char *			pszTrustStore,
 	const char *			pszHost,
 	FLMUINT					uiPort,
 	FLMUINT					uiFlags,
@@ -856,8 +891,7 @@ RCODE FLMAPI FlmOpenSSLIOStream(
 		goto Exit;
 	}
 	
-	if( RC_BAD( rc = pIOStream->openStream( pszTrustStore, pszHost,
-		uiPort, uiFlags)))
+	if( RC_BAD( rc = pIOStream->openStream( pszHost, uiPort, uiFlags)))
 	{
 		goto Exit;
 	}
@@ -876,7 +910,6 @@ Exit:
 	
 #else
 
-	F_UNREFERENCED_PARM( pszTrustStore);
 	F_UNREFERENCED_PARM( pszHost);
 	F_UNREFERENCED_PARM( uiPort);
 	F_UNREFERENCED_PARM( uiFlags);
@@ -2923,7 +2956,7 @@ RCODE FLMAPI F_UncompressingIStream::closeStream( void)
 /********************************************************************
 Desc:
 *********************************************************************/
-F_TCPStream::F_TCPStream( void)
+F_TCPIOStream::F_TCPIOStream( void)
 {
 	m_pszIp[ 0] = 0;
 	m_pszName[ 0] = 0;
@@ -2946,7 +2979,7 @@ F_TCPStream::F_TCPStream( void)
 /********************************************************************
 Desc:
 *********************************************************************/
-F_TCPStream::~F_TCPStream( void)
+F_TCPIOStream::~F_TCPIOStream( void)
 {
 	if( m_bConnected)
 	{
@@ -2964,9 +2997,10 @@ F_TCPStream::~F_TCPStream( void)
 /********************************************************************
 Desc: Opens a new connection
 *********************************************************************/
-RCODE F_TCPStream::openStream(
+RCODE F_TCPIOStream::openStream(
 	const char  *		pucHostName,
 	FLMUINT				uiPort,
+	FLMUINT,				// uiFlags,
 	FLMUINT				uiConnectTimeout,
 	FLMUINT				uiDataTimeout)
 {
@@ -3158,7 +3192,7 @@ Exit:
 /********************************************************************
 Desc: Gets information about the local host machine.
 *********************************************************************/
-RCODE F_TCPStream::getLocalInfo( void)
+RCODE F_TCPIOStream::getLocalInfo( void)
 {
 	RCODE						rc = NE_FLM_OK;
 	struct hostent *		pHostEnt;
@@ -3196,7 +3230,7 @@ Exit:
 /********************************************************************
 Desc: Gets information about the remote machine.
 *********************************************************************/
-RCODE F_TCPStream::getRemoteInfo( void)
+RCODE F_TCPIOStream::getRemoteInfo( void)
 {
 	RCODE						rc = NE_FLM_OK;
 	struct sockaddr_in 	SockAddrIn;
@@ -3237,7 +3271,7 @@ RCODE F_TCPStream::getRemoteInfo( void)
 /********************************************************************
 Desc: Tests for socket data readiness
 *********************************************************************/
-RCODE F_TCPStream::socketPeek(
+RCODE F_TCPIOStream::socketPeek(
 	FLMINT				iTimeoutVal,
 	FLMBOOL				bPeekRead)
 {
@@ -3297,7 +3331,7 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
-RCODE FLMAPI F_TCPStream::write(
+RCODE FLMAPI F_TCPIOStream::write(
 	const void *	pucBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
@@ -3316,17 +3350,25 @@ RCODE FLMAPI F_TCPStream::write(
 
 Retry:
 
-	*puiBytesWritten = 0;
+	if( puiBytesWritten)
+	{
+		*puiBytesWritten = 0;
+	}
+	
 	if( RC_OK( rc = socketPeek( m_uiIOTimeout, FALSE)))
 	{
 		iBytesWritten = send( m_iSocket, 
 					(char *)pucBuffer, (int)uiBytesToWrite, 0);
 		
-		switch ( iBytesWritten)
+		switch( iBytesWritten)
 		{
 			case -1:
 			{
-				*puiBytesWritten = 0;
+				if( puiBytesWritten)
+				{
+					*puiBytesWritten = 0;
+				}
+				
 				rc = RC_SET( NE_FLM_SOCKET_WRITE_FAIL);
 				break;
 			}
@@ -3339,7 +3381,11 @@ Retry:
 
 			default:
 			{
-				*puiBytesWritten = (FLMUINT)iBytesWritten;
+				if( puiBytesWritten)
+				{
+					*puiBytesWritten = (FLMUINT)iBytesWritten;
+				}
+				
 				break;
 			}
 		}
@@ -3381,7 +3427,7 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
-RCODE FLMAPI F_TCPStream::read(
+RCODE FLMAPI F_TCPIOStream::read(
 	void *		pucBuffer,
    FLMUINT		uiBytesToWrite,
 	FLMUINT *	puiBytesRead)
@@ -3441,7 +3487,7 @@ RCODE FLMAPI F_TCPStream::read(
 Desc: Reads data from the connection - Timeout valkue is zero, no error
       is generated if timeout occurs.
 *********************************************************************/
-RCODE F_TCPStream::readNoWait(
+RCODE F_TCPIOStream::readNoWait(
 	void *			pvBuffer,
    FLMUINT			uiBytesToRead,
 	FLMUINT *		puiBytesRead)
@@ -3510,7 +3556,7 @@ Exit:
 Desc: Reads data and does not return until all requested data has
 		been read or a timeout error has been encountered.
 *********************************************************************/
-RCODE F_TCPStream::readAll(
+RCODE F_TCPIOStream::readAll(
 	void *			pvBuffer,
 	FLMUINT			uiBytesToRead,
    FLMUINT *		puiBytesRead)
@@ -3549,7 +3595,7 @@ Exit:
 /********************************************************************
 Desc: Closes any open connections
 *********************************************************************/
-RCODE FLMAPI F_TCPStream::closeStream( void)
+RCODE FLMAPI F_TCPIOStream::closeStream( void)
 {
 	if( m_iSocket == INVALID_SOCKET)
 	{
@@ -3575,7 +3621,6 @@ Desc:
 ****************************************************************************/
 #ifdef FLM_OPENSSL
 RCODE FLMAPI F_SSLIOStream::openStream(
-	const char *			pszTrustStore,
 	const char *			pszHost,
 	FLMUINT					uiPort,
 	FLMUINT					uiFlags)
@@ -3602,14 +3647,15 @@ RCODE FLMAPI F_SSLIOStream::openStream(
 		goto Exit;
 	}
 	
-	if( pszTrustStore)
+	// Set the default path for verifying certificates
+	
+	if( !SSL_CTX_set_default_verify_paths( m_pContext))
 	{
-		if( !SSL_CTX_load_verify_locations( m_pContext, pszTrustStore, NULL))
-		{
-			rc = RC_SET( NE_FLM_CONNECT_FAIL);
-			goto Exit;
-		}
+		rc = RC_SET( NE_FLM_CONNECT_FAIL);
+		goto Exit;
 	}
+	
+	// Configure the BIO
 
 	if( (m_pBio = BIO_new_ssl_connect( m_pContext)) == NULL)
 	{
@@ -3629,6 +3675,8 @@ RCODE FLMAPI F_SSLIOStream::openStream(
 	
 	f_sprintf( szPort, "%u", (unsigned)uiPort);
 	BIO_set_conn_port( m_pBio, szPort);
+	
+	// Open the connection
 
 	if( BIO_do_connect( m_pBio) <= 0)
 	{
@@ -3986,16 +4034,13 @@ RCODE FLMAPI FlmReadLine(
 		}
 	}
 	
-Exit:
-
-	if( pBuffer->getDataLength())
+	if( RC_BAD( rc = pBuffer->appendByte( 0)))
 	{
-		if( RC_BAD( rc = pBuffer->appendByte( 0)))
-		{
-			goto Exit;
-		}
+		goto Exit;
 	}
 			
+Exit:
+
 	return( rc);
 }
 

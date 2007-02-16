@@ -1664,6 +1664,7 @@ RCODE F_BTree::btCreate(
 	FLMBYTE					ucLEMEntry[ 3];
 	FLMUINT					uiFlags = 0;
 	FLMUINT					uiLEMSize;
+	FLMUINT32				ui32RootBlockAddr = 0;
 
 	// We can't create a new Btree if we have already been initialized.
 	
@@ -1673,23 +1674,19 @@ RCODE F_BTree::btCreate(
 		goto Exit;
 	}
 
-	// Initialize the returned root block address to 0 incase of an error.
-	
-	*pui32RootBlockAddr = 0;
-
 	// Call createBlock to create a new block
 	
 	if (RC_BAD( rc = m_pBlockMgr->createBlock( &pBlock, 
-		&pucBlock, pui32RootBlockAddr)))
+		&pucBlock, &ui32RootBlockAddr)))
 	{
 		goto Exit;
 	}
 
-	setBlockAddr( pucBlock, *pui32RootBlockAddr);
+	setBlockAddr( pucBlock, ui32RootBlockAddr);
 
 	// Save the block address and identify the block as the root block.
 	
-	if( RC_BAD( rc = btOpen( *pui32RootBlockAddr, bCounts, bData, pCompare)))
+	if( RC_BAD( rc = btOpen( ui32RootBlockAddr, bCounts, bData, pCompare)))
 	{
 		goto Exit;
 	}
@@ -1734,6 +1731,13 @@ RCODE F_BTree::btCreate(
 	// There is one entry now.
 	
 	setNumKeys( pucBlock, 1);
+	
+	// Return the root block address
+	
+	if( pui32RootBlockAddr)
+	{
+		*pui32RootBlockAddr = ui32RootBlockAddr;
+	}
 
 Exit:
 

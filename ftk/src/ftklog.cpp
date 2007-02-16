@@ -42,12 +42,20 @@ public:
 	{
 		m_pLogMsg = pLogMsg;
 		m_pLogMsg->AddRef();
+		m_uiCharOffset = 0;
+		m_eCurrentForeColor = FLM_BLACK;
+		m_eCurrentBackColor = FLM_WHITE;
 	}
 	
 	virtual ~F_LogPrintfClient()
 	{
 		if( m_pLogMsg)
 		{
+			if( m_uiCharOffset)
+			{
+				flushLogBuffer();
+			}
+			
 			m_pLogMsg->Release();
 			m_pLogMsg = NULL;
 		}
@@ -76,7 +84,7 @@ public:
 			
 			if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
 			{
-				outputLogBuffer();
+				flushLogBuffer();
 			}
 		}
 		
@@ -90,7 +98,7 @@ public:
 		
 		if( m_uiCharOffset == MAX_LOG_BUF_CHARS)
 		{
-			outputLogBuffer();
+			flushLogBuffer();
 		}
 		
 		return( 1);
@@ -120,7 +128,7 @@ public:
 			
 			if (m_uiCharOffset == MAX_LOG_BUF_CHARS)
 			{
-				outputLogBuffer();
+				flushLogBuffer();
 			}
 		}
 		
@@ -134,9 +142,9 @@ public:
 
 private:
 
-	void outputLogBuffer( void);
+	void flushLogBuffer( void);
 	
-	char							m_szLogBuf [MAX_LOG_BUF_CHARS + 1];
+	char							m_szLogBuf[ MAX_LOG_BUF_CHARS + 1];
 	FLMUINT						m_uiCharOffset;
 	IF_LogMessageClient *	m_pLogMsg;
 	eColorType					m_eCurrentForeColor;
@@ -156,6 +164,28 @@ void f_logPrintf(
 	f_va_start( args, pszFormatStr);
 	f_vprintf( &printfClient, pszFormatStr, &args);
 	f_va_end( args);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void f_logPrintf(
+	eLogMessageSeverity		msgSeverity,
+	const char *				pszFormatStr, ...)
+{
+	f_va_list					args;
+	IF_LogMessageClient *	pLogMsg = NULL;
+
+	if( (pLogMsg = f_beginLogMessage( 0, msgSeverity)) != NULL)
+	{
+		F_LogPrintfClient			printfClient( pLogMsg);
+		
+		f_va_start( args, pszFormatStr);
+		f_vprintf( &printfClient, pszFormatStr, &args);
+		f_va_end( args);
+		
+		f_endLogMessage( &pLogMsg);
+	}
 }
 
 /****************************************************************************
@@ -306,7 +336,7 @@ void f_setLoggerClient(
 /****************************************************************************
 Desc:	Output the current log buffer - only called when logging.
 ****************************************************************************/
-void F_LogPrintfClient::outputLogBuffer( void)
+void F_LogPrintfClient::flushLogBuffer( void)
 {
 	if( m_uiCharOffset)
 	{
@@ -331,7 +361,7 @@ FLMINT FLMAPI F_LogPrintfClient::colorFormatter(
 		
 		// Before changing colors, output the current log buffer.
 		
-		outputLogBuffer();
+		flushLogBuffer();
 	
 		if( cFormatChar == 'F')	// Foreground color
 		{
