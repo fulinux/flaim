@@ -578,8 +578,8 @@ RCODE F_ArgSet::addArg(
 			
 			f_va_start( args, contentType);
 			
-			uiMin = f_va_arg(args, FLMUINT);
-			uiMax = f_va_arg(args, FLMUINT);
+			uiMin = f_va_arg( args, FLMUINT);
+			uiMax = f_va_arg( args, FLMUINT);
 			
 			f_assert( uiMin <= uiMax);
 			pNewArg->setMinMax( uiMin, uiMax);
@@ -1930,7 +1930,7 @@ RCODE F_ArgSet::printUsage( void)
 		}
 	}
 
-	if ( m_uiOptionalArgsVecLen > 0)
+	if( m_uiOptionalArgsVecLen > 0)
 	{
 		if( RC_BAD( rc = acc.appendTEXT(
 			"OPTIONAL args:\n"
