@@ -77,6 +77,10 @@ FSTATIC RCODE ftkTestText( void);
 
 FSTATIC RCODE ftkTestBTree( void);
 
+#ifdef FTK_TEST_NET
+	FSTATIC RCODE ftkTestNet( void);
+#endif
+
 FSTATIC FLMBOOL flmCh6Brkcar(
 	FLMUINT16			ui16WpChar,
 	FLMUINT16 *			pui16BaseChar,
@@ -3310,10 +3314,10 @@ Desc:	The Arabic characters are collated OVER the Russian characters
 		ignored while sorting the first pass - when collation == COLS0.
 
 		There are 4 possible states for all/most arabic characters:
-			зы - occurs as the only character in a word 
-			ды - appears at the first of the word
-			дд - appears at the middle of a word
-			зд - appears at the end of the word
+			О©╫О©╫ - occurs as the only character in a word 
+			О©╫О©╫ - appears at the first of the word
+			О©╫О©╫ - appears at the middle of a word
+			О©╫О©╫ - appears at the end of the word
 
 		Usually only the simple version of the letter is stored.
 		Therefore we should not have to worry about sub-collation
@@ -3337,144 +3341,144 @@ FLMBYTE flmAr160Tbl[ AR1TBLLEN + 2] =
 	COLS9+40,								// << alphabetic - end of list)
 	COLS2,									// ( 
 	COLS2+1,									// ) 
-	COLS8+1,									// зы One 
-	COLS8+2,									// зы Two 
-	COLS8+3,									// зы Three
-	COLS8+4,									// зы Four
-	COLS8+5,									// зы Five
-	COLS8+6,									// зы Six 
-	COLS8+7,									// зы Seven
-	COLS8+8,									// зы Eight
-	COLS8+9,									// зы Nine
-	COLS8+0,									// зы Zero
-	COLS8+2,									// зы Two (Handwritten)
-	COLS10a+1,								// зы alif
-	COLS10a+1,								// зд alif
-	COLS10a+2,								// зы ba
-	COLS10a+2,								// ды ba
-	COLS10a+2,								// дд ba
-	COLS10a+2,								// зд ba
-	COLS10a+6,								// зы ta
-	COLS10a+6,								// ды ta
-	COLS10a+6,								// дд ta
-	COLS10a+6,								// зд ta
-	COLS10a+8,								// зы tha
-	COLS10a+8,								// ды tha
-	COLS10a+8,								// дд tha
-	COLS10a+8,								// зд tha
-	COLS10a+12,								// зы jiim
-	COLS10a+12,								// ды jiim
-	COLS10a+12,								// дд jiim
-	COLS10a+12,								// зд jiim
-	COLS10a+16,								// зы Ha
-	COLS10a+16,								// ды Ha
-	COLS10a+16,								// дд Ha
-	COLS10a+16,								// зд Ha
-	COLS10a+17,								// зы kha
-	COLS10a+17,								// ды kha
-	COLS10a+17,								// дд kha
-	COLS10a+17,								// зд kha
-	COLS10a+20,								// зы dal
-	COLS10a+20,								// зд dal
-	COLS10a+22,								// зы dhal
-	COLS10a+22,								// зд dhal
-	COLS10a+27,								// зы ra
-	COLS10a+27,								// зд ra
-	COLS10a+29,								// зы ziin
-	COLS10a+29,								// зд ziin
-	COLS10a+31,								// зы siin
-	COLS10a+31,								// ды siin
-	COLS10a+31,								// дд siin
-	COLS10a+31,								// зд siin
-	COLS10a+32,								// зы shiin
-	COLS10a+32,								// ды shiin
-	COLS10a+32,								// дд shiin
-	COLS10a+32,								// зд shiin
-	COLS10a+34,								// зы Sad
-	COLS10a+34,								// ды Sad
-	COLS10a+34,								// дд Sad
-	COLS10a+34,								// зд Sad
-	COLS10a+35,								// зы Dad
-	COLS10a+35,								// ды Dad
-	COLS10a+35,								// дд Dad
-	COLS10a+35,								// зд Dad
-	COLS10a+36,								// зы Ta
-	COLS10a+36,								// ды Ta
-	COLS10a+36,								// дд Ta
-	COLS10a+36,								// зд Ta
-	COLS10a+37,								// зы Za
-	COLS10a+37,								// ды Za
-	COLS10a+37,								// дд Za
-	COLS10a+37,								// зд Za
-	COLS10a+38,								// зы 'ain
-	COLS10a+38,								// ды 'ain
-	COLS10a+38,								// дд 'ain
-	COLS10a+38,								// зд 'ain
-	COLS10a+39,								// зы ghain
-	COLS10a+39,								// ды ghain
-	COLS10a+39,								// дд ghain
-	COLS10a+39,								// зд ghain
-	COLS10a+40,								// зы fa  
-	COLS10a+40,								// ды fa
-	COLS10a+40,								// дд fa
-	COLS10a+40,								// зд fa
-	COLS10a+42,								// зы Qaf
-	COLS10a+42,								// ды Qaf
-	COLS10a+42,								// дд Qaf
-	COLS10a+42,								// зд Qaf
-	COLS10a+43,								// зы kaf
-	COLS10a+43,								// ды kaf
-	COLS10a+43,								// дд kaf
-	COLS10a+43,								// зд kaf
-	COLS10a+46,								// зы lam
-	COLS10a+46,								// ды lam
-	COLS10a+46,								// дд lam
-	COLS10a+46,								// зд lam
-	COLS10a+47,								// зы miim
-	COLS10a+47,								// ды miim
-	COLS10a+47,								// дд miim
-	COLS10a+47,								// зд miim
-	COLS10a+48,								// зы nuun
-	COLS10a+48,								// ды nuun
-	COLS10a+48,								// дд nuun
-	COLS10a+48,								// зд nuun
-	COLS10a+49,								// зы ha
-	COLS10a+49,								// ды ha
-	COLS10a+49,								// дд ha
-	COLS10a+49,								// зд ha
-	COLS10a+6, 								// зы ta marbuuTah
-	COLS10a+6, 								// зд ta marbuuTah
-	COLS10a+50,								// зы waw
-	COLS10a+50,								// зд waw
-	COLS10a+53,								// зы ya
-	COLS10a+53,								// ды ya
-	COLS10a+53,								// дд ya
-	COLS10a+53,								// зд ya
-	COLS10a+52,								// зы alif maqSuurah
-	COLS10a+52,								// ды ya   maqSuurah?
-	COLS10a+52,								// дд ya   maqSuurah?
-	COLS10a+52,								// зд alif maqSuurah
-	COLS10a+0,								// зы hamzah accent - never appears alone
+	COLS8+1,									// О©╫О©╫ One 
+	COLS8+2,									// О©╫О©╫ Two 
+	COLS8+3,									// О©╫О©╫ Three
+	COLS8+4,									// О©╫О©╫ Four
+	COLS8+5,									// О©╫О©╫ Five
+	COLS8+6,									// О©╫О©╫ Six 
+	COLS8+7,									// О©╫О©╫ Seven
+	COLS8+8,									// О©╫О©╫ Eight
+	COLS8+9,									// О©╫О©╫ Nine
+	COLS8+0,									// О©╫О©╫ Zero
+	COLS8+2,									// О©╫О©╫ Two (Handwritten)
+	COLS10a+1,								// О©╫О©╫ alif
+	COLS10a+1,								// О©╫О©╫ alif
+	COLS10a+2,								// О©╫О©╫ ba
+	COLS10a+2,								// О©╫О©╫ ba
+	COLS10a+2,								// О©╫О©╫ ba
+	COLS10a+2,								// О©╫О©╫ ba
+	COLS10a+6,								// О©╫О©╫ ta
+	COLS10a+6,								// О©╫О©╫ ta
+	COLS10a+6,								// О©╫О©╫ ta
+	COLS10a+6,								// О©╫О©╫ ta
+	COLS10a+8,								// О©╫О©╫ tha
+	COLS10a+8,								// О©╫О©╫ tha
+	COLS10a+8,								// О©╫О©╫ tha
+	COLS10a+8,								// О©╫О©╫ tha
+	COLS10a+12,								// О©╫О©╫ jiim
+	COLS10a+12,								// О©╫О©╫ jiim
+	COLS10a+12,								// О©╫О©╫ jiim
+	COLS10a+12,								// О©╫О©╫ jiim
+	COLS10a+16,								// О©╫О©╫ Ha
+	COLS10a+16,								// О©╫О©╫ Ha
+	COLS10a+16,								// О©╫О©╫ Ha
+	COLS10a+16,								// О©╫О©╫ Ha
+	COLS10a+17,								// О©╫О©╫ kha
+	COLS10a+17,								// О©╫О©╫ kha
+	COLS10a+17,								// О©╫О©╫ kha
+	COLS10a+17,								// О©╫О©╫ kha
+	COLS10a+20,								// О©╫О©╫ dal
+	COLS10a+20,								// О©╫О©╫ dal
+	COLS10a+22,								// О©╫О©╫ dhal
+	COLS10a+22,								// О©╫О©╫ dhal
+	COLS10a+27,								// О©╫О©╫ ra
+	COLS10a+27,								// О©╫О©╫ ra
+	COLS10a+29,								// О©╫О©╫ ziin
+	COLS10a+29,								// О©╫О©╫ ziin
+	COLS10a+31,								// О©╫О©╫ siin
+	COLS10a+31,								// О©╫О©╫ siin
+	COLS10a+31,								// О©╫О©╫ siin
+	COLS10a+31,								// О©╫О©╫ siin
+	COLS10a+32,								// О©╫О©╫ shiin
+	COLS10a+32,								// О©╫О©╫ shiin
+	COLS10a+32,								// О©╫О©╫ shiin
+	COLS10a+32,								// О©╫О©╫ shiin
+	COLS10a+34,								// О©╫О©╫ Sad
+	COLS10a+34,								// О©╫О©╫ Sad
+	COLS10a+34,								// О©╫О©╫ Sad
+	COLS10a+34,								// О©╫О©╫ Sad
+	COLS10a+35,								// О©╫О©╫ Dad
+	COLS10a+35,								// О©╫О©╫ Dad
+	COLS10a+35,								// О©╫О©╫ Dad
+	COLS10a+35,								// О©╫О©╫ Dad
+	COLS10a+36,								// О©╫О©╫ Ta
+	COLS10a+36,								// О©╫О©╫ Ta
+	COLS10a+36,								// О©╫О©╫ Ta
+	COLS10a+36,								// О©╫О©╫ Ta
+	COLS10a+37,								// О©╫О©╫ Za
+	COLS10a+37,								// О©╫О©╫ Za
+	COLS10a+37,								// О©╫О©╫ Za
+	COLS10a+37,								// О©╫О©╫ Za
+	COLS10a+38,								// О©╫О©╫ 'ain
+	COLS10a+38,								// О©╫О©╫ 'ain
+	COLS10a+38,								// О©╫О©╫ 'ain
+	COLS10a+38,								// О©╫О©╫ 'ain
+	COLS10a+39,								// О©╫О©╫ ghain
+	COLS10a+39,								// О©╫О©╫ ghain
+	COLS10a+39,								// О©╫О©╫ ghain
+	COLS10a+39,								// О©╫О©╫ ghain
+	COLS10a+40,								// О©╫О©╫ fa  
+	COLS10a+40,								// О©╫О©╫ fa
+	COLS10a+40,								// О©╫О©╫ fa
+	COLS10a+40,								// О©╫О©╫ fa
+	COLS10a+42,								// О©╫О©╫ Qaf
+	COLS10a+42,								// О©╫О©╫ Qaf
+	COLS10a+42,								// О©╫О©╫ Qaf
+	COLS10a+42,								// О©╫О©╫ Qaf
+	COLS10a+43,								// О©╫О©╫ kaf
+	COLS10a+43,								// О©╫О©╫ kaf
+	COLS10a+43,								// О©╫О©╫ kaf
+	COLS10a+43,								// О©╫О©╫ kaf
+	COLS10a+46,								// О©╫О©╫ lam
+	COLS10a+46,								// О©╫О©╫ lam
+	COLS10a+46,								// О©╫О©╫ lam
+	COLS10a+46,								// О©╫О©╫ lam
+	COLS10a+47,								// О©╫О©╫ miim
+	COLS10a+47,								// О©╫О©╫ miim
+	COLS10a+47,								// О©╫О©╫ miim
+	COLS10a+47,								// О©╫О©╫ miim
+	COLS10a+48,								// О©╫О©╫ nuun
+	COLS10a+48,								// О©╫О©╫ nuun
+	COLS10a+48,								// О©╫О©╫ nuun
+	COLS10a+48,								// О©╫О©╫ nuun
+	COLS10a+49,								// О©╫О©╫ ha
+	COLS10a+49,								// О©╫О©╫ ha
+	COLS10a+49,								// О©╫О©╫ ha
+	COLS10a+49,								// О©╫О©╫ ha
+	COLS10a+6, 								// О©╫О©╫ ta marbuuTah
+	COLS10a+6, 								// О©╫О©╫ ta marbuuTah
+	COLS10a+50,								// О©╫О©╫ waw
+	COLS10a+50,								// О©╫О©╫ waw
+	COLS10a+53,								// О©╫О©╫ ya
+	COLS10a+53,								// О©╫О©╫ ya
+	COLS10a+53,								// О©╫О©╫ ya
+	COLS10a+53,								// О©╫О©╫ ya
+	COLS10a+52,								// О©╫О©╫ alif maqSuurah
+	COLS10a+52,								// О©╫О©╫ ya   maqSuurah?
+	COLS10a+52,								// О©╫О©╫ ya   maqSuurah?
+	COLS10a+52,								// О©╫О©╫ alif maqSuurah
+	COLS10a+0,								// О©╫О©╫ hamzah accent - never appears alone
 
 	// Store the sub-collation as the actual
 	// character value from this point on
 	
-	COLS10a+1,								// зы alif hamzah
-	COLS10a+1,								// зд alif hamzah
-	COLS10a+1,								// зы hamzah-under-alif
-	COLS10a+1,								// зд hamzah-under-alif
-	COLS10a+1,								// зы waw hamzah
-	COLS10a+1,								// зд waw hamzah
-	COLS10a+1,								// зы ya hamzah
-	COLS10a+1,								// ды ya hamzah
-	COLS10a+1,								// дд ya hamzah 
-	COLS10a+1,								// зд ya hamzah
-	COLS10a+1,								// зы alif fatHataan
-	COLS10a+1,								// зд alif fatHataan
-	COLS10a+1,								// зы alif maddah
-	COLS10a+1,								// зд alif maddah
-	COLS10a+1,								// зы alif waSlah
-	COLS10a+1,								// зд alif waSlah (final)
+	COLS10a+1,								// О©╫О©╫ alif hamzah
+	COLS10a+1,								// О©╫О©╫ alif hamzah
+	COLS10a+1,								// О©╫О©╫ hamzah-under-alif
+	COLS10a+1,								// О©╫О©╫ hamzah-under-alif
+	COLS10a+1,								// О©╫О©╫ waw hamzah
+	COLS10a+1,								// О©╫О©╫ waw hamzah
+	COLS10a+1,								// О©╫О©╫ ya hamzah
+	COLS10a+1,								// О©╫О©╫ ya hamzah
+	COLS10a+1,								// О©╫О©╫ ya hamzah 
+	COLS10a+1,								// О©╫О©╫ ya hamzah
+	COLS10a+1,								// О©╫О©╫ alif fatHataan
+	COLS10a+1,								// О©╫О©╫ alif fatHataan
+	COLS10a+1,								// О©╫О©╫ alif maddah
+	COLS10a+1,								// О©╫О©╫ alif maddah
+	COLS10a+1,								// О©╫О©╫ alif waSlah
+	COLS10a+1,								// О©╫О©╫ alif waSlah (final)
 	
 	// LIGATURES
 	//		Should NEVER be stored so will not worry
@@ -3486,21 +3490,21 @@ FLMBYTE flmAr160Tbl[ AR1TBLLEN + 2] =
 	// 	The best implementation is to 
 	// 	break up ligatures into its base pieces.
 	
-	COLS10a+46,								// зы lamalif
-	COLS10a+46,								// зд lamalif
-	COLS10a+46,								// зы lamalif hamzah
-	COLS10a+46,								// зд lamalif hamzah
-	COLS10a+46,								// зы hamzah-under-lamalif
-	COLS10a+46,								// зд hamzah-under-lamalif
-	COLS10a+46,								// зы lamalif fatHataan
-	COLS10a+46,								// зд lamalif fatHataan
-	COLS10a+46,								// зы lamalif maddah
-	COLS10a+46,								// зд lamalif maddah
-	COLS10a+46,								// зы lamalif waSlah
-	COLS10a+46,								// зд lamalif waSlah
-	COLS10a+46,								// зы Allah - khaDalAlif
-	COLS0_ARABIC,							// дд taTwiil
-	COLS0_ARABIC							// дд taTwiil
+	COLS10a+46,								// О©╫О©╫ lamalif
+	COLS10a+46,								// О©╫О©╫ lamalif
+	COLS10a+46,								// О©╫О©╫ lamalif hamzah
+	COLS10a+46,								// О©╫О©╫ lamalif hamzah
+	COLS10a+46,								// О©╫О©╫ hamzah-under-lamalif
+	COLS10a+46,								// О©╫О©╫ hamzah-under-lamalif
+	COLS10a+46,								// О©╫О©╫ lamalif fatHataan
+	COLS10a+46,								// О©╫О©╫ lamalif fatHataan
+	COLS10a+46,								// О©╫О©╫ lamalif maddah
+	COLS10a+46,								// О©╫О©╫ lamalif maddah
+	COLS10a+46,								// О©╫О©╫ lamalif waSlah
+	COLS10a+46,								// О©╫О©╫ lamalif waSlah
+	COLS10a+46,								// О©╫О©╫ Allah - khaDalAlif
+	COLS0_ARABIC,							// О©╫О©╫ taTwiil
+	COLS0_ARABIC							// О©╫О©╫ taTwiil
 };
 /****************************************************************************
 Desc:
@@ -3676,7 +3680,7 @@ FLMBYTE flmAr260Tbl[ AR2TBLLEN + 2] =
 	COLS10a+51,
 	COLS10a+51,
 	COLS10a+51,
-	COLS10a+52,								// Kurdish ┬ - ya /w small v (6ce)
+	COLS10a+52,								// Kurdish О©╫ - ya /w small v (6ce)
 	COLS10a+52,		
 	COLS10a+52,		
 	COLS10a+52,		
@@ -3778,7 +3782,7 @@ FLMUINT16 flmIndexj[] =
 	0x006c,									// l
 	0x0101,									// center dot alone
 	0x006c,									// l
-	0x0117,									// А	(for German)
+	0x0117,									// О©╫	(for German)
 	0x018b,									// ij digraph
 	0x0000,									// was 'a' - will no longer map 'aa' to a-ring
 	0x0000,									// was 'a'
@@ -4320,13 +4324,22 @@ int main( void)
 	pDirHdl->Release();
 	pDirHdl = NULL;
 	
+#ifdef FTK_TEST_NET
+	// Networking tests
+	
+	if( RC_BAD( rc = ftkTestNet()))
+	{
+		goto Exit;
+	}
+#endif
+
 	// B-Tree tests
 	
 	if( RC_BAD( rc = ftkTestBTree()))
 	{
 		goto Exit;
 	}
-
+	
 	// Run a multi-threaded test to verify the proper operation of
 	// the atomic operations
 	
@@ -6279,3 +6292,81 @@ Exit:
 
 	return( rc);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+#ifdef FTK_TEST_NET
+RCODE ftkTestNet( void)
+{
+	RCODE						rc = NE_FLM_OK;
+	IF_IOStream *			pStream = NULL;
+	IF_HTTPHeader *		pHttpHeader = NULL;
+	
+	f_printf( "Running network tests ... ");
+
+	if( RC_BAD( rc = FlmOpenSSLIOStream( 
+		"www.amazon.com", 443, 0, &pStream)))
+	{
+		if( rc != NE_FLM_NOT_IMPLEMENTED)
+		{
+			goto Exit;
+		}
+		
+		if( RC_BAD( rc = FlmOpenTCPIOStream( 
+			"www.novell.com", 80, 0, &pStream)))
+		{
+			goto Exit;
+		}
+	}
+	
+	if( RC_BAD( rc = FlmAllocHTTPHeader( &pHttpHeader)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pHttpHeader->setRequestURL( "/")))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pHttpHeader->setHeaderValue( 
+		FLM_HTTP_USER_AGENT, "FTKTEST")))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pHttpHeader->setHeaderValue( 
+		FLM_HTTP_CONTENT_LENGTH, (FLMUINT)0)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pHttpHeader->writeRequestHeader( pStream)))
+	{
+		goto Exit;
+	}
+
+	if( RC_BAD( rc = pHttpHeader->readResponseHeader( pStream)))
+	{
+		goto Exit;
+	}
+	
+Exit:
+
+	f_printf( "Done (0x%08X).\n", (unsigned)rc);
+
+	if( pStream)
+	{
+		pStream->Release();
+	}
+	
+	if( pHttpHeader)
+	{
+		pHttpHeader->Release();
+	}
+
+	return( rc);
+}
+#endif
+
