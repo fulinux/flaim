@@ -31,7 +31,7 @@ package xflaim;
 public class Query 
 {
 	
-	Query(
+	public Query(
 		Db 			jdb,
 		int			iCollection) throws XFlaimException
 	{
