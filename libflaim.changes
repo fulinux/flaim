@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Sat Feb 10 15:46:50 CET 2007 - aj@suse.de
+
+- Add defattr.
+
+-------------------------------------------------------------------
 Thu Feb  8 14:20:19 MST 2007 - dsanders@novell.com
 
 - Changes to support Ubuntu packages, including 64-bit.
