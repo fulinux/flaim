@@ -56,6 +56,9 @@ FSTATIC RCODE f_initRandomGenerator( void);
 
 FSTATIC void f_freeRandomGenerator( void);
 
+#define F_VECTOR_START_AMOUNT		16
+#define F_VECTOR_GROW_AMOUNT		2
+
 /****************************************************************************
 Desc:
 ****************************************************************************/
@@ -3137,6 +3140,351 @@ Exit:
 		pBufferStream->Release();
 	}
 
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL FLMAPI f_isNumber(
+	const char *	pszStr,
+	FLMBOOL *		pbNegative,
+	FLMBOOL *		pbHex)
+{
+	FLMUINT			uiLen = f_strlen( pszStr);
+	FLMBYTE			ucChar0 = f_toupper( pszStr[ 0]);
+	FLMBYTE			ucChar1 = 0;
+	FLMBOOL			bIsNumber = FALSE;
+	FLMBOOL			bNegative = FALSE;
+	FLMBOOL			bHex = FALSE;
+	FLMUINT 			uiLoop;
+
+	if( uiLen > 1)
+	{
+		ucChar1 = f_toupper( pszStr[ 1]);
+	}
+
+	if( (ucChar0 == 'X') || 
+		 ((uiLen > 1) && (ucChar0 == '0') && (ucChar1 == 'X')))
+	{
+		const char * pszHexStart;
+		
+		if( ucChar0 == 'X')
+		{
+			pszHexStart = pszStr + 1;
+		}
+		else
+		{
+			pszHexStart = pszStr + 2;
+		}
+		
+		uiLen = f_strlen( pszHexStart);
+		
+		for( uiLoop = 0; uiLoop < uiLen; uiLoop++)
+		{
+			FLMBYTE ucChar = f_toupper( pszHexStart[ uiLoop]);
+
+			if( !((ucChar >= '0' && ucChar <= '9') ||
+					(ucChar >= 'A' && ucChar <= 'F')))
+			{
+				goto Exit;
+			}
+		}
+		
+		bIsNumber = TRUE;
+		bHex = TRUE;
+	}
+	else
+	{
+		for( FLMUINT uiStr = 0; uiStr < f_strlen( pszStr); uiStr++)
+		{
+			FLMBYTE	ucChar = pszStr[ uiStr];
+			
+			if( !uiStr && (ucChar == '+' || ucChar == '-'))
+			{
+				if( ucChar == '-')
+				{
+					bNegative = TRUE;
+				}
+			}
+			else if( (ucChar < '0' || ucChar > '9') )
+			{
+				goto Exit;
+			}
+		}
+		
+		bIsNumber = TRUE;
+	}
+	
+Exit:
+
+	if( pbNegative)
+	{
+		*pbNegative = bNegative;
+	}
+	
+	if( pbHex)
+	{
+		*pbHex = bHex;
+	}
+
+	return( bIsNumber);
+}
+
+/****************************************************************************
+Desc:  
+****************************************************************************/
+RCODE FLMAPI F_Vector::setElementAt( 
+	void * 			pData,
+	FLMUINT 			uiIndex)
+{
+	RCODE				rc = NE_FLM_OK;
+	
+	if( !m_pElementArray)
+	{		
+		if( RC_BAD( rc = f_calloc( sizeof( void *) * F_VECTOR_START_AMOUNT,
+			&m_pElementArray)))
+		{
+			goto Exit;
+		}
+		
+		m_uiArraySize = F_VECTOR_START_AMOUNT;
+	}
+
+	if( uiIndex >= m_uiArraySize)
+	{		
+		if( RC_BAD( rc = f_recalloc(
+			sizeof( void *) * m_uiArraySize * F_VECTOR_GROW_AMOUNT,
+			&m_pElementArray)))
+		{
+			goto Exit;
+		}
+		
+		m_uiArraySize *= F_VECTOR_GROW_AMOUNT;
+	}
+
+	m_pElementArray[ uiIndex] = pData;
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void * FLMAPI F_Vector::getElementAt( 
+	FLMUINT		uiIndex)
+{
+	f_assert( uiIndex < m_uiArraySize);
+	return( m_pElementArray[ uiIndex]);
+}
+
+
+/****************************************************************************
+Desc:	Append a char (or the same char many times) to the string
+****************************************************************************/
+RCODE FLMAPI F_StringAcc::appendCHAR( 
+	char				ucChar,
+	FLMUINT			uiHowMany)
+{
+	RCODE				rc = NE_FLM_OK;
+	
+	if( uiHowMany == 1)
+	{
+		FLMBYTE 		szStr[ 2];
+		
+		szStr[ 0] = ucChar;
+		szStr[ 1] = 0;
+		
+		rc = appendTEXT( (const FLMBYTE*)szStr);
+	}
+	else
+	{
+		FLMBYTE * 	pszStr;
+		
+		if( RC_BAD( rc = f_alloc( uiHowMany + 1, &pszStr)))
+		{
+			goto Exit;
+		}
+		
+		f_memset( pszStr, ucChar, uiHowMany);
+		
+		pszStr[ uiHowMany] = 0;
+		rc = appendTEXT( pszStr);
+		f_free( &pszStr);
+	}
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:	appending text to the accumulator safely.  all other methods in
+		the class funnel through this one, as this one contains the logic
+		for making sure storage requirements are met.
+****************************************************************************/
+RCODE FLMAPI F_StringAcc::appendTEXT( 
+	const FLMBYTE * 	pszVal)
+{	
+	RCODE 				rc = NE_FLM_OK;
+	FLMUINT 				uiIncomingStrLen;
+	FLMUINT 				uiStrLen;
+
+	if( !pszVal)
+	{
+		goto Exit;
+	}
+	else if( (uiIncomingStrLen = f_strlen( (const char *)pszVal)) == 0)
+	{
+		goto Exit;
+	}
+	
+	// Compute total size we need to store the new total
+	
+	if( m_bQuickBufActive || m_pszVal)
+	{
+		uiStrLen = uiIncomingStrLen + m_uiValStrLen;
+	}
+	else
+	{
+		uiStrLen = uiIncomingStrLen;
+	}
+
+	// Just use small buffer if it's small enough
+	
+	if( uiStrLen < sizeof( m_szQuickBuf))
+	{
+		f_strcat( m_szQuickBuf, (const char *)pszVal);
+		m_bQuickBufActive = TRUE;
+	}
+	else
+	{
+		// Ensure storage requirements are met (and then some)
+		
+		if( m_pszVal == NULL)
+		{
+			FLMUINT 		uiNewBytes = (uiStrLen + 1) * 4;
+			
+			if( RC_BAD( rc = f_alloc( (FLMUINT)(sizeof( FLMBYTE) * uiNewBytes),
+				&m_pszVal)))
+			{
+				goto Exit;
+			}
+			
+			m_uiBytesAllocatedForPszVal = uiNewBytes;
+			m_pszVal[ 0] = 0;
+		}
+		else if( (m_uiBytesAllocatedForPszVal - 1) < uiStrLen)
+		{
+			FLMUINT 		uiNewBytes = (uiStrLen + 1) * 4;
+			
+			if( RC_BAD( rc = f_realloc( (FLMUINT)(sizeof( FLMBYTE) * uiNewBytes),
+				&m_pszVal)))
+			{
+				goto Exit;
+			}
+			
+			m_uiBytesAllocatedForPszVal = uiNewBytes;
+		}
+
+		// If transitioning from quick buf to heap buf, we need to
+		// transfer over the quick buf contents and unset the flag
+		
+		if( m_bQuickBufActive)
+		{
+			m_bQuickBufActive = FALSE;
+			f_strcpy( m_pszVal, m_szQuickBuf);
+			
+			// No need to zero out m_szQuickBuf because it will never
+			// be used again, unless a clear() is issued, in which
+			// case it will be zeroed out then.
+		}		
+
+		// Copy over the string
+		
+		f_strcat( m_pszVal, (const char *)pszVal);
+	}
+	
+	m_uiValStrLen = uiStrLen;
+	
+Exit:
+
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_StringAcc::printf(
+	const char * pszFormatString,
+	...)
+{
+	RCODE				rc = NE_FLM_OK;
+	f_va_list		args;
+	char *			pDestStr = NULL;
+	FLMSIZET			iSize = 4096;
+
+	if( RC_BAD( rc = f_alloc( iSize, &pDestStr)))
+	{
+		goto Exit;
+	}
+
+	f_va_start( args, pszFormatString);
+	f_vsprintf( pDestStr, pszFormatString, &args);
+	f_va_end( args);
+
+	clear();
+	
+	if( RC_BAD( rc = appendTEXT( (FLMBYTE *)pDestStr)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if( pDestStr)
+	{
+		f_free( &pDestStr);
+	}
+	
+	return( rc);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_StringAcc::appendf(
+	const char * pszFormatString,
+	...)
+{
+	RCODE				rc = NE_FLM_OK;
+	f_va_list		args;
+	char *			pDestStr = NULL;
+	FLMSIZET			iSize = 4096;
+
+	if( RC_BAD( rc = f_alloc( iSize, &pDestStr)))
+	{
+		goto Exit;
+	}
+
+	f_va_start( args, pszFormatString);
+	f_vsprintf( pDestStr, pszFormatString, &args);
+	f_va_end( args);
+
+	if( RC_BAD( rc = appendTEXT( (FLMBYTE *)pDestStr)))
+	{
+		goto Exit;
+	}
+
+Exit:
+
+	if( pDestStr)
+	{
+		f_free( &pDestStr);
+	}
+	
 	return( rc);
 }
 

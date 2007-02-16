@@ -246,12 +246,12 @@ void FLMAPI f_logError(
 		if( pszFileName)
 		{
 			f_logPrintf( pLogMsg, 
-				"Error %s: %e, File=%s, Line=%d.",
+				"Error %s: %e, File=%s, Line=%d.\n",
 				pszDoing, rc, pszFileName, (int)iLineNumber);
 		}
 		else
 		{
-			f_logPrintf( pLogMsg, "Error %s: %e.", pszDoing, rc);
+			f_logPrintf( pLogMsg, "Error %s: %e.\n", pszDoing, rc);
 		}
 		
 		f_endLogMessage( &pLogMsg);

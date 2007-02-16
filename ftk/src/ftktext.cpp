@@ -2512,6 +2512,67 @@ FLMINT FLMAPI f_atod(
 }
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+FLMBOOL FLMAPI f_atobool( 
+	const char *		pszStr,
+	FLMBOOL *			pbValidFormat)
+{
+	FLMBOOL 				bReturnVal = FALSE;
+	
+	if( pbValidFormat)
+	{
+		*pbValidFormat = TRUE; 
+	}
+	
+	if( f_stricmp( pszStr, "true") == 0)
+	{
+		bReturnVal = TRUE;
+	}
+	else if( f_stricmp( pszStr, "false") == 0)
+	{
+		bReturnVal = FALSE;
+	}
+	else if( f_strcmp( pszStr, "1") == 0)
+	{
+		bReturnVal = TRUE;
+	}
+	else if( f_strcmp( pszStr, "0") == 0)
+	{
+		bReturnVal = FALSE;
+	}
+	else if( f_stricmp( pszStr, "on") == 0)
+	{
+		bReturnVal = TRUE;
+	}
+	else if ( f_stricmp( pszStr, "off") == 0)
+	{
+		bReturnVal = FALSE;
+	}
+	else if( f_stricmp( pszStr, "yes") == 0)
+	{
+		bReturnVal = TRUE;
+	}
+	else if( f_stricmp( pszStr, "no") == 0)
+	{
+		bReturnVal = FALSE;
+	}
+	else if( f_stricmp( pszStr, "null") == 0)
+	{
+		bReturnVal = FALSE;
+	}
+	else
+	{
+		if( pbValidFormat)
+		{
+			*pbValidFormat = FALSE;
+		}
+	}
+	
+	return( bReturnVal);
+}
+
+/****************************************************************************
 Desc:	Utility function to return the maximum size of a hex number
 		represented as a string.
 ****************************************************************************/

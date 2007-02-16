@@ -584,6 +584,11 @@
 	#define NE_FLM_WAIT_TIMEOUT								0xC50D			///< 0xC50D - Timeout while waiting on a semaphore, condition variable, or reader/writer lock
 	#define NE_FLM_BAD_HTTP_HEADER							0xC50E			///< 0xC50E - Invalid HTTP header format
 	
+	// Reserved range for application error codes
+	
+	#define NE_FLM_FIRST_APP_ERR								0xC600			///< 0xC600 - First application-defined error code
+	#define NE_FLM_LAST_APP_ERR								0xC6FF			///< 0xC6FF - Last application-defined error code
+	
 	// Network Errors - Must be the same as they were for FLAIM
 
 	#define NE_FLM_NOIP_ADDR									0xC900			///< 0xC900 - IP address not found
@@ -690,6 +695,7 @@
 	class F_DynaBuf;
 	class F_ListItem;
 	class F_ListManager;
+	class F_Arg;
 
 	/****************************************************************************
 	Desc: Cross-platform definitions
@@ -2105,7 +2111,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class F_SuperFileHdl : public F_Object
+	class FLMEXP F_SuperFileHdl : public F_Object
 	{
 	public:
 	
@@ -2862,6 +2868,10 @@
 	FLMUINT64 FLMAPI f_atou64(
 		const char *  				pszBuf);
 
+	FLMBOOL FLMAPI f_atobool( 
+		const char *				pszStr,
+		FLMBOOL *					pbValidFormat = NULL);
+	
 	FLMUINT FLMAPI f_unilen(
 		const FLMUNICODE *		puzStr);
 
@@ -5093,6 +5103,145 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
+	class FLMEXP F_Vector : public F_Object
+	{
+	public:
+	
+		F_Vector()
+		{
+			m_pElementArray = NULL;
+			m_uiArraySize = 0;
+		}
+		
+		virtual ~F_Vector()
+		{
+			if( m_pElementArray)
+			{
+				f_free( &m_pElementArray);
+			}
+		}
+		
+		RCODE FLMAPI setElementAt( 
+			void *				pData, 
+			FLMUINT 				uiIndex);
+		
+		void * FLMAPI getElementAt( 
+			FLMUINT 				uiIndex);
+			
+	private:
+	
+		void **					m_pElementArray;
+		FLMUINT					m_uiArraySize;
+	};
+	
+	/****************************************************************************
+	Desc:	A class to safely build up a string accumulation, without worrying
+			about buffer overflows.
+	****************************************************************************/
+	class FLMEXP F_StringAcc : public F_Object
+	{
+	public:
+	
+		F_StringAcc()
+		{
+			commonInit();
+		}
+		
+		F_StringAcc( char * pszStr)
+		{
+			commonInit();
+			appendTEXT( pszStr);
+		}
+		
+		F_StringAcc( FLMBYTE * pszStr)
+		{
+			commonInit();
+			appendTEXT( pszStr);
+		}
+		
+		virtual ~F_StringAcc()
+		{
+			if( m_pszVal)
+			{
+				f_free( &m_pszVal);
+			}
+		}
+		
+		FINLINE void FLMAPI clear( void)
+		{
+			if( m_pszVal)
+			{
+				m_pszVal[ 0] = 0;
+			}
+			
+			m_szQuickBuf[ 0] = 0;
+			m_uiValStrLen = 0;
+		}
+	
+		FINLINE FLMUINT FLMAPI getLength( void)
+		{
+			return( m_uiValStrLen);
+		}
+	
+		RCODE FLMAPI printf( 
+			const char * 			pszFormatString, ...);
+		
+		RCODE FLMAPI appendCHAR( 
+			char 						ucChar,
+			FLMUINT 					uiHowMany = 1);
+		
+		RCODE FLMAPI appendTEXT( 
+			const FLMBYTE * 		pszVal);
+		
+		RCODE FLMAPI appendTEXT( 
+			const char * 			pszVal)
+		{
+			return( appendTEXT( (FLMBYTE*)pszVal));
+		}
+		
+		RCODE FLMAPI appendf( 
+			const char *			pszFormatString, ...);
+		
+		FINLINE const char * FLMAPI getTEXT( void)
+		{
+			if( m_bQuickBufActive)
+			{
+				return( m_szQuickBuf);
+			}
+			else if( m_pszVal)
+			{
+				return( m_pszVal);
+			}
+			else
+			{
+				return( "");
+			}
+		}
+		
+	private:
+	
+		void commonInit( void)
+		{
+			m_pszVal = NULL;
+			m_uiValStrLen = 0;
+			m_szQuickBuf[ 0] = 0;
+			m_bQuickBufActive = FALSE;
+		}
+		
+		RCODE formatNumber( 
+			FLMUINT 					uiNum,
+			FLMUINT 					uiBase);
+			
+		char				m_szQuickBuf[ 128];
+		FLMBOOL			m_bQuickBufActive;
+		char *			m_pszVal;
+		FLMUINT			m_uiBytesAllocatedForPszVal;
+		FLMUINT			m_uiValStrLen;
+	};
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
 	typedef struct
 	{
 		F_ListItem *		pPrevItem;
@@ -5176,7 +5325,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class F_ListManager : public F_Object
+	class FLMEXP F_ListManager : public F_Object
 	{
 	public:
 	
@@ -5474,6 +5623,11 @@
 							? TRUE 
 							: FALSE);
 	}
+	
+	FLMBOOL FLMAPI f_isNumber(
+		const char *	pszStr,
+		FLMBOOL *		pbNegative = NULL,
+		FLMBOOL *		pbHex = NULL);
 	
 	RCODE FLMAPI f_filecpy(
 		const char *				pszSourceFile,
@@ -7012,7 +7166,7 @@
 	/***************************************************************************
 	Desc:
 	***************************************************************************/
-	class F_HashObject : virtual public F_Object
+	class FLMEXP F_HashObject : virtual public F_Object
 	{
 	public:
 	
@@ -7086,7 +7240,7 @@
 	/***************************************************************************
 	Desc: Hash tables
 	***************************************************************************/
-	class F_HashTable : public F_Object
+	class FLMEXP F_HashTable : public F_Object
 	{
 	public:
 	
@@ -7158,6 +7312,160 @@
 		FLMUINT				m_uiBuckets;
 		FLMUINT				m_uiObjects;
 		FLMUINT				m_uiMaxObjects;
+	};
+
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	
+	typedef FLMBOOL (* F_ARG_VALIDATOR) (
+		const char *		pszGivenArg,
+		const char *		pszIdentifier,
+		F_StringAcc *		pOutputAccumulator,
+		void *				pvUserData);
+	
+	typedef void (* F_ARG_OUTPUT_CALLBACK) (
+		const char *		pszOutputString,
+		void *				pvUserData);
+	
+	typedef enum 
+	{
+		F_ARG_OPTION = 0,
+		F_ARG_REQUIRED_ARG,
+		F_ARG_OPTIONAL_ARG,
+		F_ARG_REPEATING_ARG
+	} F_ARG_TYPE;
+	
+	typedef enum 
+	{
+		F_ARG_CONTENT_NONE = 0,
+		F_ARG_CONTENT_BOOL,
+		F_ARG_CONTENT_VALIDATOR,
+		F_ARG_CONTENT_SIGNED_INT, 
+		F_ARG_CONTENT_UNSIGNED_INT, 
+		F_ARG_CONTENT_ALLOWED_STRING_SET,
+		F_ARG_CONTENT_EXISTING_FILE,
+		F_ARG_CONTENT_STRING
+	} F_ARG_CONTENT_TYPE;
+
+	class FLMEXP F_ArgSet : public F_Object
+	{
+	public:
+	
+		F_ArgSet(
+			char *						pszDescription,
+			F_ARG_OUTPUT_CALLBACK	outputCallback,
+			void *						pvOutputCallbackData);
+			
+		virtual ~F_ArgSet();
+		
+		FINLINE const char * FLMAPI getDescription( void)
+		{
+			return( m_pszDescription);
+		}
+	
+		RCODE FLMAPI addArg(
+			const char *				pszIdentifier,
+			const char *				pszShortHelp,
+			FLMBOOL						bCaseSensitive,
+			F_ARG_TYPE					argType,
+			F_ARG_CONTENT_TYPE		contentType,
+			...); 
+	
+		RCODE FLMAPI parseCommandLine(
+			FLMUINT						uiArgc,
+			const char **				ppszArgv,
+			FLMBOOL *					pbPrintedUsage);
+			
+		FLMBOOL FLMAPI argIsPresent( 
+			const char *				pszIdentifier);
+		
+		FLMUINT FLMAPI getValueCount( 
+			const char *				pszIdentifier);
+	
+		FLMUINT FLMAPI getUINT( 
+			const char *				pszIdentifier,
+			FLMUINT						uiIndex = 0);
+		
+		FLMINT FLMAPI getINT( 
+			const char *				pszIdentifier,
+			FLMUINT						uiIndex = 0);
+	
+		// Boolean values are recognize in following formats:
+		//	
+		//	TRUE				FALSE			NOTES
+		//	----				-----			-----
+		//	true				false			case-insensitive
+		//	1					0
+		//	on					off			case-insensitive
+		//	yes				no				case-insensitive
+		//	NULL								case-insensitive
+		//	*									anything else is a user error
+		
+		FLMBOOL FLMAPI getBOOL(
+			const char *				pszIdentifier,
+			FLMUINT						uiIndex = 0);
+	
+		const char * FLMAPI getString(
+			const char *			pszIdentifier,
+			FLMUINT					uiIndex = 0);
+		
+		void FLMAPI getString( 
+			const char *			pszIdentifier,
+			char *					pszDestination,
+			FLMUINT					uiDestinationBufferSize,
+			FLMUINT					uiIndex = 0);
+	
+	private:
+	
+		F_Arg * getArg(
+			const char *			pszIdentifier);
+		
+		RCODE printUsage( void);
+		
+		RCODE dump( 
+			F_Vector *				pVec,
+			FLMUINT					uiVecLen);
+		
+		void outputLines(
+			const char *			pszStr);
+			
+		FLMBOOL needsPreprocessing( void);
+		
+		RCODE preProcessParams( void);
+		
+		RCODE processAtParams( 
+			FLMUINT					uiInsertionPoint,
+			char *					pszBuffer);
+			
+		RCODE displayShortHelpLines(
+			F_StringAcc *			pStringAcc,
+			const char *			pszShortHelp,
+			FLMUINT					uiCharsPerLine);
+			
+		FLMBOOL needMoreArgs( 
+			F_Vector *				pVec,
+			FLMUINT					uiVecLen);
+			
+		RCODE parseOption( 
+			const char *			pszArg,
+			FLMBOOL *				pbPrintedUsage);
+	
+		char *						m_pszDescription;
+		char							m_szExecBaseName[ F_PATH_MAX_SIZE];
+		F_Vector						m_argVec;
+		FLMUINT						m_uiArgVecIndex;
+		F_Vector						m_optionsVec;
+		FLMUINT						m_uiOptionsVecLen;
+		F_Vector						m_requiredArgsVec;
+		FLMUINT						m_uiRequiredArgsVecLen;
+		F_Vector						m_optionalArgsVec;
+		FLMUINT						m_uiOptionalArgsVecLen;
+		F_Arg *						m_pRepeatingArg;
+		FLMUINT						m_uiArgc;
+		F_Vector *					m_pArgv;
+		F_ARG_OUTPUT_CALLBACK	m_outputCallback;
+		void *						m_pvOutputCallbackData;
 	};
 
 	/****************************************************************************
