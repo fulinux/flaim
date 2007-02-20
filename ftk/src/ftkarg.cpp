@@ -1287,9 +1287,9 @@ RCODE F_ArgSet::parseCommandLine(
 					{
 						pszStr = pArg->getValue( uiArgs);
 						
-						if( !(bValidated = pArg->getValidator()( pszStr, 
+						if( (bValidated = pArg->getValidator()( pszStr, 
 									pArg->getIdentifier(), &errorAcc,
-									pArg->getValidatorData())))
+									pArg->getValidatorData())) == FALSE)
 						{
 							break;
 						}
@@ -1305,7 +1305,7 @@ RCODE F_ArgSet::parseCommandLine(
 					{
 						pszStr = pArg->getValue( uiArgs);
 						
-						if( !(bValidated = f_isNumber( pszStr, &bNegative)))
+						if( (bValidated = f_isNumber( pszStr, &bNegative)) == FALSE)
 						{
 							break;
 						}
