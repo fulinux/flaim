@@ -684,6 +684,7 @@
 	flminterface IF_ThreadInfo;
 	flminterface IF_OStream;
 	flminterface IF_IOStream;
+	flminterface IF_TCPListener;
 	flminterface IF_SSLIOStream;
 	flminterface IF_LogMessageClient;
 	flminterface IF_Thread;
@@ -696,6 +697,7 @@
 	class F_ListItem;
 	class F_ListManager;
 	class F_Arg;
+	class F_TCPIOStream;
 
 	/****************************************************************************
 	Desc: Cross-platform definitions
@@ -1529,7 +1531,13 @@
 		const char *				pszHost,
 		FLMUINT						uiPort,
 		FLMUINT						uiFlags,
+		FLMUINT						uiConnectTimeout,
 		IF_IOStream **				ppIOStream);
+	
+	RCODE FLMAPI FlmOpenTCPListener(
+		FLMBYTE *					pucBindAddr,
+		FLMUINT						uiBindPort,
+		IF_TCPListener **			ppListener);
 	
 	RCODE FLMAPI FlmRemoveMultiFileStream(
 		const char *				pszDirectory,
@@ -1624,6 +1632,52 @@
 		#endif
 	};
 	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface IF_TCPListener : public F_Object
+	{
+		virtual RCODE FLMAPI connectClient(
+			F_TCPIOStream **		ppClientStream,
+			FLMUINT					uiTimeout = 0);
+	};
+	
+	/****************************************************************************
+	Desc:
+	****************************************************************************/
+	flminterface IF_TCPIOStream : public IF_IOStream
+	{
+		virtual RCODE FLMAPI read(
+			void *			pvBuffer,
+			FLMUINT			uiBytesToRead,
+			FLMUINT *		puiBytesRead) = 0;
+			
+		virtual RCODE FLMAPI write(
+			const void *	pvBuffer,
+			FLMUINT			uiBytesToWrite,
+			FLMUINT *		puiBytesWritten) = 0;
+	
+		virtual const char * FLMAPI getLocalHostName( void)  = 0;
+	
+		virtual const char * FLMAPI getLocalHostAddress( void) = 0;
+	
+		virtual const char * FLMAPI getPeerHostName( void) = 0;
+	
+		virtual const char * FLMAPI getPeerHostAddress( void) = 0;
+	
+		virtual RCODE FLMAPI readNoWait(
+			void *			pvBuffer,
+			FLMUINT			uiCount,
+			FLMUINT *		puiReadRead) = 0;
+	
+		virtual RCODE FLMAPI readAll(
+			void *			pvBuffer,
+			FLMUINT			uiCount,
+			FLMUINT *		puiBytesRead) = 0;
+	
+		virtual RCODE FLMAPI closeStream( void) = 0;
+	};
+
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
@@ -3979,6 +4033,10 @@
 		const char *			pszFormat,
 		...);
 		
+	FLMINT FLMAPI f_errprintf(
+		const char *	pszFormat,
+		...);
+		
 	FLMINT FLMAPI f_printf(
 		IF_PrintfClient *		pClient,
 		const char *			pszFormat,
@@ -4141,6 +4199,12 @@
 			FLMUINT			uiFlags) = 0;
 	};
 	
+	RCODE FLMAPI FlmAllocStdoutPrintfClient( 
+		IF_PrintfClient **	ppClient);
+		
+	RCODE FLMAPI FlmAllocStderrPrintfClient( 
+		IF_PrintfClient **	ppClient);
+		
 	/****************************************************************************
 	Desc: XML
 	****************************************************************************/
@@ -7321,12 +7385,8 @@
 	typedef FLMBOOL (* F_ARG_VALIDATOR) (
 		const char *		pszGivenArg,
 		const char *		pszIdentifier,
-		F_StringAcc *		pOutputAccumulator,
-		void *				pvUserData);
-	
-	typedef void (* F_ARG_OUTPUT_CALLBACK) (
-		const char *		pszOutputString,
-		void *				pvUserData);
+		IF_PrintfClient *	pPrintfClient,
+		void *				pvAppData);
 	
 	typedef enum 
 	{
@@ -7352,18 +7412,13 @@
 	{
 	public:
 	
-		F_ArgSet(
-			char *						pszDescription,
-			F_ARG_OUTPUT_CALLBACK	outputCallback,
-			void *						pvOutputCallbackData);
+		F_ArgSet();
 			
 		virtual ~F_ArgSet();
 		
-		FINLINE const char * FLMAPI getDescription( void)
-		{
-			return( m_pszDescription);
-		}
-	
+		RCODE FLMAPI setup(
+			IF_PrintfClient *			pPrintfClient);
+			
 		RCODE FLMAPI addArg(
 			const char *				pszIdentifier,
 			const char *				pszShortHelp,
@@ -7374,8 +7429,7 @@
 	
 		RCODE FLMAPI parseCommandLine(
 			FLMUINT						uiArgc,
-			const char **				ppszArgv,
-			FLMBOOL *					pbPrintedUsage);
+			const char **				ppszArgv);
 			
 		FLMBOOL FLMAPI argIsPresent( 
 			const char *				pszIdentifier);
@@ -7421,15 +7475,12 @@
 		F_Arg * getArg(
 			const char *			pszIdentifier);
 		
-		RCODE printUsage( void);
+		void printUsage( void);
 		
-		RCODE dump( 
+		void dump( 
 			F_Vector *				pVec,
 			FLMUINT					uiVecLen);
 		
-		void outputLines(
-			const char *			pszStr);
-			
 		FLMBOOL needsPreprocessing( void);
 		
 		RCODE preProcessParams( void);
@@ -7439,7 +7490,6 @@
 			char *					pszBuffer);
 			
 		RCODE displayShortHelpLines(
-			F_StringAcc *			pStringAcc,
 			const char *			pszShortHelp,
 			FLMUINT					uiCharsPerLine);
 			
@@ -7448,10 +7498,8 @@
 			FLMUINT					uiVecLen);
 			
 		RCODE parseOption( 
-			const char *			pszArg,
-			FLMBOOL *				pbPrintedUsage);
+			const char *			pszArg);
 	
-		char *						m_pszDescription;
 		char							m_szExecBaseName[ F_PATH_MAX_SIZE];
 		F_Vector						m_argVec;
 		FLMUINT						m_uiArgVecIndex;
@@ -7464,8 +7512,7 @@
 		F_Arg *						m_pRepeatingArg;
 		FLMUINT						m_uiArgc;
 		F_Vector *					m_pArgv;
-		F_ARG_OUTPUT_CALLBACK	m_outputCallback;
-		void *						m_pvOutputCallbackData;
+		IF_PrintfClient *			m_pPrintfClient;
 	};
 
 	/****************************************************************************

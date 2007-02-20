@@ -392,15 +392,8 @@ void F_Arg::getString(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-F_ArgSet::F_ArgSet(
-	char *									pszDescription,
-	F_ARG_OUTPUT_CALLBACK				outputCallback,
-	void *									pvOutputCallbackData)
+F_ArgSet::F_ArgSet()
 {
-	m_pszDescription = pszDescription;
-	m_outputCallback = outputCallback;
-	m_pvOutputCallbackData = pvOutputCallbackData;
-	
 	m_uiArgVecIndex = 0;
 	m_uiArgc = 0;
 	m_pArgv = NULL;
@@ -408,8 +401,8 @@ F_ArgSet::F_ArgSet(
 	m_uiOptionsVecLen = 0;
 	m_uiRequiredArgsVecLen = 0;
 	m_uiOptionalArgsVecLen = 0;
-
 	m_szExecBaseName[ 0] = 0;
+	m_pPrintfClient = NULL;
 }
 
 /****************************************************************************
@@ -449,6 +442,27 @@ F_ArgSet::~F_ArgSet()
 			pArg->Release();
 		}
 	}
+	
+	if( m_pPrintfClient)
+	{
+		m_pPrintfClient->Release();
+	}
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+RCODE FLMAPI F_ArgSet::setup(
+	IF_PrintfClient *						pPrintfClient)
+{
+	RCODE			rc = NE_FLM_OK;
+	
+	if( (m_pPrintfClient = pPrintfClient) != NULL)
+	{
+		m_pPrintfClient->AddRef();
+	}
+	
+	return( rc);
 }
 
 /****************************************************************************
@@ -756,89 +770,51 @@ FLMBOOL F_ArgSet::needMoreArgs(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE F_ArgSet::dump( 
+void F_ArgSet::dump( 
 	F_Vector * 		pVec, 
 	FLMUINT 			uiVecLen)
 {
-	RCODE 			rc = NE_FLM_OK;
 	FLMUINT			uiLoop;
-	F_StringAcc 	acc;
 	
 	// Loop through the args and print out a table for easy reference to see
 	// what was set and what wasn't
 	
 	for( uiLoop = 0; uiLoop < uiVecLen; uiLoop++)
 	{
-		F_Arg * pArg = (F_Arg *)(pVec->getElementAt( uiLoop));
+		F_Arg * 	pArg = (F_Arg *)(pVec->getElementAt( uiLoop));
 		
-		if( RC_BAD( rc = acc.appendTEXT( "	")))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = acc.appendTEXT( pArg->getIdentifier())))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = acc.appendTEXT( ": ")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, "	");
+		f_printf( m_pPrintfClient, pArg->getIdentifier());
+		f_printf( m_pPrintfClient, ": ");
 		
 		if( pArg->isPresent())
 		{
-			if( RC_BAD( rc = acc.appendTEXT( "values={")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, "values={");
 					
 			for( FLMUINT uiVals = 0; uiVals < pArg->getValueCount(); uiVals++)
 			{
-				if( RC_BAD( rc = acc.appendTEXT( pArg->getValue( uiVals))))
-				{
-					goto Exit;
-				}
+				f_printf( m_pPrintfClient, pArg->getValue( uiVals));
 				
 				if( uiVals != (pArg->getValueCount() - 1))
 				{
-					if( RC_BAD( rc = acc.appendTEXT( ",")))
-					{
-						goto Exit;
-					}
+					f_printf( m_pPrintfClient, ",");
 				}
 			}
 			
-			if( RC_BAD( rc = acc.appendTEXT( "}\n")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, "}\n");
 		}
 		else
 		{
-			if( RC_BAD( rc = acc.appendTEXT( "not supplied\n")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, "not supplied\n");
 		}
 	}
-	
-	if( acc.getTEXT())
-	{
-		outputLines( (const char *)acc.getTEXT());
-	}
-	
-Exit:
-
-	return( rc);
 }
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
 RCODE F_ArgSet::parseOption( 
-	const char *	pszArg, 
-	FLMBOOL *		pbPrintedUsage)
+	const char *	pszArg) 
 {
 	RCODE				rc = NE_FLM_OK;
 	const char *	pszArgArg;
@@ -860,33 +836,14 @@ RCODE F_ArgSet::parseOption(
 		{
 			if( pArg->getContentType() != F_ARG_CONTENT_NONE)
 			{
-				F_StringAcc acc;
+				f_printf( m_pPrintfClient, "ERROR:  Option ");
+				f_printf( m_pPrintfClient, pArg->getIdentifier());
+				f_printf( m_pPrintfClient, " requires argument of the form option=value");
 				
-				if( RC_BAD( rc = acc.appendTEXT( "ERROR: option ")))
-				{
-					goto Exit;
-				}
-					
-				if( RC_BAD( rc = acc.appendTEXT( pArg->getIdentifier())))
-				{
-					goto Exit;
-				}
-					
-				if( RC_BAD( rc = acc.appendTEXT(
-					" requires argument of the form option=value")))
-				{
-					goto Exit;
-				}
-					
-				outputLines( (const char *)acc.getTEXT());
-				rc = printUsage();
-				*pbPrintedUsage = TRUE;
+				printUsage();
 				
-				if( RC_OK( rc))
-				{
-					rc = RC_SET( NE_FLM_FAILURE);
-					goto Exit;
-				}
+				rc = RC_SET( NE_FLM_FAILURE);
+				goto Exit;
 			}
 			else
 			{
@@ -913,28 +870,14 @@ RCODE F_ArgSet::parseOption(
 				
 				if( pArg->getContentType() == F_ARG_CONTENT_NONE)
 				{
-					F_StringAcc acc;
-					
-					if( RC_BAD( rc = acc.appendTEXT(
-						"ERROR: cannot give argument to option ")))
-					{
-						goto Exit;
-					}
+					f_printf( m_pPrintfClient,
+						"ERROR:  Cannot give argument to option ");
+					f_printf( m_pPrintfClient, pArg->getIdentifier());
 						
-					if( RC_BAD( rc = acc.appendTEXT( pArg->getIdentifier())))
-					{
-						goto Exit;
-					}
-						
-					outputLines( (const char *)acc.getTEXT());
-					rc = printUsage();
-					*pbPrintedUsage = TRUE;
+					printUsage();
 					
-					if( RC_OK( rc))
-					{
-						rc = RC_SET( NE_FLM_FAILURE);
-						goto Exit;
-					}
+					rc = RC_SET( NE_FLM_FAILURE);
+					goto Exit;
 				}
 				else
 				{
@@ -953,27 +896,13 @@ RCODE F_ArgSet::parseOption(
 	
 	if ( !bFoundMatch)
 	{
-		F_StringAcc acc;
+		f_printf( m_pPrintfClient, "Unknown option ");
+		f_printf( m_pPrintfClient, pszArg);
+		f_printf( m_pPrintfClient, "\n");
 		
-		if( RC_BAD( rc = acc.appendTEXT( "ERROR: unknown option ")))
-		{
-			goto Exit;
-		}
+		printUsage();
 		
-		if( RC_BAD( rc = acc.appendTEXT( pszArg)))
-		{
-			goto Exit;
-		}
-		
-		outputLines( (const char *)acc.getTEXT());
-		rc = printUsage();
-		*pbPrintedUsage = TRUE;
-		
-		if( RC_OK( rc))
-		{
-			rc = RC_SET( NE_FLM_FAILURE);
-		}
-		
+		rc = RC_SET( NE_FLM_FAILURE);
 		goto Exit;
 	}
 	
@@ -987,19 +916,15 @@ Desc:
 ****************************************************************************/
 RCODE F_ArgSet::parseCommandLine(
 	FLMUINT				uiArgc, 
-	const char **		ppszArgv,
-	FLMBOOL *			pbPrintedUsage)
+	const char **		ppszArgv)
 {
 	RCODE					rc = NE_FLM_OK;
-	F_StringAcc			errorAcc;
 	FLMUINT				uiLoop;
 	FLMUINT				uiArgs;
 	FLMBOOL				bNegative;
 	const char *		pszExecStr = ppszArgv[ 0];
 	char					szDir[ F_PATH_MAX_SIZE];
 	IF_FileSystem *	pFileSystem = NULL;
-
-	*pbPrintedUsage = FALSE;
 
 	// Set up members we'll need
 	
@@ -1067,18 +992,9 @@ RCODE F_ArgSet::parseCommandLine(
 			f_strcmp( pszArg, "-?") == 0 ||
 			f_strcmp( pszArg, "?") == 0)
 		{
-			if( RC_BAD( rc = printUsage()))
-			{
-				goto Exit;
-			}
+			printUsage();
 			
-			*pbPrintedUsage = TRUE;
-			
-			if( RC_OK( rc))
-			{
-				rc = RC_SET( NE_FLM_FAILURE);
-			}
-			
+			rc = RC_SET( NE_FLM_FAILURE);
 			goto Exit;
 		}
 		else if( pszArg[ 0] == '-')
@@ -1086,7 +1002,7 @@ RCODE F_ArgSet::parseCommandLine(
 			// Option-handling is sufficiently complex that we'll handle it
 			// elsewhere in its own function
 			
-			if ( RC_BAD( rc = parseOption( pszArg, pbPrintedUsage)))
+			if ( RC_BAD( rc = parseOption( pszArg)))
 			{
 				goto Exit;
 			}
@@ -1156,27 +1072,12 @@ RCODE F_ArgSet::parseCommandLine(
 		}
 		else
 		{
-			errorAcc.clear();
+			f_printf( m_pPrintfClient, "invalid extra argument ");
+			f_printf( m_pPrintfClient, pszArg);
 			
-			if( RC_BAD( rc = errorAcc.appendTEXT( "invalid extra argument ")))
-			{
-				goto Exit;
-			}
+			printUsage();
 			
-			if( RC_BAD( rc = errorAcc.appendTEXT( pszArg)))
-			{
-				goto Exit;
-			}
-			
-			outputLines( (const char *)errorAcc.getTEXT());
-			rc = printUsage();
-			*pbPrintedUsage = TRUE;
-			
-			if( RC_OK( rc))
-			{
-				rc = RC_SET( NE_FLM_FAILURE);
-			}
-			
+			rc = RC_SET( NE_FLM_FAILURE);
 			goto Exit;
 		}
 	}
@@ -1193,25 +1094,18 @@ RCODE F_ArgSet::parseCommandLine(
 			
 			if ( !pArg->isPresent())
 			{
-				errorAcc.clear();
-				if( RC_BAD( rc = errorAcc.appendf(
-					"ERROR: did not pass required arg #%u <%s>\n",
-					uiLoop + 1, pArg->getIdentifier())))
+				f_printf( m_pPrintfClient,
+					"ERROR:  Did not pass required arg #%u <%s>\n",
+					uiLoop + 1, pArg->getIdentifier());
 				{
 					goto Exit;
 				}
 			}
 		}
 		
-		outputLines( (const char *)errorAcc.getTEXT());
-		rc = printUsage();
-		*pbPrintedUsage = TRUE;
-		
-		if( RC_OK( rc))
-		{
-			rc = RC_SET( NE_FLM_FAILURE);
-		}
-		
+		printUsage();
+
+		rc = RC_SET( NE_FLM_FAILURE);
 		goto Exit;
 	}
 
@@ -1224,12 +1118,6 @@ RCODE F_ArgSet::parseCommandLine(
 		F_Arg * 		pArg = (F_Arg *)(m_argVec.getElementAt( uiLoop));
 		
 		f_assert( pArg);
-		
-		// Set up the accumulator so the generic error message appears
-		// prior to the previous one.  Set it up as if will fail ... we may
-		// not even use the partial error message.
-		
-		errorAcc.clear();
 		
 		// If it's present, then it has a value we will want to validate
 		
@@ -1258,21 +1146,10 @@ RCODE F_ArgSet::parseCommandLine(
 						
 						if( !bValidated)
 						{
-							if( RC_BAD( errorAcc.appendTEXT( "ERROR: argument '")))
-							{
-								goto Exit;
-							}
-							
-							if( RC_BAD( errorAcc.appendTEXT( pszStr)))
-							{
-								goto Exit;
-							}
-							
-							if( RC_BAD( errorAcc.appendTEXT(
-								"' is not a valid representation of a boolean")))
-							{
-								goto Exit;
-							}
+							f_printf( m_pPrintfClient, "ERROR:  Argument '");
+							f_printf( m_pPrintfClient, pszStr);
+							f_printf( m_pPrintfClient,
+								"' is not a valid representation of a boolean");
 							
 							break;
 						}
@@ -1288,7 +1165,7 @@ RCODE F_ArgSet::parseCommandLine(
 						pszStr = pArg->getValue( uiArgs);
 						
 						if( (bValidated = pArg->getValidator()( pszStr, 
-									pArg->getIdentifier(), &errorAcc,
+									pArg->getIdentifier(), m_pPrintfClient,
 									pArg->getValidatorData())) == FALSE)
 						{
 							break;
@@ -1328,13 +1205,10 @@ RCODE F_ArgSet::parseCommandLine(
 							
 							if( (iArg > iMax) || (iArg < iMin))
 							{
-								if( RC_BAD( errorAcc.appendf(
-									"ERROR: argument '%s' violates range "
+								f_printf( m_pPrintfClient,
+									"ERROR:  Argument '%s' violates range "
 									"requirement of min=%d, max=%d",
-									pszStr, iMin, iMax)))
-								{
-									goto Exit;
-								}
+									pszStr, iMin, iMax);
 										
 								bValidated = FALSE;
 								break;
@@ -1351,13 +1225,10 @@ RCODE F_ArgSet::parseCommandLine(
 							
 							if( (uiArg > uiMax) || (uiArg < uiMin))
 							{
-								if( RC_BAD( errorAcc.appendf(
-									"ERROR: argument '%s' violates range "
+								f_printf( m_pPrintfClient,
+									"ERROR:  Argument '%s' violates range "
 									"requirement of min=%u, max=%u",
-									pszStr, uiMin, uiMax)))
-								{
-									goto Exit;
-								}
+									pszStr, uiMin, uiMax);
 								
 								bValidated = FALSE;
 								break;
@@ -1395,55 +1266,26 @@ RCODE F_ArgSet::parseCommandLine(
 						
 						if( !bValidated)
 						{
-							if( RC_BAD( rc = errorAcc.appendTEXT( "ERROR: '")))
-							{
-								goto Exit;
-							}
-							
-							if( RC_BAD( rc = errorAcc.appendTEXT( pszStr)))
-							{
-								goto Exit;
-							}
-							
-							if( RC_BAD( rc = errorAcc.appendTEXT(
-								"' is invalid. Must be a member of {")))
-							{
-								goto Exit;
-							}
+							f_printf( m_pPrintfClient, "ERROR:  '");
+							f_printf( m_pPrintfClient, pszStr);
+							f_printf( m_pPrintfClient,
+								"' is invalid. Must be a member of {");
 							
 							for( uiStrSet = 0; uiStrSet < uiStrSetLen; uiStrSet++)
 							{
 								const char * 	pszNextMember = (const char *)pStringSet->getElementAt( uiStrSet);
 								
-								if( RC_BAD( rc = errorAcc.appendTEXT( "'")))
-								{
-									goto Exit;
-								}
-								
-								if( RC_BAD( rc = errorAcc.appendTEXT( pszNextMember)))
-								{
-									goto Exit;
-								}
-								
-								if( RC_BAD( rc = errorAcc.appendTEXT( "'")))
-								{
-									goto Exit;
-								}
+								f_printf( m_pPrintfClient, "'");
+								f_printf( m_pPrintfClient, pszNextMember);
+								f_printf( m_pPrintfClient, "'");
 								
 								if( uiStrSet != (uiStrSetLen - 1))
 								{
-									if( RC_BAD( rc = errorAcc.appendTEXT( ",")))
-									{
-										goto Exit;
-									}
+									f_printf( m_pPrintfClient, ",");
 								}
 							}
 							
-							if( RC_BAD( rc = errorAcc.appendTEXT( "}\n")))
-							{
-								goto Exit;
-							}
-							
+							f_printf( m_pPrintfClient, "}\n");
 							break;
 						}
 					}
@@ -1462,21 +1304,9 @@ RCODE F_ArgSet::parseCommandLine(
 							
 							if ( !bValidated)
 							{
-								if( RC_BAD( rc = errorAcc.appendTEXT( "ERROR: file ")))
-								{
-									goto Exit;
-								}
-								
-								if( RC_BAD( rc = errorAcc.appendTEXT( pszStr)))
-								{
-									goto Exit;
-								}
-								
-								if( RC_BAD( rc = errorAcc.appendTEXT( " does not exist\n")))
-								{
-									goto Exit;
-								}
-								
+								f_printf( m_pPrintfClient, "ERROR:  File ");
+								f_printf( m_pPrintfClient, pszStr);
+								f_printf( m_pPrintfClient, " does not exist\n");
 								break;
 							}
 						}
@@ -1496,41 +1326,16 @@ RCODE F_ArgSet::parseCommandLine(
 			
 			if( !bValidated)
 			{
-				if( RC_BAD( rc = errorAcc.appendTEXT( "\nargument '")))
-				{
-					goto Exit;
-				}
+				f_printf( m_pPrintfClient, "\nargument '");
+				f_printf( m_pPrintfClient, pArg->getIdentifier());
+				f_printf( m_pPrintfClient, "}\n");
+				f_printf( m_pPrintfClient, "' did not validate with value '");
+				f_printf( m_pPrintfClient, pszStr);
+				f_printf( m_pPrintfClient, "'\n");
 				
-				if( RC_BAD( rc = errorAcc.appendTEXT( pArg->getIdentifier())))
-				{
-					goto Exit;
-				}
+				printUsage();
 				
-				if( RC_BAD( rc = errorAcc.appendTEXT(
-					"' did not validate with value '")))
-				{
-					goto Exit;
-				}
-				
-				if( RC_BAD( rc = errorAcc.appendTEXT( pszStr)))
-				{
-					goto Exit;
-				}
-				
-				if( RC_BAD( rc = errorAcc.appendTEXT( "'\n")))
-				{
-					goto Exit;
-				}
-				
-				outputLines( (const char *)errorAcc.getTEXT());
-				rc = printUsage();
-				*pbPrintedUsage = TRUE;
-				
-				if( RC_OK( rc))
-				{
-					rc = RC_SET( NE_FLM_FAILURE);
-				}
-				
+				rc = RC_SET( NE_FLM_FAILURE);
 				goto Exit;
 			}
 		}
@@ -1543,14 +1348,6 @@ Exit:
 		pFileSystem->Release();
 	}
 
-	if( RC_BAD( rc) && !(*pbPrintedUsage))
-	{
-		F_StringAcc acc;
-		
-		acc.appendf( "ERROR: parseCommandLine(): %u\n", rc);
-		outputLines( (const char *)acc.getTEXT());
-	}
-	
 	return( rc);
 }
 
@@ -1560,7 +1357,6 @@ Desc: Print out the short help lines, breaking up at word boundaries.  This
 		when changing it.
 ****************************************************************************/
 RCODE F_ArgSet::displayShortHelpLines(
-	F_StringAcc *	pStringAcc,
 	const char *	pszShortHelp,
 	FLMUINT			uiCharsPerLine)
 {
@@ -1594,16 +1390,9 @@ RCODE F_ArgSet::displayShortHelpLines(
 			
 			pszClone[ uiLastGoodBreakingPos] = 0;
 			
-			if( RC_BAD( rc = pStringAcc->appendTEXT( pszClone)))
-			{
-				goto Exit;
-			}
-			
-			if( RC_BAD( rc = pStringAcc->appendTEXT(
-				"\n												")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, pszClone);
+			f_printf( m_pPrintfClient,
+				"\n												");
 			
 			pszClone += f_strlen( pszClone) + 1;
 			uiLoop = 0;
@@ -1614,11 +1403,7 @@ RCODE F_ArgSet::displayShortHelpLines(
 		}
 		else if( uiLoop == (uiLen - 1))
 		{
-			if( RC_BAD( rc = pStringAcc->appendTEXT( pszClone)))
-			{
-				goto Exit;
-			}
-			
+			f_printf( m_pPrintfClient, pszClone);
 			break;
 		}
 		else if( f_isWhitespace( pszClone[ uiLoop]))
@@ -1642,149 +1427,75 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE F_ArgSet::printUsage( void)
+void F_ArgSet::printUsage( void)
 {
 	RCODE				rc = NE_FLM_OK;
-	F_StringAcc		acc;
 	FLMUINT			uiLoop = 0;
 
-	// Print usage line
-	
-	if( RC_BAD( rc = acc.appendTEXT( "Usage: ")))
-	{
-		goto Exit;
-	}
-	
-	if( RC_BAD( rc = acc.appendTEXT( m_szExecBaseName)))
-	{
-		goto Exit;
-	}
+	f_printf( m_pPrintfClient, "Usage: ");
+	f_printf( m_pPrintfClient, m_szExecBaseName);
 	
 	if( m_uiOptionsVecLen > 0)
 	{
-		if( RC_BAD( rc = acc.appendTEXT( " [OPTIONS]")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, " [OPTIONS]");
 	}
 	
 	if( m_uiRequiredArgsVecLen > 0)
 	{
-		if( RC_BAD( rc = acc.appendTEXT( " ")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, " ");
 	}
 	
 	for( uiLoop = 0; uiLoop < m_uiRequiredArgsVecLen; uiLoop++)
 	{
 		F_Arg * 	pArg = (F_Arg*)m_requiredArgsVec.getElementAt( uiLoop);
 		
-		if( RC_BAD( rc = acc.appendTEXT( "<")))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = acc.appendTEXT( pArg->getIdentifier())))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = acc.appendTEXT( ">")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, "<");
+		f_printf( m_pPrintfClient, pArg->getIdentifier());
+		f_printf( m_pPrintfClient, ">");
 		
 		if( uiLoop != (m_uiRequiredArgsVecLen - 1))
 		{
-			if( RC_BAD( rc = acc.appendTEXT( " ")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, " ");
 		}
 	}
 	
 	if( m_uiOptionalArgsVecLen > 0)
 	{
-		if( RC_BAD( rc = acc.appendTEXT( " ")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, " ");
 	}
 	
 	for ( uiLoop = 0; uiLoop < m_uiOptionalArgsVecLen; uiLoop++)
 	{
 		F_Arg * pArg = (F_Arg*)m_optionalArgsVec.getElementAt( uiLoop);
 		
-		if( RC_BAD( rc = acc.appendTEXT( "[")))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = acc.appendTEXT( pArg->getIdentifier())))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = acc.appendTEXT( "]")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, "[");
+		f_printf( m_pPrintfClient, pArg->getIdentifier());
+		f_printf( m_pPrintfClient, "]");
 		
 		if( uiLoop != (m_uiOptionalArgsVecLen - 1))
 		{
-			if( RC_BAD( rc = acc.appendTEXT( " ")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, " ");
 		}
 	}
 	
 	if ( m_pRepeatingArg)
 	{
-		if( RC_BAD( rc = acc.appendTEXT( " [")))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = acc.appendTEXT( m_pRepeatingArg->getIdentifier())))
-		{
-			goto Exit;
-		}
-		
-		if( RC_BAD( rc = acc.appendTEXT( "...]")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, " [");
+		f_printf( m_pPrintfClient, m_pRepeatingArg->getIdentifier());
+		f_printf( m_pPrintfClient, "...]");
 	}
 	
-	if( RC_BAD( rc = acc.appendTEXT( "\n")))
-	{
-		goto Exit;
-	}
-	
-	if( RC_BAD( rc = acc.appendTEXT( m_pszDescription)))
-	{
-		goto Exit;
-	}
-	
-	if( RC_BAD( rc = acc.appendTEXT( "\n\n")))
-	{
-		goto Exit;
-	}
+	f_printf( m_pPrintfClient, "\n\n");
 
 	if( m_uiOptionsVecLen > 0)
 	{
 		// The following is fairly hard-coded to get the spacing right
 		
-		if( RC_BAD( rc = acc.appendTEXT(
+		f_printf( m_pPrintfClient,
 			"OPTIONS:\n"
 			"\n"
-			"identifier			  case sensitive	 description\n"
-			"-----------------  --------------	 ---------------------------------------\n")))
-		{
-			goto Exit;
-		}
+			"identifier         case sensitive   description\n"
+			"-----------------  --------------   ---------------------------------------\n");
 
 		// Show all the options
 		
@@ -1795,49 +1506,24 @@ RCODE F_ArgSet::printUsage( void)
 			const char *	pszIdentifier = pArg->getIdentifier();
 			FLMUINT			uiIdentifierLength = f_strlen( pszIdentifier);
 			
-			if( RC_BAD( rc = acc.appendTEXT( "-")))
-			{
-				goto Exit;
-			}
-			
-			if( RC_BAD( rc = acc.appendTEXT( pszIdentifier)))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, "-");
+			f_printf( m_pPrintfClient, pszIdentifier);
 			
 			if( pArg->getContentType() != F_ARG_CONTENT_NONE)
 			{
 				const char * 	pszArgArgIndicator = "=ARG";
 				
-				if( RC_BAD( rc = acc.appendTEXT( pszArgArgIndicator)))
-				{
-					goto Exit;
-				}
-				
+				f_printf( m_pPrintfClient, pszArgArgIndicator);
 				uiIdentifierLength += f_strlen( pszArgArgIndicator);
 			}
 			
-			if( RC_BAD( rc = acc.appendCHAR( ' ', (16 - uiIdentifierLength))))
-			{
-				goto Exit;
-			}
+			m_pPrintfClient->outputChar( ' ', 16 - uiIdentifierLength);
 			
-			if( RC_BAD( rc = acc.appendTEXT( "	")))
-			{
-				goto Exit;
-			}
-			
-			if( RC_BAD( rc = acc.appendTEXT( (pArg->getCaseSensitive())
+			f_printf( m_pPrintfClient, "  ");
+			f_printf( m_pPrintfClient, (pArg->getCaseSensitive())
 																		? "y"
-																		: "n")))
-			{
-				goto Exit;
-			}
-			
-			if( RC_BAD( rc = acc.appendCHAR( ' ', 16)))
-			{
-				goto Exit;
-			}
+																		: "n");
+			m_pPrintfClient->outputChar( ' ', 16);
 			
 			if( RC_BAD( rc = f_strdup( pArg->getShortHelp(), 
 				(char **)&pszHelpClone)))
@@ -1845,7 +1531,7 @@ RCODE F_ArgSet::printUsage( void)
 				goto Exit;
 			}
 			
-			rc = displayShortHelpLines( &acc, pszHelpClone, 39);
+			rc = displayShortHelpLines( pszHelpClone, 39);
 			
 			if( pszHelpClone)
 			{
@@ -1858,32 +1544,23 @@ RCODE F_ArgSet::printUsage( void)
 				goto Exit;
 			}
 			
-			if( RC_BAD( rc = acc.appendTEXT( "\n")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, "\n");
 		}
 		
-		if( RC_BAD( rc = acc.appendTEXT( "\n")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, "\n");
 	}
 
 	if( m_uiRequiredArgsVecLen > 0)
 	{
-		if( RC_BAD( rc = acc.appendTEXT(
+		f_printf( m_pPrintfClient,
 			"REQUIRED args:\n"
-			"\n")))
-		{
-			goto Exit;
-		}
+			"\n");
 		
 		for( uiLoop = 0; uiLoop < m_uiRequiredArgsVecLen; uiLoop++)
 		{
-			F_Arg *		pArg = (F_Arg*)m_requiredArgsVec.getElementAt( uiLoop);
-			F_StringAcc tempAcc;
-			FLMUINT 		uiPads;
+			F_Arg *			pArg = (F_Arg*)m_requiredArgsVec.getElementAt( uiLoop);
+			F_StringAcc 	tempAcc;
+			FLMUINT 			uiPads;
 			
 			if( RC_BAD( rc = tempAcc.appendTEXT( "<")))
 			{
@@ -1907,37 +1584,24 @@ RCODE F_ArgSet::printUsage( void)
 				goto Exit;
 			}
 			
-			if( RC_BAD( rc = acc.appendTEXT( tempAcc.getTEXT())))
+			f_printf( m_pPrintfClient, tempAcc.getTEXT());
+			
+			if( RC_BAD( rc = displayShortHelpLines( pArg->getShortHelp(), 39)))
 			{
 				goto Exit;
 			}
 			
-			if( RC_BAD( rc = displayShortHelpLines(
-				&acc, pArg->getShortHelp(), 39)))
-			{
-				goto Exit;
-			}
-			
-			if( RC_BAD( rc = acc.appendTEXT( "\n")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, "\n");
 		}
 		
-		if( RC_BAD( rc = acc.appendTEXT( "\n\n")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, "\n\n");
 	}
 
 	if( m_uiOptionalArgsVecLen > 0)
 	{
-		if( RC_BAD( rc = acc.appendTEXT(
+		f_printf( m_pPrintfClient, 
 			"OPTIONAL args:\n"
-			"\n")))
-		{
-			goto Exit;
-		}
+			"\n");
 		
 		for( uiLoop = 0; uiLoop < m_uiOptionalArgsVecLen; uiLoop++)
 		{
@@ -1967,27 +1631,17 @@ RCODE F_ArgSet::printUsage( void)
 				goto Exit;
 			}
 			
-			if( RC_BAD( rc = acc.appendTEXT( tempAcc.getTEXT())))
+			f_printf( m_pPrintfClient, tempAcc.getTEXT());
+			
+			if( RC_BAD( rc = displayShortHelpLines( pArg->getShortHelp(), 39)))
 			{
 				goto Exit;
 			}
 			
-			if( RC_BAD( rc = displayShortHelpLines(
-				&acc, pArg->getShortHelp(), 39)))
-			{
-				goto Exit;
-			}
-			
-			if( RC_BAD( rc = acc.appendTEXT( "\n")))
-			{
-				goto Exit;
-			}
+			f_printf( m_pPrintfClient, "\n");
 		}
 		
-		if( RC_BAD( rc = acc.appendTEXT( "\n\n")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, "\n\n");
 	}
 
 	if( m_pRepeatingArg)
@@ -1995,12 +1649,9 @@ RCODE F_ArgSet::printUsage( void)
 		F_StringAcc		tempAcc;
 		FLMUINT			uiPads;
 		
-		if( RC_BAD( rc = acc.appendTEXT(
+		f_printf( m_pPrintfClient,
 			"REPEATING arg:\n"
-			"\n")))
-		{
-			goto Exit;
-		}
+			"\n");
 		
 		if( RC_BAD( rc = tempAcc.appendTEXT( "[")))
 		{
@@ -2024,74 +1675,20 @@ RCODE F_ArgSet::printUsage( void)
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = acc.appendTEXT( tempAcc.getTEXT())))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, tempAcc.getTEXT());
 		
 		if( RC_BAD( rc = displayShortHelpLines(
-			&acc, m_pRepeatingArg->getShortHelp(), 39)))
+			m_pRepeatingArg->getShortHelp(), 39)))
 		{
 			goto Exit;
 		}
 		
-		if( RC_BAD( rc = acc.appendTEXT( "\n\n")))
-		{
-			goto Exit;
-		}
+		f_printf( m_pPrintfClient, "\n\n");
 	}
-	
-	outputLines( (const char *)acc.getTEXT());
 	
 Exit:
 
-	return( rc);
-}
-
-/****************************************************************************
-Desc: Output lines of text in the argument by making calls to the
-		output callback, one per line.
-****************************************************************************/
-void F_ArgSet::outputLines( 
-	const char *		pszStr)
-{
-	if( m_outputCallback)
-	{
-		char				pszOneLine[ 80];
-		FLMUINT			uiStrLen = f_strlen( pszStr);
-		const char *	pEndLine;
-
-		for( ;;)
-		{
-			pEndLine = f_strchr( (const char *)pszStr, '\n');
-			
-			if( uiStrLen == 0)
-			{
-				break;
-			}
-			else if( pEndLine && ((pEndLine - pszStr) > 79))
-			{
-				f_strncpy( pszOneLine, pszStr, 79);
-				pszOneLine[ 79] = 0;
-				m_outputCallback( pszOneLine, m_pvOutputCallbackData);
-				pszStr += 79;
-			}
-			else if( !pEndLine)
-			{
-				m_outputCallback( pszStr, m_pvOutputCallbackData);
-				break;
-			}
-			else
-			{
-				f_strncpy( pszOneLine, pszStr, 79);
-				pszOneLine[ 79] = 0;
-				m_outputCallback( pszOneLine, m_pvOutputCallbackData);
-				
-				pszStr = pEndLine + 1;
-				uiStrLen = f_strlen( pszStr);
-			}
-		}
-	}
+	return;
 }
 
 /****************************************************************************
@@ -2343,7 +1940,7 @@ RCODE F_ArgSet::preProcessParams( void)
 			{
 				// There's probably a cycle in the @-files if we're going this deep
 				
-				outputLines( "ERROR: cycle in @-files detected");
+				f_printf( m_pPrintfClient, "ERROR:  Cycle in @-files detected");
 				rc = RC_SET( NE_FLM_FAILURE);
 				goto Exit;
 			}
@@ -2353,24 +1950,9 @@ RCODE F_ArgSet::preProcessParams( void)
 			if( RC_BAD( rc = f_filetobuf(
 				(const char *)(pszNextArg + 1), &pszBuffer)))
 			{
-				F_StringAcc		acc;
-				
-				if( RC_BAD( acc.appendTEXT( "ERROR: reading @-file ")))
-				{
-					goto Exit;
-				}
-				
-				if( RC_BAD( acc.appendTEXT( pszNextArg)))
-				{
-					goto Exit;
-				}
-				
-				if( RC_BAD( acc.appendTEXT( "!")))
-				{
-					goto Exit;
-				}
-				
-				outputLines( (const char *)acc.getTEXT());
+				f_printf( m_pPrintfClient, "ERROR:  Reading @-file ");
+				f_printf( m_pPrintfClient, pszNextArg);
+				f_printf( m_pPrintfClient, "!");
 				goto Exit;
 			}
 			

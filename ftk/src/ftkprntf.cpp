@@ -146,6 +146,114 @@ private:
 };
 
 /****************************************************************************
+Desc:
+****************************************************************************/
+class FLMEXP F_StdoutPrintfClient : public IF_PrintfClient
+{
+public:
+
+	F_StdoutPrintfClient()
+	{
+	}
+	
+	virtual ~F_StdoutPrintfClient()
+	{
+	}
+	
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar)
+	{
+		f_printf( "%c", cChar);
+		return( 1);
+	}
+		
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar,
+		FLMUINT			uiCount)
+	{
+		FLMINT			iBytesOutput = (FLMINT)uiCount;
+		
+		while( uiCount)
+		{
+			f_printf( "%c", cChar);
+			uiCount--;
+		}
+		
+		return( iBytesOutput);
+	}
+
+	FINLINE FLMINT FLMAPI outputStr(
+		const char *	pszStr,
+		FLMUINT			uiLen)
+	{
+		f_printf( "%*s", (unsigned)uiLen, pszStr);
+		return( (FLMINT)uiLen);
+	}
+		
+	FINLINE FLMINT FLMAPI colorFormatter(
+		char,				// cFormatChar,
+		eColorType,		// eColor,
+		FLMUINT)			// uiFlags)
+	{
+		return( 0);
+	}
+};
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+class FLMEXP F_StderrPrintfClient : public IF_PrintfClient
+{
+public:
+
+	F_StderrPrintfClient()
+	{
+	}
+	
+	virtual ~F_StderrPrintfClient()
+	{
+	}
+	
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar)
+	{
+		f_printf( "%c", cChar);
+		return( 1);
+	}
+		
+	FINLINE FLMINT FLMAPI outputChar(
+		char				cChar,
+		FLMUINT			uiCount)
+	{
+		FLMINT			iBytesOutput = (FLMINT)uiCount;
+		
+		while( uiCount)
+		{
+			f_printf( "%c", cChar);
+			uiCount--;
+		}
+		
+		return( iBytesOutput);
+	}
+
+	FINLINE FLMINT FLMAPI outputStr(
+		const char *	pszStr,
+		FLMUINT			uiLen)
+	{
+		f_printf( "%*s", (unsigned)uiLen, pszStr);
+		return( (FLMINT)uiLen);
+	}
+		
+	FINLINE FLMINT FLMAPI colorFormatter(
+		char,				// cFormatChar,
+		eColorType,		// eColor,
+		FLMUINT)			// uiFlags)
+	{
+		return( 0);
+	}
+};
+
+/****************************************************************************
 Desc:		Parameter 'format' points to text following a '%' sign. Process
 			legal field information.	Leave 'format' pointing at the format
 			specifier char.
@@ -883,5 +991,57 @@ FLMINT FLMAPI f_printf(
 #endif
 
 	return( iLen);
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMINT FLMAPI f_errprintf(
+	const char *	pszFormat,
+	...)
+{
+	FLMINT						iLen;
+	f_va_list					args;
+	F_DynaPrintfClient		printfClient;
+
+	f_va_start( args, pszFormat);
+	iLen = f_vprintf( &printfClient, pszFormat, &args);
+	f_va_end( args);
+	printfClient.outputChar( 0);
+	
+#ifndef FLM_RING_ZERO_NLM
+	fprintf( stderr, printfClient.getBufferPtr());
+	fflush( stderr);
+#endif
+
+	return( iLen);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmAllocStdoutPrintfClient( 
+	IF_PrintfClient **		ppClient)
+{
+	if( (*ppClient = f_new F_StdoutPrintfClient) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
+}
+
+/*****************************************************************************
+Desc:
+******************************************************************************/
+RCODE FLMAPI FlmAllocStderrPrintfClient( 
+	IF_PrintfClient **		ppClient)
+{
+	if( (*ppClient = f_new F_StderrPrintfClient) == NULL)
+	{
+		return( RC_SET( NE_FLM_MEM));
+	}
+	
+	return( NE_FLM_OK);
 }
 
