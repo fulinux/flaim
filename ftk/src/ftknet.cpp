@@ -31,7 +31,7 @@ FSTATIC RCODE f_socketPeek(
 	FLMBOOL				bPeekRead);
 	
 FSTATIC void f_closeSocket(
-	int *					piSocket);
+	SOCKET *				piSocket);
 	
 /****************************************************************************
 Desc:
@@ -1449,7 +1449,7 @@ Exit:
 Desc:
 *********************************************************************/
 void f_closeSocket(
-	int *					piSocket)
+	SOCKET *				piSocket)
 {
 	if( *piSocket != INVALID_SOCKET)
 	{
