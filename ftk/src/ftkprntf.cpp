@@ -163,7 +163,7 @@ public:
 	FINLINE FLMINT FLMAPI outputChar(
 		char				cChar)
 	{
-		f_printf( "%c", cChar);
+		fprintf( stdout, "%c", cChar);
 		return( 1);
 	}
 		
@@ -175,7 +175,7 @@ public:
 		
 		while( uiCount)
 		{
-			f_printf( "%c", cChar);
+			fprintf( stdout, "%c", cChar);
 			uiCount--;
 		}
 		
@@ -186,7 +186,7 @@ public:
 		const char *	pszStr,
 		FLMUINT			uiLen)
 	{
-		f_printf( "%*s", (unsigned)uiLen, pszStr);
+		fprintf( stdout, "%.*s", (unsigned)uiLen, pszStr);
 		return( (FLMINT)uiLen);
 	}
 		
@@ -217,7 +217,7 @@ public:
 	FINLINE FLMINT FLMAPI outputChar(
 		char				cChar)
 	{
-		f_printf( "%c", cChar);
+		fprintf( stderr, "%c", cChar);
 		return( 1);
 	}
 		
@@ -229,7 +229,7 @@ public:
 		
 		while( uiCount)
 		{
-			f_printf( "%c", cChar);
+			fprintf( stderr, "%c", cChar);
 			uiCount--;
 		}
 		
@@ -240,7 +240,7 @@ public:
 		const char *	pszStr,
 		FLMUINT			uiLen)
 	{
-		f_printf( "%*s", (unsigned)uiLen, pszStr);
+		fprintf( stderr, "%.*s", (unsigned)uiLen, pszStr);
 		return( (FLMINT)uiLen);
 	}
 		
@@ -987,7 +987,6 @@ FLMINT FLMAPI f_printf(
 	
 #ifndef FLM_RING_ZERO_NLM
 	fprintf( stdout, printfClient.getBufferPtr());
-	fflush( stdout);
 #endif
 
 	return( iLen);
@@ -1011,7 +1010,6 @@ FLMINT FLMAPI f_errprintf(
 	
 #ifndef FLM_RING_ZERO_NLM
 	fprintf( stderr, printfClient.getBufferPtr());
-	fflush( stderr);
 #endif
 
 	return( iLen);

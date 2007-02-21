@@ -59,7 +59,7 @@ public:
 		FLMBYTE *				pucBindAddr = NULL);
 
 	RCODE FLMAPI connectClient(
-		F_TCPIOStream **	ppClientStream,
+		IF_TCPIOStream **	ppClientStream,
 		FLMUINT				uiTimeout = 3);
 		
 private:
@@ -71,7 +71,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class	F_TCPIOStream : public IF_IOStream
+class	F_TCPIOStream : public IF_TCPIOStream
 {
 public:
 
@@ -115,25 +115,25 @@ public:
 		return( f_socketPeek( m_iSocket, uiTimeOut, TRUE));
 	};
 
-	FINLINE const char * getName( void)
+	FINLINE const char * getLocalHostName( void)
 	{
 		getLocalInfo();
 		return( (const char *)m_pszName);
 	};
 
-	FINLINE const char * getAddr( void)
+	FINLINE const char * getLocalHostAddress( void)
 	{
 		getLocalInfo();
 		return( (const char *)m_pszIp);
 	};
 
-	FINLINE const char * getPeerName( void)
+	FINLINE const char * getPeerHostName( void)
 	{
 		getRemoteInfo();
 		return( (const char *)m_pszPeerName);
 	};
 
-	FINLINE const char * getPeerAddr( void)
+	FINLINE const char * getPeerHostAddress( void)
 	{
 		getRemoteInfo();
 		return( (const char *)m_pszPeerIp);
@@ -149,8 +149,8 @@ public:
 		FLMUINT			uiCount,
 		FLMUINT *		puiBytesRead);
 
-	RCODE	setTcpDelay(
-		FLMBOOL			bOn);
+	void FLMAPI setIOTimeout(
+		FLMUINT			uiSeconds);
 
 	RCODE FLMAPI closeStream( void);
 
@@ -313,7 +313,7 @@ Exit:
 Desc:
 *****************************************************************************/
 RCODE F_TCPListener::connectClient(
-	F_TCPIOStream **		ppClientStream,
+	IF_TCPIOStream **		ppClientStream,
 	FLMUINT					uiConnectTimeout)
 {
 	RCODE						rc = NE_FLM_OK;
@@ -1104,6 +1104,15 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
+void FLMAPI F_TCPIOStream::setIOTimeout(
+	FLMUINT			uiSeconds)
+{
+	m_uiIOTimeout = uiSeconds;
+}
+	
+/****************************************************************************
+Desc:
+****************************************************************************/
 #ifdef FLM_OPENSSL
 RCODE FLMAPI F_SSLIOStream::openStream(
 	const char *			pszHost,
@@ -1479,7 +1488,7 @@ RCODE FLMAPI FlmOpenTCPListener(
 		goto Exit;
 	}
 	
-	if( RC_BAD( pListener->bind( uiBindPort, pucBindAddr)))
+	if( RC_BAD( rc = pListener->bind( uiBindPort, pucBindAddr)))
 	{
 		goto Exit;
 	}

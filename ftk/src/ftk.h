@@ -686,6 +686,7 @@
 	flminterface IF_IOStream;
 	flminterface IF_TCPListener;
 	flminterface IF_SSLIOStream;
+	flminterface IF_TCPIOStream;
 	flminterface IF_LogMessageClient;
 	flminterface IF_Thread;
 	flminterface IF_IOBuffer;
@@ -1635,17 +1636,17 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_TCPListener : public F_Object
+	flminterface FLMEXP IF_TCPListener : public F_Object
 	{
 		virtual RCODE FLMAPI connectClient(
-			F_TCPIOStream **		ppClientStream,
-			FLMUINT					uiTimeout = 0);
+			IF_TCPIOStream **		ppClientStream,
+			FLMUINT					uiTimeout = 0) = 0;
 	};
 	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_TCPIOStream : public IF_IOStream
+	flminterface FLMEXP IF_TCPIOStream : public IF_IOStream
 	{
 		virtual RCODE FLMAPI read(
 			void *			pvBuffer,
@@ -1657,7 +1658,7 @@
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten) = 0;
 	
-		virtual const char * FLMAPI getLocalHostName( void)  = 0;
+		virtual const char * FLMAPI getLocalHostName( void) = 0;
 	
 		virtual const char * FLMAPI getLocalHostAddress( void) = 0;
 	
@@ -1676,12 +1677,15 @@
 			FLMUINT *		puiBytesRead) = 0;
 	
 		virtual RCODE FLMAPI closeStream( void) = 0;
+		
+		virtual void FLMAPI setIOTimeout(
+			FLMUINT			uiSeconds) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_SSLIOStream : public IF_IOStream
+	flminterface FLMEXP IF_SSLIOStream : public IF_IOStream
 	{
 		virtual RCODE FLMAPI openStream(
 			const char *			pszHost,

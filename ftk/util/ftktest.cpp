@@ -4281,18 +4281,58 @@ FSTATIC FLMUINT gv_puiPacketSizes[] =
 Desc:
 ****************************************************************************/
 #ifdef FLM_RING_ZERO_NLM
-extern "C" int nlm_main( void)
+extern "C" int nlm_main(
+	int						argc,
+	const char **			argv)
 #else
-int main( void)
+int main(
+	int						argc,
+	const char **			argv)
 #endif
 {
-	RCODE					rc = NE_FLM_OK;
-	IF_DirHdl *			pDirHdl = NULL;
-	IF_FileSystem *	pFileSystem = NULL;
-	FLMUINT *			puiPacketSize;
-	char					szTmpBuf[ 128];
+	RCODE						rc = NE_FLM_OK;
+	IF_DirHdl *				pDirHdl = NULL;
+	IF_FileSystem *		pFileSystem = NULL;
+	FLMUINT *				puiPacketSize;
+	char						szTmpBuf[ 128];
+	F_ArgSet *				pArgSet = NULL;
+	IF_PrintfClient *		pStdoutClient = NULL;
 	
 	if( RC_BAD( rc = ftkStartup()))
+	{
+		goto Exit;
+	}
+	
+	// Parse the command line
+	
+	if( RC_BAD( rc = FlmAllocStdoutPrintfClient( &pStdoutClient)))
+	{
+		goto Exit;
+	}
+	
+	if( (pArgSet = f_new F_ArgSet) == NULL)
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pArgSet->setup( pStdoutClient)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pArgSet->addArg( "d", "display test output", 
+		TRUE, F_ARG_OPTION, F_ARG_CONTENT_NONE)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pArgSet->addArg( "port", "listener port for RPC requests", 
+		TRUE, F_ARG_OPTION, F_ARG_CONTENT_UNSIGNED_INT, 1, 65535)))
+	{
+		goto Exit;
+	}
+	
+	if( RC_BAD( rc = pArgSet->parseCommandLine( (FLMUINT)argc, argv)))
 	{
 		goto Exit;
 	}
@@ -4303,7 +4343,7 @@ int main( void)
 	{
 		goto Exit;
 	}
-
+	
 #ifdef FLM_NLM
 	if( RC_BAD( rc = pFileSystem->openDir( "sys:\\", "*.*", &pDirHdl)))
 	{
@@ -4456,6 +4496,16 @@ Exit:
 	if( pFileSystem)
 	{
 		pFileSystem->Release();
+	}
+	
+	if( pArgSet)
+	{
+		pArgSet->Release();
+	}
+	
+	if( pStdoutClient)
+	{
+		pStdoutClient->Release();
 	}
 	
 	ftkShutdown();

@@ -836,9 +836,9 @@ RCODE F_ArgSet::parseOption(
 		{
 			if( pArg->getContentType() != F_ARG_CONTENT_NONE)
 			{
-				f_printf( m_pPrintfClient, "ERROR:  Option ");
+				f_printf( m_pPrintfClient, "ERROR: Option '");
 				f_printf( m_pPrintfClient, pArg->getIdentifier());
-				f_printf( m_pPrintfClient, " requires argument of the form option=value");
+				f_printf( m_pPrintfClient, "' requires argument of the form option=value");
 				
 				printUsage();
 				
@@ -871,7 +871,7 @@ RCODE F_ArgSet::parseOption(
 				if( pArg->getContentType() == F_ARG_CONTENT_NONE)
 				{
 					f_printf( m_pPrintfClient,
-						"ERROR:  Cannot give argument to option ");
+						"ERROR: Cannot give argument to option ");
 					f_printf( m_pPrintfClient, pArg->getIdentifier());
 						
 					printUsage();
@@ -975,7 +975,7 @@ RCODE F_ArgSet::parseCommandLine(
 	}
 
 	// Now read through the args.  They will all be well-formed at this
-	// point.	 Look for strings beginning with a hyphen to find options,
+	// point.  Look for strings beginning with a hyphen to find options,
 	// and everything else is either a required, optional, or repeating
 	// arg.  Ignore arg 0, which is the executable name.
 	
@@ -1072,8 +1072,9 @@ RCODE F_ArgSet::parseCommandLine(
 		}
 		else
 		{
-			f_printf( m_pPrintfClient, "invalid extra argument ");
+			f_printf( m_pPrintfClient, "invalid extra argument '");
 			f_printf( m_pPrintfClient, pszArg);
+			f_printf( m_pPrintfClient, "'\n");
 			
 			printUsage();
 			
@@ -1095,7 +1096,7 @@ RCODE F_ArgSet::parseCommandLine(
 			if ( !pArg->isPresent())
 			{
 				f_printf( m_pPrintfClient,
-					"ERROR:  Did not pass required arg #%u <%s>\n",
+					"ERROR: Did not pass required arg #%u <%s>\n",
 					uiLoop + 1, pArg->getIdentifier());
 				{
 					goto Exit;
@@ -1146,7 +1147,7 @@ RCODE F_ArgSet::parseCommandLine(
 						
 						if( !bValidated)
 						{
-							f_printf( m_pPrintfClient, "ERROR:  Argument '");
+							f_printf( m_pPrintfClient, "ERROR: Argument '");
 							f_printf( m_pPrintfClient, pszStr);
 							f_printf( m_pPrintfClient,
 								"' is not a valid representation of a boolean");
@@ -1206,8 +1207,8 @@ RCODE F_ArgSet::parseCommandLine(
 							if( (iArg > iMax) || (iArg < iMin))
 							{
 								f_printf( m_pPrintfClient,
-									"ERROR:  Argument '%s' violates range "
-									"requirement of min=%d, max=%d",
+									"ERROR: Argument '%s' violates range "
+									"requirement of min=%d, max=%d\n",
 									pszStr, iMin, iMax);
 										
 								bValidated = FALSE;
@@ -1221,14 +1222,14 @@ RCODE F_ArgSet::parseCommandLine(
 							FLMUINT		uiArg;
 							
 							pArg->getMinMax( &uiMin, &uiMax);
-							uiArg = f_atoi( pszStr);
+							uiArg = f_atoud( pszStr);
 							
 							if( (uiArg > uiMax) || (uiArg < uiMin))
 							{
 								f_printf( m_pPrintfClient,
-									"ERROR:  Argument '%s' violates range "
-									"requirement of min=%u, max=%u",
-									pszStr, uiMin, uiMax);
+									"ERROR: Argument '%s' violates range "
+									"requirement of min=%u, max=%u\n",
+									pszStr, (unsigned)uiMin, (unsigned)uiMax);
 								
 								bValidated = FALSE;
 								break;
@@ -1266,7 +1267,7 @@ RCODE F_ArgSet::parseCommandLine(
 						
 						if( !bValidated)
 						{
-							f_printf( m_pPrintfClient, "ERROR:  '");
+							f_printf( m_pPrintfClient, "ERROR: '");
 							f_printf( m_pPrintfClient, pszStr);
 							f_printf( m_pPrintfClient,
 								"' is invalid. Must be a member of {");
@@ -1304,7 +1305,7 @@ RCODE F_ArgSet::parseCommandLine(
 							
 							if ( !bValidated)
 							{
-								f_printf( m_pPrintfClient, "ERROR:  File ");
+								f_printf( m_pPrintfClient, "ERROR: File ");
 								f_printf( m_pPrintfClient, pszStr);
 								f_printf( m_pPrintfClient, " does not exist\n");
 								break;
@@ -1326,9 +1327,8 @@ RCODE F_ArgSet::parseCommandLine(
 			
 			if( !bValidated)
 			{
-				f_printf( m_pPrintfClient, "\nargument '");
+				f_printf( m_pPrintfClient, "ERROR: Argument '");
 				f_printf( m_pPrintfClient, pArg->getIdentifier());
-				f_printf( m_pPrintfClient, "}\n");
 				f_printf( m_pPrintfClient, "' did not validate with value '");
 				f_printf( m_pPrintfClient, pszStr);
 				f_printf( m_pPrintfClient, "'\n");
@@ -1940,7 +1940,7 @@ RCODE F_ArgSet::preProcessParams( void)
 			{
 				// There's probably a cycle in the @-files if we're going this deep
 				
-				f_printf( m_pPrintfClient, "ERROR:  Cycle in @-files detected");
+				f_printf( m_pPrintfClient, "ERROR: Cycle in @-files detected");
 				rc = RC_SET( NE_FLM_FAILURE);
 				goto Exit;
 			}
@@ -1950,7 +1950,7 @@ RCODE F_ArgSet::preProcessParams( void)
 			if( RC_BAD( rc = f_filetobuf(
 				(const char *)(pszNextArg + 1), &pszBuffer)))
 			{
-				f_printf( m_pPrintfClient, "ERROR:  Reading @-file ");
+				f_printf( m_pPrintfClient, "ERROR: Reading @-file ");
 				f_printf( m_pPrintfClient, pszNextArg);
 				f_printf( m_pPrintfClient, "!");
 				goto Exit;
