@@ -5966,7 +5966,7 @@ void FlmExportCommand::displayHelp(
 			"  <collection> defaults to \"Data\" if omitted\n"
 			"    Data - Default data collection\n"
 			"    Dict - Dictionary collection\n"
-			"    #    - Collection number\n",
+			"    #    - Collection number\n"
 			"  <doc#> defaults to all documents if omitted\n"
 			"  <export format> defaults to \"indent\" if omitted)\n"
 			"    none    - no special formatting used\n"
