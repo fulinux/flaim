@@ -1097,7 +1097,7 @@ Desc:
 RCODE FlmShell::con_printf(
 	const char *	pszFormat, ...)
 {
-	char				szBuffer[ 512];
+	char				szBuffer[ 4096];
 	f_va_list		args;
 
 	if( m_pWindow)
