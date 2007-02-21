@@ -2999,6 +2999,7 @@ JNIEXPORT jstring JNICALL Java_xflaim_Db__1exportXML__JJI(
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
+	dynaOStream.closeStream();
 	
 	// Create a string and return it.
 
