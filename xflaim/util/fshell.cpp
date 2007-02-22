@@ -5248,6 +5248,11 @@ RetryLoad:
 			bTransActive = TRUE;
 		}
 		
+		if (pFileIStream)
+		{
+			pFileIStream->Release();
+			pFileIStream = NULL;
+		}
 		if( RC_BAD( rc = FlmOpenFileIStream( szTmpPath, &pFileIStream)))
 		{
 			goto Exit;
@@ -5394,6 +5399,11 @@ RetryLoad:
 	}
 
 Exit:
+
+	if (pFileIStream)
+	{
+		pFileIStream->Release();
+	}
 
 	if( pDirHdl)
 	{
