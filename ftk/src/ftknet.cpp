@@ -83,13 +83,13 @@ public:
 	
 	virtual ~F_TCPIOStream( void);
 
-	RCODE openStream(
+	RCODE FLMAPI openStream(
 		const char *	pucHostAddress,
 		FLMUINT			uiPort,
 		FLMUINT			uiFlags,
 		FLMUINT			uiConnectTimeout);
 
-	RCODE openStream(
+	RCODE FLMAPI openStream(
 		int				iSocket,
 		FLMUINT			uiFlags);
 		
@@ -103,48 +103,48 @@ public:
 		FLMUINT			uiBytesToWrite,
 		FLMUINT *		puiBytesWritten);
 
-	FINLINE RCODE socketPeekWrite(
+	FINLINE RCODE FLMAPI socketPeekWrite(
 		FLMUINT		uiTimeOut)
 	{
 		return( f_socketPeek( m_iSocket, uiTimeOut, FALSE));
 	}
 
-	FINLINE RCODE f_socketPeekRead( 
+	FINLINE RCODE FLMAPI f_socketPeekRead( 
 		FLMUINT		uiTimeOut)
 	{
 		return( f_socketPeek( m_iSocket, uiTimeOut, TRUE));
 	};
 
-	FINLINE const char * getLocalHostName( void)
+	FINLINE const char * FLMAPI getLocalHostName( void)
 	{
 		getLocalInfo();
 		return( (const char *)m_pszName);
 	};
 
-	FINLINE const char * getLocalHostAddress( void)
+	FINLINE const char * FLMAPI getLocalHostAddress( void)
 	{
 		getLocalInfo();
 		return( (const char *)m_pszIp);
 	};
 
-	FINLINE const char * getPeerHostName( void)
+	FINLINE const char * FLMAPI getPeerHostName( void)
 	{
 		getRemoteInfo();
 		return( (const char *)m_pszPeerName);
 	};
 
-	FINLINE const char * getPeerHostAddress( void)
+	FINLINE const char * FLMAPI getPeerHostAddress( void)
 	{
 		getRemoteInfo();
 		return( (const char *)m_pszPeerIp);
 	};
 
-	RCODE readNoWait(
+	RCODE FLMAPI readNoWait(
 		void *			pvBuffer,
 		FLMUINT			uiCount,
 		FLMUINT *		puiReadRead);
 
-	RCODE readAll(
+	RCODE FLMAPI readAll(
 		void *			pvBuffer,
 		FLMUINT			uiCount,
 		FLMUINT *		puiBytesRead);

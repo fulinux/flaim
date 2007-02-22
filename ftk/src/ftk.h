@@ -614,6 +614,7 @@
 	
 	#define FLM_HTTP_STATUS_CONTINUE							100
 	#define FLM_HTTP_STATUS_SWITCHING_PROTOCOLS			101
+	#define FLM_HTTP_STATUS_PROCESSING						102
 	#define FLM_HTTP_STATUS_OK									200
 	#define FLM_HTTP_STATUS_CREATED							201
 	#define FLM_HTTP_STATUS_ACCEPTED							202
@@ -621,6 +622,7 @@
 	#define FLM_HTTP_STATUS_NO_CONTENT						204
 	#define FLM_HTTP_STATUS_RESET_CONTENT					205
 	#define FLM_HTTP_STATUS_PARTIAL_CONTENT				206
+	#define FLM_HTTP_STATUS_MULTI_STATUS					207
 	#define FLM_HTTP_STATUS_MULTIPLE_CHOICES				300
 	#define FLM_HTTP_STATUS_MOVED_PERMANENTLY				301
 	#define FLM_HTTP_STATUS_FOUND								302
@@ -652,6 +654,9 @@
 	#define FLM_HTTP_STATUS_SERVICE_UNAVAILABLE			503
 	#define FLM_HTTP_STATUS_GATEWAY_TIMEOUT				504
 	#define FLM_HTTP_STATUS_VERSION_NOT_SUPPORTED		505
+	
+	const char * FLMAPI FlmGetHTTPStatusString( 
+		FLMUINT				uiStatusCode);
 
 	/****************************************************************************
 	Desc: Return code functions and macros
@@ -1551,7 +1556,7 @@
 	RCODE FLMAPI FlmReadFully(
 		IF_IStream *				pIStream,
 		F_DynaBuf *					pDynaBuf);
-	
+		
 	RCODE FLMAPI FlmReadLine(
 		IF_IStream *				pIStream,
 		F_DynaBuf *					pBuffer);
@@ -1676,8 +1681,6 @@
 			FLMUINT			uiCount,
 			FLMUINT *		puiBytesRead) = 0;
 	
-		virtual RCODE FLMAPI closeStream( void) = 0;
-		
 		virtual void FLMAPI setIOTimeout(
 			FLMUINT			uiSeconds) = 0;
 	};
@@ -1703,8 +1706,6 @@
 			FLMUINT *				puiBytesWritten = NULL) = 0;
 			
 		virtual const char * FLMAPI getPeerCertificateText( void) = 0;
-			
-		virtual RCODE FLMAPI closeStream( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1720,10 +1721,16 @@
 	
 	flminterface IF_HTTPHeader : public F_Object
 	{
+		virtual RCODE FLMAPI readRequestHeader(
+			IF_IStream *				pIStream) = 0;
+			
 		virtual RCODE FLMAPI readResponseHeader(
 			IF_IStream *				pIStream) = 0;
 			
 		virtual RCODE FLMAPI writeRequestHeader(
+			IF_OStream *				pOStream) = 0;
+			
+		virtual RCODE FLMAPI writeResponseHeader(
 			IF_OStream *				pOStream) = 0;
 			
 		virtual RCODE FLMAPI getHeaderValue(
@@ -1744,9 +1751,14 @@
 			
 		virtual FLMUINT FLMAPI getStatusCode( void) = 0;
 		
-		virtual RCODE FLMAPI setRequestURL(
-			const char *				pszRequestURL) = 0;
+		virtual RCODE FLMAPI setStatusCode(
+			FLMUINT						uiStatusCode) = 0;
+		
+		virtual RCODE FLMAPI setRequestURI(
+			const char *				pszRequestURI) = 0;
 			
+		const char * FLMAPI getRequestURI( void);
+	
 		virtual RCODE FLMAPI setMethod(
 			eHttpMethod					httpMethod) = 0;
 			
@@ -3502,8 +3514,12 @@
 	Desc: String constants
 	****************************************************************************/
 	
-	#define FLM_HTTP_CONTENT_LENGTH		((const char *) "Content-Length")
-	#define FLM_HTTP_USER_AGENT			((const char *) "User-Agent")
+	#define FLM_HTTP_CONTENT_LENGTH_TAG		((const char *) "Content-Length")
+	#define FLM_HTTP_CONTENT_TYPE_TAG		((const char *) "Content-Type")
+	
+	#define FLM_HTTP_USER_AGENT_STR			((const char *) "User-Agent")
+	
+	#define FLM_MIME_TYPE_TEXT_XML_STR		((const char *) "text/xml")
 	
 	/****************************************************************************
 	Desc: Endian macros
