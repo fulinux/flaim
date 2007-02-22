@@ -296,13 +296,13 @@ JNIEXPORT void JNICALL Java_xflaim_Query__1setupQueryExpr(
 	FLMBYTE		ucQuery [512];
 	F_DynaBuf	queryBuf( ucQuery, sizeof( ucQuery));
 	
-	if (RC_BAD( rc = getUniString( pEnv, sQuery, &queryBuf)))
+	if (RC_BAD( rc = getUTF8String( pEnv, sQuery, &queryBuf)))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
 	}
 
-	if (RC_BAD( rc = pQuery->setupQueryExpr( pDb, queryBuf.getUnicodePtr())))
+	if (RC_BAD( rc = pQuery->setupQueryExpr( pDb, (const char *)queryBuf.getBufferPtr())))
 	{
 		ThrowError( rc, pEnv);
 		goto Exit;
