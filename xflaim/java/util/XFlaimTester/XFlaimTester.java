@@ -34,7 +34,7 @@ public class XFlaimTester
 		DbSystem					dbSystem = null;
 		CREATEOPTS				createOpts = null;
 		Db							jDb = null;
-		PosIStream				jIStream = null;
+		IStream					jIStream = null;
 		boolean					bDone = false;
 		int						iCount = 0;
 		int						iBufferSize;
