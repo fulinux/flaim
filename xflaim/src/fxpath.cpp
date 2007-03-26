@@ -2163,7 +2163,7 @@ RCODE F_XPath::parseQuery(
 								pNamespace ? pNamespace->getURIPtr() : NULL,
 								&uiDictNum, NULL)))
 							{
-								if( rc != NE_XFLM_NOT_FOUND)
+								if( rc != NE_XFLM_NOT_FOUND && rc != NE_XFLM_MULTIPLE_MATCHES)
 								{
 									goto Exit;
 								}
@@ -2175,7 +2175,7 @@ RCODE F_XPath::parseQuery(
 											? ELM_ELEMENT_TAG
 											: ELM_ATTRIBUTE_TAG, 
 										m_curToken.getLocalPtr(),
-										NULL, FALSE, NULL, &uiDictNum, NULL)))
+										NULL, TRUE, NULL, &uiDictNum, NULL)))
 									{
 										rc = RC_SET( NE_XFLM_SYNTAX);
 										goto Exit;
