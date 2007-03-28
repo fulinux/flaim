@@ -2799,7 +2799,13 @@ FLMBOOL F_RecRelocator::canRelocate(
 {
 	FlmRecord *		pRec = (FlmRecord *)pvAlloc;
 
-	if( pRec->getRefCount() == 1 && pRec->isCached())
+	// DO NOT call getRefCount() or isCached() methods because the
+	// constructors may not have been called yet - meaning that the v-table
+	// pointers may not yet be set up.  We are relying on
+	// FlmRecord::objectAllocInit to initialize m_refCnt and m_uiFlags.
+	// objecAllocInit is called while the slab allocator mutex is locked.
+
+	if( pRec->m_refCnt == 1 && (pRec->m_uiFlags & RCA_CACHED))
 	{
 		return( TRUE);
 	}
@@ -2819,8 +2825,8 @@ void F_RecRelocator::relocate(
 	RCACHE *			pRCache;
 	RCACHE *			pVersion;
 
-	flmAssert( pOldRec->getRefCount() == 1);
-	flmAssert( pOldRec->isCached());
+	flmAssert( pOldRec->m_refCnt == 1);
+	flmAssert( pOldRec->m_uiFlags & RCA_CACHED);
 	flmAssert( pvNewAlloc < pvOldAlloc);
 
 	// Update the record pointer in the data buffer
@@ -2878,7 +2884,13 @@ FLMBOOL F_RecBufferRelocator::canRelocate(
 	flmAssert( pRec->m_pucBuffer == pvAlloc || 
 				  pRec->m_pucFieldIdTable == pvAlloc);
 
-	if( pRec->getRefCount() == 1 && pRec->isCached())
+	// DO NOT call getRefCount() or isCached() methods because the
+	// constructors may not have been called yet - meaning that the v-table
+	// pointers may not yet be set up.  We are relying on
+	// FlmRecord::objectAllocInit to initialize m_refCnt and m_uiFlags.
+	// objecAllocInit is called while the slab allocator mutex is locked.
+
+	if( pRec->m_refCnt == 1 && (pRec->m_uiFlags & RCA_CACHED))
 	{
 		return( TRUE);
 	}
@@ -2895,8 +2907,8 @@ void F_RecBufferRelocator::relocate(
 {
 	FlmRecord *		pRec = *((FlmRecord **)pvOldAlloc);
 
-	flmAssert( pRec->getRefCount() == 1);
-	flmAssert( pRec->isCached());
+	flmAssert( pRec->m_refCnt == 1);
+	flmAssert( pRec->m_uiFlags & RCA_CACHED);
 	flmAssert( pvNewAlloc < pvOldAlloc);
 
 	// Update the buffer pointer in the record
