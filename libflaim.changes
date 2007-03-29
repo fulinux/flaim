@@ -1,4 +1,9 @@
 -------------------------------------------------------------------
+Thu Mar 29 08:45:10 MST 2007 - dsanders@novell.com
+
+- Fixed problem of accessing FlmRecord object before it was constructed.
+
+-------------------------------------------------------------------
 Thu Mar 29 09:08:00 CEST 2007 - aj@suse.de
 
 - Add BuildRequires for ncurses-devel.

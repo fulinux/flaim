@@ -1,4 +1,18 @@
 -------------------------------------------------------------------
+Thu Mar 29 08:47:22 MST 2007 - dsanders@novell.com
+
+- Modified so that the java and xedit targets do not require the svn revision to be calculated.
+- Added support for building with an openssl-enabled toolkit.
+- Added public to Query class constructor (JAVA).
+- Increased buffer size for con_printf.
+- Fixed help for export command in xshell utility.
+- Fixed exportXML JAVA method to add a null character to string for C++ layer .
+- Changed JAVA setupQueryExpr method to produce a UTF8 string for C++ layer.
+- Needed to release an open file stream in the import command.
+- Changed PosIStream to IStream in JAVA code.
+- Query parser needed to resolve the name when no prefix was specified using a NULL namespace.
+
+-------------------------------------------------------------------
 Thu Mar 29 13:16:58 CEST 2007 - aj@suse.de
 
 - Add BuildRequires for ncurses-devel.
