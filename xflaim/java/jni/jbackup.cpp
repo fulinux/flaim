@@ -156,7 +156,7 @@ RCODE JNIBackupClient::WriteData(
 	JNIEnv *			pEnv;
 	jclass			Cls;
 	jmethodID		MId;
-	jbyteArray		jBuff;
+	jbyteArray		jBuff = NULL;
 	void *			pvBuff;
 	FLMBOOL			bMustDetach = FALSE;
 	
@@ -172,11 +172,15 @@ RCODE JNIBackupClient::WriteData(
 	}
 	
 	Cls = pEnv->GetObjectClass( m_jClient);
-	MId = pEnv->GetMethodID( Cls, "writeData", "([B)I");
+	MId = pEnv->GetMethodID( Cls, "WriteData", "([B)I");
 	
 	flmAssert( MId);
 	
-	jBuff = pEnv->NewByteArray( (jsize)uiBytesToWrite);
+	if ((jBuff = pEnv->NewByteArray( (jsize)uiBytesToWrite)) == NULL)
+	{
+		rc = RC_SET( NE_XFLM_MEM);
+		goto Exit;
+	}
 	pvBuff = pEnv->GetPrimitiveArrayCritical(jBuff, NULL);
 	f_memcpy(pvBuff, pvBuffer, uiBytesToWrite);
 	pEnv->ReleasePrimitiveArrayCritical( jBuff, pvBuff, 0);
@@ -187,6 +191,11 @@ RCODE JNIBackupClient::WriteData(
 	}
 		
 Exit:
+
+	if (jBuff)
+	{
+		pEnv->DeleteLocalRef( jBuff);
+	}
 
 	if (bMustDetach)
 	{
