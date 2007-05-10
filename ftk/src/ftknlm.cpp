@@ -28,6 +28,9 @@
 
 #if defined( FLM_NLM)
 
+#define NSS_BLOCK_SIZE				65536
+#define NSS_SECTORS_PER_BLOCK		(NSS_BLOCK_SIZE / FLM_NLM_SECTOR_SIZE)
+
 #if defined( FLM_RING_ZERO_NLM)
 	#define zMAX_COMPONENT_NAME						256
 	#define zGET_INFO_VARIABLE_DATA_SIZE			(zMAX_COMPONENT_NAME * 2)
@@ -1730,14 +1733,22 @@ RCODE F_FileHdl::expand(
 
 	if( m_bNSS)
 	{
-		lStartBlockNumber = lStartSector / (65536 / FLM_NLM_SECTOR_SIZE);
-		lLastBlockNumber = (lStartSector + lSectorsToAlloc) / (65536 / FLM_NLM_SECTOR_SIZE);
-		lExtendSize = uiRequestedExtendSize / 65536;
+		lStartBlockNumber = lStartSector / NSS_SECTORS_PER_BLOCK;
+		lLastBlockNumber = (lStartSector + lSectorsToAlloc) / NSS_SECTORS_PER_BLOCK;
+		if (((lStartSector + lSectorsToAlloc) % NSS_SECTORS_PER_BLOCK) != 0)
+		{
+			lLastBlockNumber++;
+		}
+		lExtendSize = uiRequestedExtendSize / NSS_BLOCK_SIZE;
 	}
 	else
 	{
 		lStartBlockNumber = lStartSector / m_lSectorsPerBlock;
 		lLastBlockNumber = (lStartSector + lSectorsToAlloc) / m_lSectorsPerBlock;
+		if (((lStartSector + lSectorsToAlloc) % m_lSectorsPerBlock) != 0)
+		{
+			lLastBlockNumber++;
+		}
 		lExtendSize = uiRequestedExtendSize / (m_lSectorsPerBlock * FLM_NLM_SECTOR_SIZE);
 	}
 
@@ -1745,7 +1756,7 @@ RCODE F_FileHdl::expand(
 	// start block number.
 
 	f_assert( lLastBlockNumber >= lStartBlockNumber);
-	lMinToAlloc = (lLastBlockNumber - lStartBlockNumber) + 1;
+	lMinToAlloc = lLastBlockNumber - lStartBlockNumber;
 
 	if( lExtendSize < 5)
 	{
