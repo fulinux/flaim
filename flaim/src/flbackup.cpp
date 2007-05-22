@@ -1941,8 +1941,7 @@ FSTATIC RCODE flmRestoreFile(
 		// Compare the incremental backup sequence number to the value in the
 		// database's log header.
 
-		if( RC_BAD( rc = 	pSFile->readBlock( 
-			FSBlkAddress( 0, DB_LOG_HEADER_START + LOG_INC_BACKUP_SEQ_NUM), 
+		if( RC_BAD( rc = 	pSFile->readOffset( 0, DB_LOG_HEADER_START + LOG_INC_BACKUP_SEQ_NUM,
 			4, ucTmpSeqNum, &uiTmp)))
 		{
 			goto Exit;
@@ -1957,8 +1956,7 @@ FSTATIC RCODE flmRestoreFile(
 		// Compare the incremental backup serial number to the value in the
 		// database's log header.
 
-		if( RC_BAD( rc = 	pSFile->readBlock( 
-			FSBlkAddress( 0, DB_LOG_HEADER_START + LOG_INC_BACKUP_SERIAL_NUM), 
+		if( RC_BAD( rc = 	pSFile->readOffset( 0, DB_LOG_HEADER_START + LOG_INC_BACKUP_SERIAL_NUM,
 			F_SERIAL_NUM_SIZE, ucTmpSerialNum, &uiTmp)))
 		{
 			goto Exit;

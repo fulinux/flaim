@@ -2204,6 +2204,13 @@
 			FLMBOOL					bGetForUpdate,
 			IF_FileHdl **			ppFileHdlRV);
 	
+		RCODE FLMAPI readOffset(
+			FLMUINT					uiFileNumber,
+			FLMUINT					uiOffset,
+			FLMUINT					uiBytesToRead,
+			void *					pvBuffer,
+			FLMUINT *				puiBytesRead);
+	
 		RCODE FLMAPI readBlock(
 			FLMUINT					uiBlkAddress,
 			FLMUINT					uiBytesToRead,

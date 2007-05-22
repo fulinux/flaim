@@ -197,10 +197,11 @@ Exit:
 }
 
 /****************************************************************************
-Desc:	Reads a database block into a buffer
+Desc:	Reads data from a file number into a buffer
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::readBlock(
-	FLMUINT			uiBlkAddress,
+RCODE FLMAPI F_SuperFileHdl::readOffset(
+	FLMUINT			uiFileNumber,
+	FLMUINT			uiOffset,
 	FLMUINT			uiBytesToRead,
 	void *			pvBuffer,
 	FLMUINT *		puiBytesRead)
@@ -208,14 +209,12 @@ RCODE FLMAPI F_SuperFileHdl::readBlock(
 	RCODE				rc = NE_FLM_OK;
 	IF_FileHdl *	pFileHdl = NULL;
 
-	if( RC_BAD( rc = getFileHdl(
-		m_pSuperFileClient->getFileNumber( uiBlkAddress), FALSE, &pFileHdl)))
+	if( RC_BAD( rc = getFileHdl( uiFileNumber, FALSE, &pFileHdl)))
 	{
 		goto Exit;
 	}
 
-	if( RC_BAD( rc = pFileHdl->read(
-		m_pSuperFileClient->getFileOffset( uiBlkAddress), uiBytesToRead,
+	if( RC_BAD( rc = pFileHdl->read( uiOffset, uiBytesToRead,
 		pvBuffer, puiBytesRead)))
 	{
 		goto Exit;
@@ -229,6 +228,20 @@ Exit:
 	}
 
 	return( rc);
+}
+
+/****************************************************************************
+Desc:	Reads a database block into a buffer
+****************************************************************************/
+RCODE FLMAPI F_SuperFileHdl::readBlock(
+	FLMUINT			uiBlkAddress,
+	FLMUINT			uiBytesToRead,
+	void *			pvBuffer,
+	FLMUINT *		puiBytesRead)
+{
+	return( readOffset( m_pSuperFileClient->getFileNumber( uiBlkAddress),
+		m_pSuperFileClient->getFileOffset( uiBlkAddress), uiBytesToRead,
+		pvBuffer, puiBytesRead));
 }
 
 /****************************************************************************
