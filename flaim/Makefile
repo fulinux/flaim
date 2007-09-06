@@ -1888,7 +1888,7 @@ ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Installing ...\n"
 	mkdir -p $(lib_install_dir)/pkgconfig
 	mkdir -p $(include_install_dir)
-	install --mode=644 $(flaim_shared_lib) $(lib_install_dir)
+	install --mode=755 $(flaim_shared_lib) $(lib_install_dir)
 	install --mode=644 $(flaim_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/flaim.h $(include_install_dir)

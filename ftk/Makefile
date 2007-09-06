@@ -1685,7 +1685,7 @@ ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Installing ...\n"
 	mkdir -p $(lib_install_dir)/pkgconfig
 	mkdir -p $(include_install_dir)
-	install --mode=644 $(ftk_shared_lib_path) $(lib_install_dir)
+	install --mode=755 $(ftk_shared_lib_path) $(lib_install_dir)
 	install --mode=644 $(ftk_static_lib) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/ftk.h $(include_install_dir)

@@ -2266,9 +2266,9 @@ ifneq ($(host_os_family),win)
 	$(ec)$(gprintf) "Installing ...\n"
 	mkdir -p $(lib_install_dir)/pkgconfig
 	mkdir -p $(include_install_dir)
-	install --mode=644 $(xflaim_shared_lib) $(lib_install_dir)
+	install --mode=755 $(xflaim_shared_lib) $(lib_install_dir)
 	install --mode=644 $(xflaim_static_lib) $(lib_install_dir)
-	install --mode=644 $(xflaim_csharp_assembly) $(lib_install_dir)
+	install --mode=755 $(xflaim_csharp_assembly) $(lib_install_dir)
 	install --mode=644 $(xflaim_csharp_assembly_xml) $(lib_install_dir)
 	install --mode=644 $(pkgconfig_file) $(pkgconfig_install_dir)
 	install --mode=644 src/xflaim.h $(include_install_dir)
