@@ -200,7 +200,6 @@ Desc:	Unlinks a cache block from the F_Database's new block list
 void F_CachedBlock::unlinkFromNewList( void)
 {
 	flmAssert( m_pDatabase);
-
 	flmAssert( m_ui16Flags & CA_IN_NEW_LIST);
 	flmAssert( m_pDatabase->m_uiNewCount);
 

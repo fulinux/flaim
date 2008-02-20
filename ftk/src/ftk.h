@@ -3950,7 +3950,7 @@
 	} F_TMSTAMP;
 
 	#define f_timeIsLeapYear(year) \
-		((((year) & 0x03) == 0) && (((year) % 100) != 0) || (((year) % 400) == 0))
+		(((((year) & 0x03) == 0) && (((year) % 100) != 0)) || (((year) % 400) == 0))
 
 	void f_timeGetSeconds(
 		FLMUINT	*		puiSeconds);

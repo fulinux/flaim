@@ -528,14 +528,13 @@ FSTATIC RCODE flmProcessIndexedFld(
 			}
 			else
 			{
-
 				// uiContainerNum == 0, indexing all containers
 
 				if (pIxd->uiFlags & IXD_OFFLINE)
 				{
 					if (uiContainerNum > pIxd->uiLastContainerIndexed ||
-						 uiContainerNum == pIxd->uiLastContainerIndexed &&
-						 uiDrn > pIxd->uiLastDrnIndexed)
+						 (uiContainerNum == pIxd->uiLastContainerIndexed &&
+						 uiDrn > pIxd->uiLastDrnIndexed))
 					{
 						continue;
 					}
