@@ -55,7 +55,7 @@
 #define LFH_OPTION_LAST_BLOCK		0x2000
 #define BLK_OPTION_CHILD_BLOCK	0x1000
 
-EXTERN char * Labels[]
+EXTERN const char * Labels[]
 #ifdef MAIN_MODULE
 = {
 	"File Header",								  /*0*/

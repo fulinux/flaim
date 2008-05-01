@@ -1,9 +1,9 @@
 #!/usr/bin/make -f
 
-DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-OSTYPE   ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_OS)
-HOSTTYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
+DEB_HOST_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+DEB_BUILD_GNU_TYPE ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+OSTYPE ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_OS)
+HOSTTYPE ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH_CPU)
 CFLAGS = -Wall -g
 PLAT64BIT = no
 
@@ -40,9 +40,9 @@ clean:
 	dh_testdir
 	dh_testroot
 	rm -f build-stamp configure-stamp
-	-$(MAKE) clean OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
+	$(MAKE) clean OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
 ifeq ($(PLAT64BIT),yes)
-	-$(MAKE) 32bit clean OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
+	$(MAKE) 32bit clean OSTYPE=$(OSTYPE) HOSTTYPE=$(HOSTTYPE) -j 2
 endif
 	dh_clean 
 

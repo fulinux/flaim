@@ -26,7 +26,7 @@
 
 #include "view.h"
 
-FSTATIC char * Months[] = {
+FSTATIC const char * Months[] = {
 	"Jan",
 	"Feb",
 	"Mar",

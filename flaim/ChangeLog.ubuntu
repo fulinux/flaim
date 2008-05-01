@@ -1,16 +1,18 @@
+libflaim (4.9.1053) edgy; urgency=low
+
+  * Updates for Hardy
+
+ -- Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>  Thu,  1 May 2008 13:31:00 -0600
+
 libflaim (4.9.1003-0ubuntu1) edgy; urgency=low
-
-  * Added support for 64-bit libraries 
-  * Removed /zp1 compiler switch and added pragmas to do one-byte packing on structures
-  * Fixed mis-typed member of OPT_INFO structure
-  * Corrected errors in the spec file
-
- -- Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>  Wed,  4 Oct 2006 11:50:56 -0600
-
-libflaim (4.9.0-0ubuntu1) edgy; urgency=low
 
   * Removed shared libraries from the development package
   * Removed debian/docs
+  * Added support for 64-bit libraries 
+  * Removed /zp1 compiler switch and added pragmas to
+    do one-byte packing on structures
+  * Fixed mis-typed member of OPT_INFO structure
+  * Corrected errors in the spec file
 
  -- Andrew Hodgkinson (Sr. Software Engineer) <ahodgkinson@novell.com>  Wed,  4 Oct 2006 11:50:56 -0600
 
