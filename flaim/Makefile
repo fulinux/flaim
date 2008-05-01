@@ -2108,6 +2108,11 @@ endif
 	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name))
 	
 	$(ec)$(gprintf) "Creating Ubuntu changelog file ...\n"
+	$(ec)$(gprintf) "$(package_proj_name) ($(version)) $(package_distro_ubuntu); urgency=low\n" > $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)$(gprintf) "\n  * Update to revison $(version)\n\n"  >> $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)date -R >> $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
+	$(ec)$(gprintf) "\n" >> $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
 	$(ec)cat ChangeLog.ubuntu >> $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
 	$(ec)gzip -f --best $(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name)/changelog
 
@@ -2141,10 +2146,16 @@ ubuntusrc: srcdist
 	
 	-$(ec)$(call rmdircmd,$(ubuntu_stage_dir))
 	$(ec)$(call mkdircmd,$(ubuntu_stage_dir))
+	$(ec)$(call mkdircmd,$(ubuntu_stage_dir)/usr/share/doc/$(package_proj_name))
 	$(ec)$(call copycmd,$(src_package_dir)/$(src_package_name),$(ubuntu_stage_dir))
 	$(ec)$(call extract_archive,$(ubuntu_stage_dir),$(src_package_base_name))
 
 	$(ec)$(gprintf) "Creating Ubuntu changelog file ...\n"
+	$(ec)$(gprintf) "$(package_proj_name) ($(version)) $(package_distro_ubuntu); urgency=low\n" > $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) "\n  * Update to revison $(version)\n\n"  >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) " -- $(ahodgkinson_info)  " >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)date -R >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
+	$(ec)$(gprintf) "\n" >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	$(ec)cat ChangeLog.ubuntu >> $(ubuntu_stage_dir)/$(package_proj_name_and_ver)/debian/changelog
 	
 	$(ec)$(gprintf) "Creating Ubuntu control file ...\n"
