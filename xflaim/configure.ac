@@ -41,7 +41,7 @@ AC_ARG_ENABLE([debug],
 # Ensure that both or neither FTK paths were specified.
 if (test -n "$FTKLIB" && test -z "$FTKINC") || \
    (test -n "$FTKINC" && test -z "$FTKLIB"); then
-  AC_MSG_ERROR([Specify both FTK library and include paths, or neither.])
+  AC_MSG_ERROR([Specify both FTKINC and FTKLIB, or neither.])
 fi 
 
 # Not specified? Check for FTK in standard places.
@@ -65,7 +65,7 @@ if test -z "$FTKLIB"; then
   AC_CHECK_LIB([flaimtk], [ftkFastChecksum], 
     [AC_CHECK_HEADERS([flaimtk.h])
      LIBS="-lflaimtk $LIBS"],
-    [AC_MSG_ERROR([No FLAIM Took Kit found. Terminating.])])
+    [AC_MSG_ERROR([No FLAIM Toolkit found. Terminating.])])
 fi
 
 # AC_SUBST command line variables from FTKLIB and FTKINC.
