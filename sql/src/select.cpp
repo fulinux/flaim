@@ -496,16 +496,17 @@ Get_Index:
 			{
 				goto Exit;
 			}
-			if (uiNumOrderByColumns == MAX_ORDER_BY_COLUMNS)
-			{
-				setErrInfo( m_uiCurrLineNum,
-						uiTokenLineOffset,
-						SQL_ERR_TOO_MANY_ORDER_BY_COLUMNS,
-						m_uiCurrLineFilePos,
-						m_uiCurrLineBytes);
-				rc = RC_SET( NE_SFLM_INVALID_SQL);
-				goto Exit;
-			}
+//			JMC - FIXME: commented out due to missing functionality in flaimtk.h
+//			if (uiNumOrderByColumns == MAX_ORDER_BY_COLUMNS)
+//			{
+//				setErrInfo( m_uiCurrLineNum,
+//						uiTokenLineOffset,
+//						SQL_ERR_TOO_MANY_ORDER_BY_COLUMNS,
+//						m_uiCurrLineFilePos,
+//						m_uiCurrLineBytes);
+//				rc = RC_SET( NE_SFLM_INVALID_SQL);
+//				goto Exit;
+//			}
 			
 			// See if we have a period after the name.
 			

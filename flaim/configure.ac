@@ -1,116 +1,173 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-AC_INIT([flaim], [4.8], [flaim-bug@novell.com])
-AM_INIT_AUTOMAKE
+AC_PREREQ([2.62])
+AC_INIT([FLAIM], [4.10], [flaim-users@forge.novell.com])
+AM_INIT_AUTOMAKE([-Wall -Werror])
+LT_PREREQ([2.2])
+LT_INIT([dlopen])
 
-AC_PREREQ(2.59)
+AC_LANG(C++)
 
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_SRCDIR([src/flaim.h])
-AC_CONFIG_HEADER([config.h])
+AC_CONFIG_HEADERS([config.h])
 
 # Checks for programs.
 AC_PROG_CXX
-AC_PROG_CC
-AC_PROG_CPP
-AC_PROG_INSTALL
 AC_PROG_LN_S
-AC_PROG_MAKE_SET
-AC_PROG_LIBTOOL
+AC_PROG_INSTALL
+
+# Checks for optional programs.
+AC_PROG_TRY_DOXYGEN
+
+# Configure FTKLIB and FTKINC variables.
+AC_ARG_VAR([FTKLIB], [The PATH wherein libflaimtk.la can be found.])
+AC_ARG_VAR([FTKINC], [The PATH wherein flaimtk.h can be found.])
+
+# Ensure that both or neither FTK paths were specified.
+if (test -n "$FTKLIB" && test -z "$FTKINC") || \
+   (test -n "$FTKINC" && test -z "$FTKLIB"); then
+  AC_MSG_ERROR([Specify both FTK library and include paths, or neither.])
+fi 
+
+# Not specified? Check for FTK in standard places.
+if test -z "$FTKLIB"; then
+  # Check for flaim tool kit as a sub-project.
+  if test -d "$srcdir/ftk"; then
+    AC_CONFIG_SUBDIRS([ftk])
+    FTKINC='$(top_srcdir)/ftk/src'
+    FTKLIB='$(top_builddir)/ftk/src'
+  else
+    # Check for flaim tool kit as a super-project.
+    if test -d "$srcdir/../ftk"; then
+      FTKINC='$(top_srcdir)/../ftk/src'
+      FTKLIB='$(top_builddir)/../ftk/src'
+    fi
+  fi
+fi
+
+# Still empty? Check for *installed* flaim tool kit.
+if test -z "$FTKLIB"; then
+  AC_CHECK_LIB([flaimtk], [ftkFastChecksum], 
+    [AC_CHECK_HEADERS([flaimtk.h])
+     LIBS="-lflaimtk $LIBS"],
+    [AC_MSG_ERROR([No FLAIM Took Kit found. Terminating.])])
+fi
+
+# AC_SUBST command line variables from FTKLIB and FTKINC.
+if test -n "$FTKLIB"; then
+  AC_SUBST([FTK_LTLIB], ["$FTKLIB/libflaimtk.la"])
+  AC_SUBST([FTK_INCLUDE], ["-I$FTKINC"])
+fi
+
+# Configure options: --enable-debug[=no].
+AC_ARG_ENABLE([debug],
+  [AS_HELP_STRING([--enable-debug],
+    [enable debug code (default is no)])],
+  [debug="$withval"], [debug=no])
+
+# Check for doxygen program.
+if test -z "$DOXYGEN"; then
+  echo "-----------------------------------------"
+  echo " No Doxygen program found - continuing"
+  echo " without Doxygen documentation support."
+  echo "-----------------------------------------"
+fi
+AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
 
 # Checks for libraries.
-AC_CHECK_LIB([ncurses], [initscr])
-AC_CHECK_LIB([dl], [dlopen])
-AC_CHECK_LIB([m], [log10])
-AC_CHECK_LIB([nsl], [gethostname])
-AC_CHECK_LIB([pthread], [pthread_create])
-AC_CHECK_LIB([socket], [socket])
 
 # Checks for header files.
-AC_HEADER_STDC
-AC_CHECK_HEADERS([arpa/inet.h fcntl.h limits.h malloc.h memory.h netdb.h netinet/in.h stddef.h stdlib.h string.h strings.h sys/param.h sys/socket.h sys/statvfs.h sys/time.h sys/vfs.h unistd.h utime.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_HEADER_STDBOOL
-AC_C_CONST
 AC_C_INLINE
-AC_TYPE_MODE_T
-AC_TYPE_PID_T
-AC_TYPE_SIZE_T
-AC_HEADER_TIME
-AC_STRUCT_TM
-AC_C_VOLATILE
 
 # Checks for library functions.
-AC_FUNC_LSTAT
-AC_FUNC_LSTAT_FOLLOWS_SLASHED_SYMLINK
-AC_FUNC_MEMCMP
-AC_FUNC_MKTIME
-AC_FUNC_MMAP
-AC_FUNC_SELECT_ARGTYPES
-AC_TYPE_SIGNAL
-AC_FUNC_STAT
-AC_CHECK_FUNCS([atexit fdatasync ftruncate getcwd gethostbyaddr gethostbyname gethostname gethrtime gettimeofday inet_ntoa localtime_r memmove memset mkdir munmap pstat_getdynamic realpath rmdir select setenv socket strcasecmp strncasecmp strrchr strstr])
+AC_CHECK_FUNCS([atexit strchr])
 
-#
-# Generic DEBUG support - default is OFF
-#   ON means with symbols, no optimization, DEBUG is defined
-#   OFF means with symbols, full optimization, NDEBUG is defined
+# Configure compiler and platform flags and options.
+# This stuff was in the original makefile...
+# Personally, I believe -O2 does as good a job as 
+# a hand-coded set of optimization flags...
+gcc_opt_flags="-O -foptimize-sibling-calls
+ -fstrength-reduce -fcse-follow-jumps -fcse-skip-blocks
+ -frerun-cse-after-loop -frerun-loop-opt -fgcse
+ -fgcse-lm -fgcse-sm -fdelete-null-pointer-checks
+ -fexpensive-optimizations -fregmove -fsched-interblock
+ -fsched-spec -fcaller-saves -fpeephole2 -freorder-blocks
+ -freorder-functions -falign-functions -falign-jumps
+ -falign-loops -falign-labels -fcrossjumping"
 
-AC_ARG_ENABLE(debug,
-  AS_HELP_STRING([--enable-debug], [Turn on debugging (default is OFF)]),
-  [case "${enableval}" in
-    yes) debug=yes ;;
-    no)  debug=no  ;;
-    *)   AC_MSG_ERROR(bad value ${enableval} for --enable-debug) ;;
-  esac], [debug=no])
-AM_CONDITIONAL(DEBUG, test x$debug = xyes)
-AM_CONDITIONAL(NDEBUG, test x$debug = xno)
-if test x$debug = xyes; then
-  AC_DEFINE(DEBUG, 1, [Defined for debug builds])
-else
-  AC_DEFINE(NDEBUG, 1, [Defined for non-debug builds])
+# Enable g++ specific compiler flags.
+# Currently, enabling all warnings displays the type-pun error dozens
+# of times, and of course enabling warnings as werrors breaks the build
+#if test "x$CXX" = "xg++"; then
+#  CXXFLAGS="$CXXFLAGS -Wall -Werror"
+#  CXXFLAGS="$CXXFLAGS $gcc_opt_flags"
+#fi
+
+# Configure DEBUG source code, if requested.
+if test "x$debug" = xyes; then
+  AC_DEFINE([FLM_DEBUG], [], [Define to enable FLAIM debug features])
 fi
 
-#
-# Set C/C++ compiler-specific warning/optimization/option flags
+# Configure global pre-processor definitions.
+AC_DEFINE([_REENTRANT], [], [Define for reentrant code])
+AC_DEFINE([_LARGEFILE64_SOURCE], [], [Define for 64-bit data files])
+AC_DEFINE([_LARGEFILE_SOURCE], [], [Define for 64-bit data files])
 
-CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64"
+# Configure supported platforms' compiler and linker flags.
+case $host in
+  sparc-*-solaris*)
+    LDFLAGS="$LDFLAGS -R /usr/lib/lwp"
+    if "x$CXX" != "xg++"; then
+      if "x$debug" = xno; then
+        CXXFLAGS="$CXXFLAGS -xO3"
+      fi
+      SUN_STUDIO_COMPILER=`"$CXX" -V | grep "Sun C++"`
+      if "x$SUN_STUDIO_COMPILER" = "xSun C++"; then
+        CXXFLAGS="$CXXFLAGS -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder"
+      fi
+    fi ;;
 
-if test x$GCC = xyes; then
-  # GCC: turn on all warnings, set warnings as errors
-  #   disable optimization for debug builds
-  #   enable high-level optimizations for non-debug builds
-  CXXFLAGS="$CXXFLAGS -Wall -Werror"
-  if test x$debug = xyes; then
-    CXXFLAGS="$CXXFLAGS -O0"
-  else
-    CXXFLAGS="$CXXFLAGS -O3 -fgcse-sm"
-  fi
-elif $CC -V 2>&1 | grep "WorkShop Compilers"; then
-  # Solaris Workshop: enable optimizations for debug builds
-  CXXFLAGS="$CXXFLAGS -errwarn=%all -errtags -erroff=hidef,inllargeuse"
-  if test x$debug = xno; then
-    CXXFLAGS="$CXXFLAGS -fast"
-    if echo $CC | grep "xarch=v9"; then
-      # -fast sets -xarch=v8 disabling 64-bit mode, enable it again
-      CXXFLAGS="$CXXFLAGS -xarch=v9"
-    fi
-  fi
-elif echo $host_os | grep -i "osf" >/dev/null; then
-  # OSF: enable standard C (shouldn't be necessary)
-  #   enable optimizations for non-debug builds
-  CXXFLAGS="$CXXFLAGS -std"
-  if test x$debug = xno; then
-    CXXFLAGS="$CXXFLAGS -O"
-  fi
-else
-  # everything else: take a wild guess (shouldn't need this)
-  if test x$debug = xno; then
-    CXXFLAGS="$CXXFLAGS -O"
-  fi
-fi
+  *-apple-darwin*)
+    AC_DEFINE([OSX], [], 
+      [Define if building on Apple OSX.]) ;;
 
-AC_CONFIG_FILES([Makefile src/Makefile util/Makefile])
+  *-*-aix*)
+    if "x$CXX" != "xg++"; then
+      CXXFLAGS="$CXXFLAGS -qthreaded -qstrict -q$build_bits"
+      LDFLAGS="$LDFLAGS -q$build_bits -X$build_bits"
+    fi ;;
+
+  *-*-hpux*)
+    if "x$CXX" != "xg++"; then
+      # Disable "Placement operator delete invocation is not yet implemented" warning
+      CXXFLAGS="$CXXFLAGS +W930"
+    fi ;;
+esac
+
+AC_CONFIG_FILES([Makefile
+                 docs/Makefile
+                 docs/doxygen/Makefile
+                 docs/doxygen/doxyfile
+                 obs/flaim.spec
+                 obs/Makefile
+                 sample/Makefile
+                 src/Makefile
+                 util/Makefile])
 AC_OUTPUT
+
+echo "
+  FLAIM Database Library ($PACKAGE_NAME) version $PACKAGE_VERSION
+  Prefix.........: $prefix
+  Debug Build....: $debug
+  C++ Compiler...: $CXX $CXXFLAGS $CPPFLAGS
+  Linker.........: $LD $LDFLAGS $LIBS
+  FTK Library....: ${FTKLIB:-INSTALLED}
+  FTK Include....: ${FTKINC:-INSTALLED}
+  Doxygen........: ${DOXYGEN:-NONE}
+"
 

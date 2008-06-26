@@ -911,7 +911,7 @@ Retry:
 		}
 
 		pThread->setThreadStatus( FLM_THREAD_STATUS_SLEEPING);
-		f_semWait( pDatabase->m_hMaintSem, F_SEM_WAITFOREVER);
+		f_semWait( pDatabase->m_hMaintSem, F_WAITFOREVER);
 			
 		if (pThread->getShutdownFlag())
 		{

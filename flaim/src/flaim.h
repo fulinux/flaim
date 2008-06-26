@@ -29,7 +29,7 @@
 #ifndef FLAIM_H
 #define FLAIM_H
 
-	#include "flaimtk.h"
+	#include <flaimtk.h>
 
 	#ifdef FLM_PACK_STRUCTS
 		#pragma pack(push, 1)

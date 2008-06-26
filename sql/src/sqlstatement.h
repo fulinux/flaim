@@ -92,7 +92,7 @@ public:
 	
 	FINLINE FLMINT FLMAPI AddRef( void)
 	{
-		return( f_atomicInc( &m_refCnt);
+		return( f_atomicInc( &m_refCnt));
 	}
 
 	FINLINE FLMINT FLMAPI Release( void)
@@ -135,7 +135,7 @@ public:
 	{
 		if (m_uiErrMsgLen)
 		{
-			return( &m_szErrMsg [0]);
+			return( m_szErrMsg [0]);
 		}
 		else
 		{
@@ -189,13 +189,13 @@ public:
 private:
 
 	F_MUTEX			m_hMutex;
-	const char *	m_pszLastStateInfo;
+	const char *		m_pszStateInfo;
 	char *			m_szErrMsg [200];
 	FLMUINT			m_uiErrMsgLen;
 	RCODE				m_rc;
 	FLMUINT			m_bHaveError;
 	FLMUINT			m_uiNumDiagRecs;
-}
+};
 
 /*============================================================================
 Desc:	SQL statement class.  Parses and executes SQL statements.  This object
@@ -212,8 +212,6 @@ public:
 
 	virtual ~SQLStatement();
 	
-	FLMBOOL canRelease( void);
-
 	RCODE setupStatement( void);
 
 	void resetStatement( void);

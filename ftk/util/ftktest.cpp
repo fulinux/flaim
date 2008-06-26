@@ -23,7 +23,7 @@
 // $Id$
 //-------------------------------------------------------------------------
 
-#include "ftk.h"
+#include "flaimtk.h"
 
 #define F_ATOM_TEST_THREADS			64
 #define F_ATOM_TEST_ITERATIONS		100000
@@ -4327,7 +4327,7 @@ int main(
 	}
 	
 	if( RC_BAD( rc = pArgSet->addArg( "port", "listener port for RPC requests", 
-		TRUE, F_ARG_OPTION, F_ARG_CONTENT_UNSIGNED_INT, 1, 65535)))
+		TRUE, F_ARG_OPTION, F_ARG_CONTENT_UNSIGNED_INT, (FLMUINT)1, (FLMUINT)65535)))
 	{
 		goto Exit;
 	}

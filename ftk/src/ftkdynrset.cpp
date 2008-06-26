@@ -23,7 +23,7 @@
 // $Id$
 //------------------------------------------------------------------------------
 
-#include "ftk.h"
+#include "flaimtk.h"
 #include "ftkdynrset.h"
 
 #define HASH_POS(vp) \

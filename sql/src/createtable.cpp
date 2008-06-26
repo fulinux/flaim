@@ -427,7 +427,7 @@ Invalid_Data_Type:
 		{
 			if (RC_BAD( rc = haveToken( "null", FALSE, SQL_ERR_EXPECTING_NULL)))
 			{
-				goto exit;
+				goto Exit;
 			}
 			(*puiFlags) &= (~(COL_NULL_ALLOWED));
 		}

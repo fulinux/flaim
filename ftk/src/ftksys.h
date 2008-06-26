@@ -27,8 +27,12 @@
 #ifndef FTKSYS_H
 #define FTKSYS_H
 
-	#include "ftk.h"
-	
+	#ifdef HAVE_CONFIG_H
+		#include <config.h>
+	#endif
+
+	#include "flaimtk.h"
+
 	#ifdef FLM_NLM
 		#if !defined( FLM_RING_ZERO_NLM) && !defined( FLM_LIBC_NLM)
 			#define FLM_LIBC_NLM
@@ -116,10 +120,6 @@
 	Desc:		UNIX
 	****************************************************************************/
 	#if defined( FLM_UNIX)
-
-		#ifdef HAVE_CONFIG_H
-			#include "config.h"
-		#endif
 
 		#ifdef FLM_OSX
 			#include <sys/resource.h>

@@ -1569,7 +1569,8 @@ Exit:
 	if (pCFileHdl)
 	{
 		(void)pSFileHdl->releaseFiles();
-		pSFileHdl->setBlockSize( m_uiBlockSize);
+//		JMC - FIXME: commented out due to missing functionality in flaimtk.h
+//		pSFileHdl->setBlockSize( m_uiBlockSize);
 	}
 
 	return( rc);
@@ -1663,7 +1664,8 @@ RCODE F_Database::startCPThread( void)
 
 	if (m_lastCommittedDbHdr.ui32DbVersion)
 	{
-		pCPInfo->pSFileHdl->setBlockSize( m_uiBlockSize);
+//		JMC - FIXME: commented out due to missing functionality in flaimtk.h
+//		pCPInfo->pSFileHdl->setBlockSize( m_uiBlockSize);
 	}
 
 	f_memset( &pCPInfo->Stats, 0, sizeof( SFLM_STATS));

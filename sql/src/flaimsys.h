@@ -29,7 +29,28 @@
 
 // Public includes
 
+#ifdef HAVE_CONFIG_H
+	#include <config.h>
+#endif
+
 #include "flaimsql.h"
+
+// Collation bits
+
+#define HAD_SUB_COLLATION				0x01		// Set if had sub-collating values-diacritics
+#define HAD_LOWER_CASE					0x02		// Set if you hit a lowercase character
+#define COMPOUND_MARKER					0x02		// Compound key marker between each piece
+#define END_COMPOUND_MARKER			0x01		// Last of all compound markers - for post
+#define NULL_KEY_MARKER					0x03
+#define COLL_FIRST_SUBSTRING			0x03		// First substring marker
+#define COLL_MARKER 						0x04		// Marks place of sub-collation
+#define SC_LOWER							0x00		// Only lowercase characters exist
+#define SC_MIXED							0x01		// Lower/uppercase flags follow in next byte
+#define SC_UPPER							0x02		// Only upper characters exist
+#define SC_SUB_COL						0x03		// Sub-collation follows (diacritics|extCh)
+#define UNK_UNICODE_CODE				0xFFFE	// Used for collation
+#define COLL_TRUNCATED					0x0C		// This key piece has been truncated from original
+#define MAX_COL_OPCODE					COLL_TRUNCATED
 
 #if defined( FLM_WIN)
 	// Conversion from XXX to YYY, possible loss of data
@@ -4408,6 +4429,8 @@ public:
 		FLMUINT					uiFileNumber,
 		char *					pszPath);
 		
+	FLMUINT64 FLMAPI getMaxFileSize( void);
+
 	static void bldSuperFileExtension(
 		FLMUINT					uiFileNum,
 		char *					pszFileExtension);

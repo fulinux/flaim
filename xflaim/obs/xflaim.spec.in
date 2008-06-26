@@ -1,0 +1,74 @@
+Name: @PACKAGE_TARNAME@
+BuildRequires: gcc-c++ libstdc++-devel gcc-java mono-core doxygen
+Requires: libstdc++ mono-core java >= 1.4.2
+Summary: XFLAIM is an XML database library.
+URL: http://forge.novell.com/modules/xfmod/project/?flaim
+Version: @PACKAGE_VERSION@
+Release: 1
+License: GPL
+Vendor: Novell, Inc.
+Group: Development/Libraries/C and C++
+Source: %{name}-%{version}.tar.gz
+BuildRoot: %{_tmppath}/%{name}-%{version}-build
+
+%description
+XFLAIM is an XML database library.
+
+Authors:
+--------
+    dsanders@novell.com
+    ahodgkinson@novell.com
+
+%package devel
+Summary: XFLAIM static library and header file
+Group: Development/Libraries/C and C++
+
+%description devel
+XFLAIM is an XML database library.
+
+%prep
+%setup -q
+
+%build
+%configure
+make
+
+%install
+rm -rf ${RPM_BUILD_ROOT}
+make DESTDIR=${RPM_BUILD_ROOT} install
+if test -f ${RPM_BUILD_ROOT}/usr/include/flaimtk.h; then
+  rm ${RPM_BUILD_ROOT}/usr/include/flaimtk.h
+  rm ${RPM_BUILD_ROOT}/usr/lib64/libflaimtk.*
+  rm -rf ${RPM_BUILD_ROOT}/usr/share/doc/ftk
+fi
+
+%clean
+rm -rf ${RPM_BUILD_ROOT}
+
+%files
+%defattr(-,root,root)
+%doc %{_datadir}/doc/%{name}/AUTHORS
+%doc %{_datadir}/doc/%{name}/ChangeLog
+%doc %{_datadir}/doc/%{name}/COPYING
+%doc %{_datadir}/doc/%{name}/INSTALL
+%doc %{_datadir}/doc/%{name}/NEWS
+%doc %{_datadir}/doc/%{name}/README
+%doc %{_datadir}/doc/%{name}/%{name}-doxy-%{version}.tar.gz 
+%doc %{_datadir}/doc/%{name}/xflaim_csharp.xml
+%doc %{_datadir}/doc/%{name}/XFLAIMArchitecture.odg
+%doc %{_datadir}/doc/%{name}/XFLAIMArchitecture.png
+%{_datadir}/java/xflaimjni-5.1.jar
+%{_libdir}/libxflaim.la
+%{_libdir}/libxflaim.so*
+%{_libdir}/xflaim_csharp.dll
+%{_bindir}/xflmcheckdb
+%{_bindir}/xflmrebuild
+%{_bindir}/xflmsample
+%{_bindir}/xflmview
+%{_bindir}/xflmdbshell
+
+%files devel
+%{_libdir}/libxflaim.a
+%{_includedir}/xflaim.h
+
+

@@ -26,7 +26,7 @@
 #ifndef XFLAIM_H
 #define XFLAIM_H
 
-	#include "xflaimtk.h"
+	#include <flaimtk.h>
 	
 	#ifdef FLM_PACK_STRUCTS
 		#pragma pack(push, 1)

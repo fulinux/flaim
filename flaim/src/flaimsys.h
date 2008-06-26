@@ -27,6 +27,10 @@
 #ifndef FLAIMSYS_H
 #define FLAIMSYS_H
 
+#if HAVE_CONFIG_H
+	#include <config.h>
+#endif
+
 #include "flaim.h"
 
 #if defined( FLM_WIN)

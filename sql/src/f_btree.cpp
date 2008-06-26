@@ -11140,7 +11140,7 @@ RCODE F_Btree::btCheck(
 		if( RC_BAD( rc = m_pDb->m_pDatabase->getBlock( m_pDb, m_pLFile,
 			ui32NextBlkAddr, NULL, &pCurrentBlk)))
 		{
-			localErrStruct.type = SCA_GET_BLOCK_FAILED;
+			localErrStruct.type = GET_BLOCK_FAILED;
 			f_sprintf( localErrStruct.szMsg, 
 				"Failed to get block at %X", ui32NextBlkAddr);
 			goto Exit;
@@ -11181,8 +11181,8 @@ RCODE F_Btree::btCheck(
 				(getBlkAvailSpace(pBlk) / localErrStruct.uiBlocksChecked);
 			localErrStruct.ui64FreeSpace += getBlkAvailSpace(pBlk);
 
-			localErrStruct.LevelStats[ localErrStruct.uiLevels - 1].uiBlkCnt++;
-			localErrStruct.LevelStats[ localErrStruct.uiLevels - 1].uiBytesUsed +=
+			localErrStruct.LevelStats[ localErrStruct.uiLevels - 1].uiDOBlockCnt++;
+			localErrStruct.LevelStats[ localErrStruct.uiLevels - 1].uiDOBytesUsed +=
 										(m_uiBlockSize - getBlkAvailSpace(pBlk));
 
 			uiNumKeys = ((F_BTREE_BLK_HDR *)pBlk)->ui16NumKeys;
@@ -11387,7 +11387,7 @@ RCODE F_Btree::btCheck(
 					if( RC_BAD( rc = m_pDb->m_pDatabase->getBlock( m_pDb, m_pLFile,
 						ui32ChildBlkAddr, NULL, &pChildBlk)))
 					{
-						localErrStruct.type = SCA_GET_BLOCK_FAILED;
+						localErrStruct.type = GET_BLOCK_FAILED;
 						f_sprintf( localErrStruct.szMsg, "Failed to get block at %X", 
 							ui32ChildBlkAddr);
 						goto Exit;
@@ -11415,7 +11415,7 @@ RCODE F_Btree::btCheck(
 				if( RC_BAD( rc = m_pDb->m_pDatabase->getBlock( m_pDb, m_pLFile,
 												ui32NextBlkAddr, NULL, &pCurrentBlk)))
 				{
-					localErrStruct.type = SCA_GET_BLOCK_FAILED;
+					localErrStruct.type = GET_BLOCK_FAILED;
 					f_sprintf( localErrStruct.szMsg, 
 						"Failed to get block at %X", ui32ChildBlkAddr);
 					goto Exit;
@@ -11470,14 +11470,14 @@ RCODE F_Btree::verifyDOBlkChain(
 
 	while( ui32NextAddr)
 	{
-		errStruct->LevelStats[ errStruct->uiLevels - 1].uiDOBlkCnt++;
+		errStruct->LevelStats[ errStruct->uiLevels - 1].uiDOBlockCnt++;
 		
 		// Get the next block
 		
 		if( RC_BAD( m_pDb->m_pDatabase->getBlock( m_pDb, m_pLFile,
 			ui32NextAddr, NULL, &pCurrentBlk)))
 		{
-			errStruct->type = SCA_GET_BLOCK_FAILED;
+			errStruct->type = GET_BLOCK_FAILED;
 			f_sprintf( errStruct->szMsg, "Failed to get block at %X", uiDOAddr);
 			goto Exit;
 		}

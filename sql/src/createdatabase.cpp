@@ -354,12 +354,14 @@ RCODE F_DbSystem::createDatabase(
 
 	if (pCreateOpts != NULL)
 	{
-		pDb->m_pSFileHdl->setBlockSize(
-			flmAdjustBlkSize( pCreateOpts->uiBlockSize));
+//		JMC - FIXME: commented out due to missing function in ftk
+//		pDb->m_pSFileHdl->setBlockSize(
+//			flmAdjustBlkSize( pCreateOpts->uiBlockSize));
 	}
 	else
 	{
-		pDb->m_pSFileHdl->setBlockSize( SFLM_DEFAULT_BLKSIZ);
+//		JMC - FIXME: commented out due to missing function in ftk
+//		pDb->m_pSFileHdl->setBlockSize( SFLM_DEFAULT_BLKSIZ);
 	}
 
 	if (RC_OK( gv_SFlmSysData.pFileSystem->doesFileExist( pszFilePath)))

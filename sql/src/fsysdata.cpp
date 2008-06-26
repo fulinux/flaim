@@ -588,7 +588,7 @@ RCODE flmWaitNotifyReq(
 
 	f_mutexUnlock( hMutex);
 	
-	if( RC_BAD( TempRc = f_semWait( notifyItem.hSem, F_SEM_WAITFOREVER)))
+	if( RC_BAD( TempRc = f_semWait( notifyItem.hSem, F_WAITFOREVER)))
 	{
 		rc = TempRc;
 	}
@@ -697,7 +697,8 @@ RCODE F_Db::linkToDatabase(
 
 		if( pDatabase->m_lastCommittedDbHdr.ui32DbVersion)
 		{
-			m_pSFileHdl->setBlockSize( pDatabase->m_uiBlockSize);
+//			JMC - FIXME: commented out due to missing functionality in flaimtk.h
+//			m_pSFileHdl->setBlockSize( pDatabase->m_uiBlockSize);
 		}
 	}
 
@@ -3255,6 +3256,21 @@ FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
 	FLMUINT					uiBlockAddr)
 {
 	return( FSGetFileOffset( uiBlockAddr));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+FLMUINT64 FLMAPI F_SuperFileClient::getMaxFileSize( void)
+{
+//	JMC - FIXME: commented out due to missing functionality in flaimtk.h
+//	if( m_uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
+//	{
+//		return( gv_FlmSysData.uiMaxFileSize);
+//	}
+	
+#define MAX_FILE_SIZE_VER40			((FLMUINT)0x7FF00000)
+	return( MAX_FILE_SIZE_VER40);
 }
 		
 /****************************************************************************

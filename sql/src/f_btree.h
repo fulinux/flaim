@@ -203,31 +203,32 @@ FINLINE FLMUINT actualEntrySize(
 
 // Error information returned by btCheck()
 
-enum BTREE_ERR_TYPE
-{
-	NO_ERR = 0,  // FYI: Visual Studio already defines NOERROR
-	BT_HEADER,
-	KEY_ORDER,
-	DUPLICATE_KEYS,
-	INFINITY_MARKER,
-	CHILD_BLOCK_ADDRESS,
-	SCA_GET_BLOCK_FAILED,
-	MISSING_OVERALL_DATA_LENGTH,
-	NOT_DATA_ONLY_BLOCK,
-	BAD_DO_BLOCK_LENGTHS,
-	BAD_COUNTS,
-	CATASTROPHIC_FAILURE = 999
-};
+//	JMC - FIXME: commented out - duplicated in flaimtk.h
+//enum BTREE_ERR_TYPE
+//{
+//	NO_ERR = 0,  // FYI: Visual Studio already defines NOERROR
+//	BT_HEADER,
+//	KEY_ORDER,
+//	DUPLICATE_KEYS,
+//	INFINITY_MARKER,
+//	CHILD_BLOCK_ADDRESS,
+//	SCA_GET_BLOCK_FAILED,
+//	MISSING_OVERALL_DATA_LENGTH,
+//	NOT_DATA_ONLY_BLOCK,
+//	BAD_DO_BLOCK_LENGTHS,
+//	BAD_COUNTS,
+//	CATASTROPHIC_FAILURE = 999
+//};
 
-typedef struct
-{
-	FLMUINT			uiKeyCnt;
-	FLMUINT			uiFirstKeyCnt;
-	FLMUINT			uiBlkCnt;
-	FLMUINT			uiBytesUsed;
-	FLMUINT			uiDOBlkCnt;
-	FLMUINT			uiDOBytesUsed;
-} BTREE_LEVEL_STATS;
+//typedef struct
+//{
+//	FLMUINT			uiKeyCnt;
+//	FLMUINT			uiFirstKeyCnt;
+//	FLMUINT			uiBlkCnt;
+//	FLMUINT			uiBytesUsed;
+//	FLMUINT			uiDOBlkCnt;
+//	FLMUINT			uiDOBytesUsed;
+//} BTREE_LEVEL_STATS;
 
 typedef struct
 {

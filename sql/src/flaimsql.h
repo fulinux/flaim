@@ -35,13 +35,8 @@
 	
 	/// \defgroup flaim_errors FLAIM Error Codes
 	/// \ingroup errors
-	
 
-#ifdef HAVE_CONFIG_H
-	#include "config.h"
-#endif
-
-#include "flaimsqltk.h"
+#include <flaimtk.h>
 
 // Forward declarations
 

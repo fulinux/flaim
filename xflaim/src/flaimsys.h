@@ -27,16 +27,16 @@
 #ifndef  FLAIMSYS_H
 #define  FLAIMSYS_H
 
+#if HAVE_CONFIG_H
+	#include <config.h>
+#endif
+
 #include "xflaim.h"
 
 #undef FLM_HAS_ENCRYPTION
 
 #ifdef FLM_USE_NICI
 	#define FLM_HAS_ENCRYPTION
-#endif
-
-#ifdef HAVE_CONFIG_H
-	#include "../config.h"
 #endif
 
 #if defined( FLM_WIN)
