@@ -30,8 +30,8 @@
 		#define FLM_DONT_USE_COM
 	#endif
 	
-	#include "xflaim.h"
-	#include "ftk.h"	
+	#include <xflaim.h>
+	#include <flaimtk.h>
 	#include "jni.h"
 	
 	void ThrowError(
