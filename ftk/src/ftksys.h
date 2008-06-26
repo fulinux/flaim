@@ -595,7 +595,7 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	class FLMEXP F_FileAsyncClient : public IF_AsyncClient
+	class FTKEXP F_FileAsyncClient : public IF_AsyncClient
 	{
 	public:
 	

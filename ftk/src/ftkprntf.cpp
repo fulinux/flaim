@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class FLMEXP F_BufferPrintfClient : public IF_PrintfClient
+class FTKEXP F_BufferPrintfClient : public IF_PrintfClient
 {
 public:
 
@@ -84,7 +84,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class FLMEXP F_DynaPrintfClient : public IF_PrintfClient
+class FTKEXP F_DynaPrintfClient : public IF_PrintfClient
 {
 public:
 
@@ -148,7 +148,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class FLMEXP F_StdoutPrintfClient : public IF_PrintfClient
+class FTKEXP F_StdoutPrintfClient : public IF_PrintfClient
 {
 public:
 
@@ -202,7 +202,7 @@ public:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-class FLMEXP F_StderrPrintfClient : public IF_PrintfClient
+class FTKEXP F_StderrPrintfClient : public IF_PrintfClient
 {
 public:
 

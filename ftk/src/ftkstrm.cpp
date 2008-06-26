@@ -100,7 +100,7 @@ FLMBYTE gv_ucBase64EncodeTable[ 64] =
 /***************************************************************************
 Desc:
 ***************************************************************************/
-class FLMEXP F_StreamPrintfClient : public IF_PrintfClient
+class FTKEXP F_StreamPrintfClient : public IF_PrintfClient
 {
 public:
 

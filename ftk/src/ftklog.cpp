@@ -32,7 +32,7 @@ static IF_LoggerClient *	gv_pLogger = NULL;
 /***************************************************************************
 Desc:
 ***************************************************************************/
-class FLMEXP F_LogPrintfClient : public IF_PrintfClient
+class FTKEXP F_LogPrintfClient : public IF_PrintfClient
 {
 public:
 
