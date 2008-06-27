@@ -1,0 +1,90 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ftk", "ftk", "{0BF17DE0-D6D1-4389-96C1-EF6E8EFC175D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "flaim", "flaim", "{C6AE6621-9535-4914-BB7C-625A96752846}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "sql", "sql", "{5C39F26B-F199-4BBB-8F24-AFA9FB1A6242}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "xflaim", "xflaim", "{486040F9-016A-4A47-9E2D-1DB1196300A1}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaim", "..\..\flaim\win32\flaim\flaim\flaim.vcproj", "{D16B82B1-8831-49D8-BE86-835183329342}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaim_static", "..\..\flaim\win32\flaim\flaim_static\flaim_static.vcproj", "{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaimtk", "..\..\ftk\win32\ftk\flaimtk\flaimtk.vcproj", "{44861D28-034F-4F4B-B51B-892A9E2FF12F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaimtk_static", "..\..\ftk\win32\ftk\flaimtk_static\flaimtk_static.vcproj", "{F3ACBCA5-621F-4B54-B445-581EA14B49B4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ftktest", "..\..\ftk\win32\ftk\ftktest\ftktest.vcproj", "{00B9E579-CD68-46CB-81FA-230861C49A72}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4} = {F3ACBCA5-621F-4B54-B445-581EA14B49B4}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaimsql", "..\..\sql\win32\sql\flaimsql\flaimsql.vcproj", "{9E0A94C9-6B5C-4C74-9678-AF556D772426}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaimsql_static", "..\..\sql\win32\sql\flaimsql_static\flaimsql_static.vcproj", "{2327896F-38A5-493C-BF81-12E7AE5F7FC2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xflaim", "..\..\xflaim\win32\xflaim\xflaim\xflaim.vcproj", "{41AA6907-E826-4E8F-A271-F3B2EB6158D2}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "xflaim_static", "..\..\xflaim\win32\xflaim\xflaim_static\xflaim_static.vcproj", "{1EB08BC4-5446-44B2-9739-ADA9E59770DE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D16B82B1-8831-49D8-BE86-835183329342}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D16B82B1-8831-49D8-BE86-835183329342}.Debug|Win32.Build.0 = Debug|Win32
+		{D16B82B1-8831-49D8-BE86-835183329342}.Release|Win32.ActiveCfg = Release|Win32
+		{D16B82B1-8831-49D8-BE86-835183329342}.Release|Win32.Build.0 = Release|Win32
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}.Debug|Win32.ActiveCfg = Debug|Win32
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}.Debug|Win32.Build.0 = Debug|Win32
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}.Release|Win32.ActiveCfg = Release|Win32
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}.Release|Win32.Build.0 = Release|Win32
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F}.Debug|Win32.Build.0 = Debug|Win32
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F}.Release|Win32.ActiveCfg = Release|Win32
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F}.Release|Win32.Build.0 = Release|Win32
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4}.Debug|Win32.Build.0 = Debug|Win32
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4}.Release|Win32.ActiveCfg = Release|Win32
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4}.Release|Win32.Build.0 = Release|Win32
+		{00B9E579-CD68-46CB-81FA-230861C49A72}.Debug|Win32.ActiveCfg = Debug|Win32
+		{00B9E579-CD68-46CB-81FA-230861C49A72}.Debug|Win32.Build.0 = Debug|Win32
+		{00B9E579-CD68-46CB-81FA-230861C49A72}.Release|Win32.ActiveCfg = Release|Win32
+		{00B9E579-CD68-46CB-81FA-230861C49A72}.Release|Win32.Build.0 = Release|Win32
+		{9E0A94C9-6B5C-4C74-9678-AF556D772426}.Debug|Win32.ActiveCfg = Debug|Win32
+		{9E0A94C9-6B5C-4C74-9678-AF556D772426}.Debug|Win32.Build.0 = Debug|Win32
+		{9E0A94C9-6B5C-4C74-9678-AF556D772426}.Release|Win32.ActiveCfg = Release|Win32
+		{9E0A94C9-6B5C-4C74-9678-AF556D772426}.Release|Win32.Build.0 = Release|Win32
+		{2327896F-38A5-493C-BF81-12E7AE5F7FC2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{2327896F-38A5-493C-BF81-12E7AE5F7FC2}.Debug|Win32.Build.0 = Debug|Win32
+		{2327896F-38A5-493C-BF81-12E7AE5F7FC2}.Release|Win32.ActiveCfg = Release|Win32
+		{2327896F-38A5-493C-BF81-12E7AE5F7FC2}.Release|Win32.Build.0 = Release|Win32
+		{41AA6907-E826-4E8F-A271-F3B2EB6158D2}.Debug|Win32.ActiveCfg = Debug|Win32
+		{41AA6907-E826-4E8F-A271-F3B2EB6158D2}.Debug|Win32.Build.0 = Debug|Win32
+		{41AA6907-E826-4E8F-A271-F3B2EB6158D2}.Release|Win32.ActiveCfg = Release|Win32
+		{41AA6907-E826-4E8F-A271-F3B2EB6158D2}.Release|Win32.Build.0 = Release|Win32
+		{1EB08BC4-5446-44B2-9739-ADA9E59770DE}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1EB08BC4-5446-44B2-9739-ADA9E59770DE}.Debug|Win32.Build.0 = Debug|Win32
+		{1EB08BC4-5446-44B2-9739-ADA9E59770DE}.Release|Win32.ActiveCfg = Release|Win32
+		{1EB08BC4-5446-44B2-9739-ADA9E59770DE}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F} = {0BF17DE0-D6D1-4389-96C1-EF6E8EFC175D}
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4} = {0BF17DE0-D6D1-4389-96C1-EF6E8EFC175D}
+		{00B9E579-CD68-46CB-81FA-230861C49A72} = {0BF17DE0-D6D1-4389-96C1-EF6E8EFC175D}
+		{D16B82B1-8831-49D8-BE86-835183329342} = {C6AE6621-9535-4914-BB7C-625A96752846}
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18} = {C6AE6621-9535-4914-BB7C-625A96752846}
+		{9E0A94C9-6B5C-4C74-9678-AF556D772426} = {5C39F26B-F199-4BBB-8F24-AFA9FB1A6242}
+		{2327896F-38A5-493C-BF81-12E7AE5F7FC2} = {5C39F26B-F199-4BBB-8F24-AFA9FB1A6242}
+		{41AA6907-E826-4E8F-A271-F3B2EB6158D2} = {486040F9-016A-4A47-9E2D-1DB1196300A1}
+		{1EB08BC4-5446-44B2-9739-ADA9E59770DE} = {486040F9-016A-4A47-9E2D-1DB1196300A1}
+	EndGlobalSection
+EndGlobal

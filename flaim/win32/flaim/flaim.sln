@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "flaim", "flaim", "{C8D70EC6-B286-4612-A6CE-79291CF2E4B7}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaim", "flaim\flaim.vcproj", "{D16B82B1-8831-49D8-BE86-835183329342}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaim_static", "flaim_static\flaim_static.vcproj", "{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D16B82B1-8831-49D8-BE86-835183329342}.Debug|Win32.ActiveCfg = Debug|Win32
+		{D16B82B1-8831-49D8-BE86-835183329342}.Debug|Win32.Build.0 = Debug|Win32
+		{D16B82B1-8831-49D8-BE86-835183329342}.Release|Win32.ActiveCfg = Release|Win32
+		{D16B82B1-8831-49D8-BE86-835183329342}.Release|Win32.Build.0 = Release|Win32
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}.Debug|Win32.ActiveCfg = Debug|Win32
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}.Debug|Win32.Build.0 = Debug|Win32
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}.Release|Win32.ActiveCfg = Release|Win32
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D16B82B1-8831-49D8-BE86-835183329342} = {C8D70EC6-B286-4612-A6CE-79291CF2E4B7}
+		{05142CA1-9F15-4E61-AAF0-FB61AD0C6F18} = {C8D70EC6-B286-4612-A6CE-79291CF2E4B7}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,42 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ftk", "ftk", "{809BD836-7C76-4D12-8F7E-B8EEE68E2674}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaimtk", "flaimtk\flaimtk.vcproj", "{44861D28-034F-4F4B-B51B-892A9E2FF12F}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "flaimtk_static", "flaimtk_static\flaimtk_static.vcproj", "{F3ACBCA5-621F-4B54-B445-581EA14B49B4}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ftktest", "ftktest\ftktest.vcproj", "{00B9E579-CD68-46CB-81FA-230861C49A72}"
+	ProjectSection(ProjectDependencies) = postProject
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4} = {F3ACBCA5-621F-4B54-B445-581EA14B49B4}
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Release|Win32 = Release|Win32
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F}.Debug|Win32.Build.0 = Debug|Win32
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F}.Release|Win32.ActiveCfg = Release|Win32
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F}.Release|Win32.Build.0 = Release|Win32
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4}.Debug|Win32.ActiveCfg = Debug|Win32
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4}.Debug|Win32.Build.0 = Debug|Win32
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4}.Release|Win32.ActiveCfg = Release|Win32
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4}.Release|Win32.Build.0 = Release|Win32
+		{00B9E579-CD68-46CB-81FA-230861C49A72}.Debug|Win32.ActiveCfg = Debug|Win32
+		{00B9E579-CD68-46CB-81FA-230861C49A72}.Debug|Win32.Build.0 = Debug|Win32
+		{00B9E579-CD68-46CB-81FA-230861C49A72}.Release|Win32.ActiveCfg = Release|Win32
+		{00B9E579-CD68-46CB-81FA-230861C49A72}.Release|Win32.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{44861D28-034F-4F4B-B51B-892A9E2FF12F} = {809BD836-7C76-4D12-8F7E-B8EEE68E2674}
+		{F3ACBCA5-621F-4B54-B445-581EA14B49B4} = {809BD836-7C76-4D12-8F7E-B8EEE68E2674}
+		{00B9E579-CD68-46CB-81FA-230861C49A72} = {809BD836-7C76-4D12-8F7E-B8EEE68E2674}
+	EndGlobalSection
+EndGlobal
