@@ -354,7 +354,7 @@ void ftkFastChecksum(
 			"			mov		%%ecx, %%edi\n" 
 			
 			"			cmp		$32, %%ecx\n"
-			"			jb			MediumStuff\n" 					
+			"			jb			2f # MediumStuff\n" 					
 			
 			"			shr		$5, %%ecx\n"
 			"			and		$0x01F, %%edi\n"
@@ -362,7 +362,7 @@ void ftkFastChecksum(
 			"			movd		%%edx, %%mm4\n"
 			"			movd		%%ebx, %%mm5\n"
 			
-			"BigStuffLoop:\n"
+			"1: # BigStuffLoop:\n"
 			"			movq		(%%esi), %%mm0\n"
 			"			movq		8(%%esi), %%mm1\n"
 			"			movq		16(%%esi), %%mm2\n"
@@ -378,7 +378,7 @@ void ftkFastChecksum(
 			"			pxor		%%mm3, %%mm5\n"
 			"			dec		%%ecx\n"
 			
-			"			jnz		BigStuffLoop\n" 
+			"			jnz		1b # BigStuffLoop\n" 
 			"			movd		%%mm5, %%ebx\n"
 			"			psrlq		$32, %%mm5\n"
 			"			movd		%%mm5, %%eax\n"
@@ -394,13 +394,13 @@ void ftkFastChecksum(
 			
 			"			mov		%%edi, %%ecx\n"
 			
-			"MediumStuff:\n"
+			"2: # MediumStuff:\n"
 			"			cmp		$4, %%ecx\n"
-			"			jb			SmallStuff\n"
+			"			jb			4f # SmallStuff\n"
 			"			shr		$2, %%ecx\n"
 			"			and		$3, %%edi\n"
 			
-			"MediumStuffLoop:\n"
+			"3: # MediumStuffLoop:\n"
 			"			mov		(%%esi), %%eax\n"
 			"			add		$4, %%esi\n"
 			"			xor		%%eax, %%ebx\n"
@@ -410,26 +410,26 @@ void ftkFastChecksum(
 			"			add		%%al, %%dl\n"
 			"			add		%%ah, %%dh\n"
 			"			dec		%%ecx\n"
-			"			jnz		MediumStuffLoop\n"
+			"			jnz		3b # MediumStuffLoop\n"
 			"			mov		%%edi, %%ecx\n"
 			
-			"SmallStuff:\n"
+			"4: # SmallStuff:\n"
 			"			add		%%dh, %%dl\n" 
 			"			mov		%%ebx, %%eax\n"
 			"			shr		$16, %%eax\n"				
 			"			xor		%%ax, %%bx\n" 							
 			"			xor		%%bh, %%bl\n"							
 			"			cmp		$0, %%ecx\n" 
-			"			jz			Done\n" 							
+			"			jz			6f # Done\n" 							
 			
-			"SmallStuffLoop:\n" 						
+			"5: # SmallStuffLoop:\n" 						
 			"			mov		(%%esi), %%al\n" 						
 			"			inc		%%esi\n"								
 			"			add		%%al, %%dl\n" 							
 			"			xor		%%al, %%bl\n" 							
 			"			dec		%%ecx\n" 							
-			"			jnz		SmallStuffLoop\n" 				
-			"Done:\n" 									
+			"			jnz		5b # SmallStuffLoop\n" 				
+			"6: # Done:\n" 									
 			"			and		$0xFF, %%edx\n" 
 			"			and		$0xFF, %%ebx\n" 
 			
@@ -467,7 +467,7 @@ void ftkFastChecksum(
 			"			mov		%%ecx, %%edi\n" 
 			
 			"			cmp		$32, %%ecx\n"
-			"			jb			MediumStuff\n" 					
+			"			jb			2f # MediumStuff\n" 					
 			
 			"			shr		$5, %%ecx\n"
 			"			and		$0x01F, %%edi\n"
@@ -475,7 +475,7 @@ void ftkFastChecksum(
 			"			movd		%%edx, %%mm4\n"
 			"			movd		%%ebx, %%mm5\n"
 			
-			"BigStuffLoop:\n"
+			"1: # BigStuffLoop:\n"
 			"			movq		(%%r8), %%mm0\n"
 			"			movq		8(%%r8), %%mm1\n"
 			"			movq		16(%%r8), %%mm2\n"
@@ -491,7 +491,7 @@ void ftkFastChecksum(
 			"			pxor		%%mm3, %%mm5\n"
 			"			dec		%%ecx\n"
 			
-			"			jnz		BigStuffLoop\n" 
+			"			jnz		1b # BigStuffLoop\n" 
 			"			movd		%%mm5, %%ebx\n"
 			"			psrlq		$32, %%mm5\n"
 			"			movd		%%mm5, %%eax\n"
@@ -507,13 +507,13 @@ void ftkFastChecksum(
 			
 			"			mov		%%edi, %%ecx\n"
 			
-			"MediumStuff:\n"
+			"2: # MediumStuff:\n"
 			"			cmp		$4, %%ecx\n"
-			"			jb			SmallStuff\n"
+			"			jb			4f # SmallStuff\n"
 			"			shr		$2, %%ecx\n"
 			"			and		$3, %%edi\n"
 			
-			"MediumStuffLoop:\n"
+			"3: # MediumStuffLoop:\n"
 			"			mov		(%%r8), %%eax\n"
 			"			add		$4, %%r8\n"
 			"			xor		%%eax, %%ebx\n"
@@ -523,26 +523,26 @@ void ftkFastChecksum(
 			"			add		%%al, %%dl\n"
 			"			add		%%ah, %%dh\n"
 			"			dec		%%ecx\n"
-			"			jnz		MediumStuffLoop\n"
+			"			jnz		3b # MediumStuffLoop\n"
 			"			mov		%%edi, %%ecx\n"
 			
-			"SmallStuff:\n"
+			"4: # SmallStuff:\n"
 			"			add		%%dh, %%dl\n" 
 			"			mov		%%ebx, %%eax\n"
 			"			shr		$16, %%eax\n"				
 			"			xor		%%ax, %%bx\n" 							
 			"			xor		%%bh, %%bl\n"							
 			"			cmp		$0, %%ecx\n" 
-			"			jz			Done\n" 							
+			"			jz			6f # Done\n" 							
 			
-			"SmallStuffLoop:\n" 						
+			"5: # SmallStuffLoop:\n" 						
 			"			mov		(%%r8), %%al\n" 						
 			"			inc		%%r8\n"								
 			"			add		%%al, %%dl\n"
 			"			xor		%%al, %%bl\n" 							
 			"			dec		%%ecx\n" 							
-			"			jnz		SmallStuffLoop\n" 				
-			"Done:\n" 									
+			"			jnz		5b # SmallStuffLoop\n" 				
+			"6: # Done:\n" 									
 			"			and		$0xFF, %%edx\n" 
 			"			and		$0xFF, %%ebx\n" 
 			
