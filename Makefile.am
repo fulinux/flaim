@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = tools win32
+EXTRA_DIST = INSTALL.W32 tools win32
 
 SUBDIRS = ftk flaim sql xflaim
 

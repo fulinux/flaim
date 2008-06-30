@@ -1,46 +1,64 @@
 Building on Windows
 ===================
-   Visual C++ 8.0 Express is good, but more to the point, it's free.
-To build XFLAIM, you will need to download and install VC8 Express and the
-latest Windows Platform SDK, as VC8 Express only comes with .NET libraries.
-You can get VC8 Express here:
+   Visual C++ 2008 Express is good, but more to the point, it's free.
+To build the FLAIM projects, you will need to download and install 
+Visual C++ 2008 Express (which now thankfully comes with a reasonably 
+late version of the Windows Platform SDK).
 
-   http://msdn.microsoft.com/vstudio/express/visualC/default.aspx
+You can get Visual C++ 2008 Express here:
 
-Click the Download link on the right, and CAREFULLY follow steps 1 through
-4 on that page. The 4th step links to a page that indicates how to install
-the Windows Platform SDK. It looks painful, but it's really rather simple.
+   http://www.microsoft.com/express/vc
 
-Once VC8 Express and the Platform SDK have been installed and configured
-to work correctly with each other (and after the obligatory set of reboots), 
-you can simply double click on the xflaim solution (xflaim.sln) file to bring 
-up the xflaim project in the VC8 IDE. Use the main or context menu options 
+The ">> Download Now!" link on that page, and decide whether you want to
+install from the web (slow) or install off-line (also slow - there's no 
+fast solution, sorry). 
+
+Once Visual C++ 2008 Express has been installed you may simply double 
+click on any of the flaim project solution files to bring up the flaim 
+project in the Visual C++ 2008 IDE. Use the main or context menu options 
 to build the desired targets.
 
-At some near future point, we hope to be able to build with autotools under 
-Cygwin. Of course, VC8 Express (or Professional) will still be required, but
-at least the build process will be the same for all platforms.
+The flaim project solution files are located in the win32 directories
+in the following locations:
 
-XFLAIM Runtime Library Use
+flaim-projects
+  flaim
+    win32 - flaim.sln
+  ftk
+    win32 - flaimtk.sln
+  sql
+    win32 - flaimsql.sln
+  xflaim
+    win32 - xflaim.sln
+  win32   - flaim-projects.sln 
+
+The projects may be build individually from each of the lower-level 
+solution files, or all at once from the flaim-projects solution file.
+
+WARNING: The flaim-projects solution file refers to the same project
+files as the individual lower-level solution files, so if you make 
+changes in one of these, they'll be reflected in the other.
+
+FLAIM Runtime Library Use
 =========================
-   XFLAIM libraries - both static and dynamic - and the xflaim utilities
-consume the dynamic (DLL) form of the VC8 runtime libraries. This is in 
-alignment with the use of runtime libraries on Unix platforms. It's more
-efficient and flexible to use the DLL versions of these libraries, and
-it allows Microsoft to update these libraries as necessary to fix security
-holes and defects which may be found in the future.
+   FLAIM libraries - both static and dynamic - and the flaim utilities
+consume the dynamic (DLL) form of the Visual C++ 2008 runtime libraries. 
+This is in alignment with the use of runtime libraries on Unix platforms.
+It's more efficient and flexible to use the DLL versions of these libraries, 
+and it allows Microsoft to update these libraries as necessary to fix 
+security holes and defects which may be found in the future.
 
    With each new version of Windows and Microsoft tools, Microsoft 
 platforms become more security minded - and more secure. This is 
 generally done by copying features from Unix platforms into the Windows 
-operating system and into the tools themselves. Visual Studio 2005 is no 
-exception. The most significant security feature in VC8 (IMHO) is secure 
-package deployment and executable module manifests. This is nothing less 
-than the direct equivalent of RPATH's in Unix and Linux, and the usual 
+operating system and into the tools themselves. Visual Studio 2008 is no 
+exception. The most significant security feature in Visual C++ 2008 (IMHO)
+is secure package deployment and executable module manifests. This is nothing
+less than the direct equivalent of RPATH's in Unix and Linux, and the usual 
 security features - and annoying issues - come along with it.
 
-   The VC8 runtime libraries include MSVCR80.DLL, MSVCP80.DLL and 
-MSVCM80.DLL, which represent the C standard library, the C++ standard
+   The Visual C++ 2008 runtime libraries include MSVCR90.DLL, MSVCP90.DLL and 
+MSVCM90.DLL, which represent the C standard library, the C++ standard
 library, and the C math library, respectively. These libraries may no 
 longer be simply dropped into the same directory as your executable and 
 consumed. Executables and consumer DLL's need to be configured to build 
@@ -50,22 +68,21 @@ significant algorithm to determine platform requirements and features,
 and making the right decisions to install these runtime libraries. 
 
    Developers (like you) will not have a problem executing your own 
-projects built against the XFLAIM libraries because you've installed VC8, 
+projects built against the FLAIM libraries because you've installed VC8, 
 which consumes the VC8 runtime libraries, and so deploys it during its
 install process. For more information, see this excellent article on 
 the CodeProjects website:
 
    http://www.codeproject.com/cpp/vcredists_x86.asp
 
-
 Legacy Makefile
 ===============
-   There is also a legacy makefile that has been hand written to target
-xflaim for all of the platforms that xflaim currently supports. If you don't
-want to use autotools, and you don't feel comfortable in the VC8 IDE, then
-you may build for windows by simply running make from the root of the XFLAIM
-project. This makefile accepts multiple auxilliary targets, which modify
-the build in various ways. These auxilliary targets include:
+   There is also a legacy makefile (GNUMakefile) that has been hand written 
+to target flaim for all of the platforms that flaim currently supports. If you
+don't want to use autotools, and you don't feel comfortable in the Visual C++
+2008 IDE, then you may build for windows by simply running make from the root 
+of the FLAIM project. This makefile accepts multiple auxilliary targets, which 
+modify the build in various ways. These auxilliary targets include:
 
    debug
    release
@@ -77,11 +94,16 @@ the build in various ways. These auxilliary targets include:
 
 True build targets include:
 
-   libs (default) - xflaim libraries (static and dynamic)
+   libs (default) - flaim libraries (static and dynamic)
    checkdb - checkdb.exe
    rebuild - rebuild.exe
    view - view.exe
    ut_basictest - basic unit tests
    sample - sample.exe
+
+CAVEAT: We're trying to phase out the legacy GNU makefile build system, so:
+
+1) Don't expect it to last forever, and 
+2) Don't be surprised if it doesn't work all the time
 
 Enjoy!
