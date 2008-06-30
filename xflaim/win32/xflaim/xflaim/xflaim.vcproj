@@ -41,13 +41,17 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;XFLAIM_EXPORTS"
-				MinimalRebuild="true"
+				AdditionalIncludeDirectories="..\..\..\..\ftk\src"
+				PreprocessorDefinitions="WIN32;_WINDLL;_DEBUG;_WINDOWS;_USRDLL;FLM_DEBUG;FLM_SOURCE;$(NOINHERIT)"
+				StringPooling="true"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
+				DefaultCharIsUnsigned="true"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				DebugInformationFormat="4"
+				ProgramDataBaseFileName="$(OutDir)\$(ProjectName).pdb"
+				WarningLevel="4"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -60,7 +64,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="kernel32.lib user32.lib msvcrtd.lib msvcprtd.lib flaimtk.lib $(NOINHERIT)"
 				LinkIncremental="2"
+				AdditionalLibraryDirectories="..\..\..\..\ftk\win32\ftk\Debug"
+				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				TargetMachine="1"
@@ -114,11 +121,16 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;XFLAIM_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\..\ftk\src"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDLL;_WINDOWS;_USRDLL;FLM_SOURCE;$(NOINHERIT)"
+				StringPooling="true"
+				MinimalRebuild="false"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
+				DefaultCharIsUnsigned="true"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
+				ProgramDataBaseFileName="$(OutDir)\$(ProjectName).pdb"
+				WarningLevel="4"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -132,7 +144,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="kernel32.lib user32.lib msvcrt.lib msvcprt.lib flaimtk.lib $(NOINHERIT)"
 				LinkIncremental="1"
+				AdditionalLibraryDirectories="..\..\..\..\ftk\win32\ftk\Release"
+				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="2"
 				OptimizeReferences="2"

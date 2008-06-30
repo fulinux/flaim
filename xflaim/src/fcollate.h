@@ -75,18 +75,4 @@ RCODE flmColText2StorageText(
 	FLMBOOL *			pbDataTruncated,
 	FLMBOOL *			pbFirstSubstring);
 	
-RCODE flmUTF8ToColText(
-	IF_PosIStream *	pIStream,
-	FLMBYTE *			pucCollatedStr,
-	FLMUINT *			puiCollatedStrLen,
-	FLMBOOL  			bCaseInsensitive,
-	FLMUINT *			puiCollationLen,
-	FLMUINT *			puiCaseLen,
-	FLMUINT				uiLanguage,
-	FLMUINT				uiCharLimit,
-	FLMBOOL				bFirstSubstring,
-	FLMBOOL				bDataTruncated,
-	FLMBOOL *			pbOriginalCharsLost,
-	FLMBOOL *			pbDataTruncated);
-
 #endif

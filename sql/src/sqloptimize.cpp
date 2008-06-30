@@ -1024,6 +1024,50 @@ FSTATIC SQL_NODE * sqlClipNotNode(
 }
 
 //-------------------------------------------------------------------------
+// Desc:	
+//-------------------------------------------------------------------------
+RCODE SQLQuery::getNext(
+	F_Row **	ppRow)
+{
+	RCODE			rc = NE_SFLM_OK;
+   // JMC - FIXME: Implement this!
+   return ( rc);
+}
+
+//-------------------------------------------------------------------------
+// Desc:	
+//-------------------------------------------------------------------------
+RCODE SQLQuery::getPrev(
+	F_Row **	ppRow)
+{
+	RCODE			rc = NE_SFLM_OK;
+   // JMC - FIXME: Implement this!
+   return ( rc);
+}
+	
+//-------------------------------------------------------------------------
+// Desc:	
+//-------------------------------------------------------------------------
+RCODE SQLQuery::getFirst(
+	F_Row **	ppRow)
+{
+	RCODE			rc = NE_SFLM_OK;
+   // JMC - FIXME: Implement this!
+   return ( rc);
+}
+	
+//-------------------------------------------------------------------------
+// Desc:	
+//-------------------------------------------------------------------------
+RCODE SQLQuery::getLast(
+	F_Row **	ppRow)
+{
+	RCODE			rc = NE_SFLM_OK;
+   // JMC - FIXME: Implement this!
+   return ( rc);
+}
+
+//-------------------------------------------------------------------------
 // Desc:	Reduce the query tree.  This will strip out NOT nodes and
 //			resolve constant expressions to a single node.  It also weeds
 //			out all boolean constants that are operands of AND or OR operators.

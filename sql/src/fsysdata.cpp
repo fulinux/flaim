@@ -3261,6 +3261,17 @@ FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
 /****************************************************************************
 Desc:
 ****************************************************************************/
+FLMUINT FLMAPI F_SuperFileClient::getBlockAddress(
+	FLMUINT					uiFileNumber,
+	FLMUINT					uiFileOffset)
+{
+	// JMC - FIXME: Don't know if this is the correct implementation for this
+   return( FSBlkAddress( uiFileNumber, uiFileOffset));
+}
+
+/****************************************************************************
+Desc:
+****************************************************************************/
 FLMUINT64 FLMAPI F_SuperFileClient::getMaxFileSize( void)
 {
 //	JMC - FIXME: commented out due to missing functionality in flaimtk.h

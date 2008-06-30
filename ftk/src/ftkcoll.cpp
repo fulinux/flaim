@@ -8056,7 +8056,7 @@ VISIT:	If the string is EXACTLY the length of the truncation
 			The code didn't match the design intent.  Fix next major
 			version.
 ****************************************************************************/
-RCODE flmUTF8ToColText(
+RCODE FLMAPI flmUTF8ToColText(
 	IF_PosIStream *	pIStream,
 	FLMBYTE *			pucCollatedStr,		// Returns collated string
 	FLMUINT *			puiCollatedStrLen,	// Returns total collated string length

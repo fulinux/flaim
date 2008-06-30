@@ -3268,6 +3268,20 @@
 		char *						pszLanguage		///< Language string that is to be converted to a code.
 		);
 
+   FTKEXPC RCODE FLMAPI flmUTF8ToColText(
+	   IF_PosIStream *	pIStream,
+	   FLMBYTE *			pucCollatedStr,
+	   FLMUINT *			puiCollatedStrLen,
+	   FLMBOOL  			bCaseInsensitive,
+	   FLMUINT *			puiCollationLen,
+	   FLMUINT *			puiCaseLen,
+	   FLMUINT				uiLanguage,
+	   FLMUINT				uiCharLimit,
+	   FLMBOOL				bFirstSubstring,
+	   FLMBOOL				bDataTruncated,
+	   FLMBOOL *			pbOriginalCharsLost,
+	   FLMBOOL *			pbDataTruncated);
+
 	/****************************************************************************
 	Desc: ASCII character constants and macros
 	****************************************************************************/

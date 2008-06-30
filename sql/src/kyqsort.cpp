@@ -335,9 +335,9 @@ RCODE ixKeyCompare(
 	F_DataVector *		pSearchKey1,
 	F_Row *				pRow1,
 	const void *		pvKey1,
+   FLMUINT           uiKeyLen1,
 	F_DataVector *		pSearchKey2,
 	F_Row *				pRow2,
-	FLMUINT				uiKeyLen1,
 	const void *		pvKey2,
 	FLMUINT				uiKeyLen2,
 	FLMINT *				piCompare)
