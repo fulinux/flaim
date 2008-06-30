@@ -154,7 +154,7 @@ private:
 /****************************************************************************
 Desc:	Main entry point for printf functionality.
 ****************************************************************************/
-void f_logPrintf(
+void FLMAPI f_logPrintf(
 	IF_LogMessageClient *	pLogMessage,
 	const char *				pszFormatStr, ...)
 {
@@ -169,7 +169,7 @@ void f_logPrintf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void f_logPrintf(
+void FLMAPI f_logPrintf(
 	eLogMessageSeverity		msgSeverity,
 	const char *				pszFormatStr, ...)
 {
@@ -315,7 +315,7 @@ void f_loggerShutdown( void)
 /****************************************************************************
 Desc:	Set the toolkit logger client
 ****************************************************************************/
-void f_setLoggerClient(
+FTKEXPC void FLMAPI f_setLoggerClient(
 	IF_LoggerClient *	pLogger)
 {
 	f_mutexLock( gv_hLoggerMutex);

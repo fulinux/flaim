@@ -41,13 +41,18 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				PreprocessorDefinitions="WIN32;_DEBUG;_WINDOWS;_USRDLL;FLAIM_EXPORTS"
-				MinimalRebuild="true"
+				AdditionalIncludeDirectories="..\..\..\..\ftk\src"
+				PreprocessorDefinitions="WIN32;_DEBUG;_WINDLL;_WINDOWS;_USRDLL;FLAIM_EXPORTS;FLM_DEBUG;FLM_SOURCE;$(NOINHERIT)"
+				StringPooling="true"
+				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
 				RuntimeLibrary="3"
+				DefaultCharIsUnsigned="true"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
-				DebugInformationFormat="4"
+				ProgramDataBaseFileName="$(OutDir)\$(ProjectName).pdb"
+				WarningLevel="4"
+				WarnAsError="true"
+				DebugInformationFormat="3"
 			/>
 			<Tool
 				Name="VCManagedResourceCompilerTool"
@@ -60,8 +65,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				LinkIncremental="2"
+				AdditionalDependencies="..\..\..\..\ftk\win32\ftk\Debug\flaimtk.lib"
+				LinkIncremental="1"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)\$(ProjectName).pdb"
 				SubSystem="2"
 				TargetMachine="1"
 			/>
@@ -114,11 +121,17 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				PreprocessorDefinitions="WIN32;NDEBUG;_WINDOWS;_USRDLL;FLAIM_EXPORTS"
+				AdditionalIncludeDirectories="..\..\..\..\ftk\src"
+				PreprocessorDefinitions="WIN32;NDEBUG;_WINDLL;_WINDOWS;_USRDLL;FLAIM_EXPORTS;FLM_SOURCE;$(NOINHERIT)"
+				StringPooling="true"
+				MinimalRebuild="false"
 				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
+				DefaultCharIsUnsigned="true"
 				UsePrecompiledHeader="0"
-				WarningLevel="3"
+				ProgramDataBaseFileName="$(OutDir)\$(ProjectName).pdb"
+				WarningLevel="4"
+				WarnAsError="true"
 				DebugInformationFormat="3"
 			/>
 			<Tool
@@ -132,8 +145,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalDependencies="..\..\..\..\ftk\win32\ftk\Release\flaimtk.lib"
 				LinkIncremental="1"
 				GenerateDebugInformation="true"
+				ProgramDatabaseFile="$(OutDir)\$(ProjectName).pdb"
 				SubSystem="2"
 				OptimizeReferences="2"
 				EnableCOMDATFolding="2"

@@ -83,7 +83,7 @@ static FLMUINT f_timeLeapYearsSince1970(
 /****************************************************************************
 Desc:	Gets the number of seconds since 1980 or 1970.
 ****************************************************************************/
-void f_timeGetSeconds(
+void FLMAPI f_timeGetSeconds(
 	FLMUINT	*		puiSeconds)
 {
 #if defined( FLM_WIN)
@@ -101,7 +101,7 @@ void f_timeGetSeconds(
 Desc:		Gets the time stamp from the system clock.
 Notes:
 ****************************************************************************/
-void	f_timeGetTimeStamp(
+void FLMAPI f_timeGetTimeStamp(
 	F_TMSTAMP *		pTimeStamp)
 {
 #if defined( FLM_WIN)
@@ -147,7 +147,7 @@ void	f_timeGetTimeStamp(
 /****************************************************************************
 Desc:		Returns the local time bias in seconds
 ****************************************************************************/
-FLMINT f_timeGetLocalOffset( void)
+FLMINT FLMAPI f_timeGetLocalOffset( void)
 {
 	FLMINT		iOffset = 0;
 
@@ -234,7 +234,7 @@ static FLMUINT  f_timeLeapYearsSince1970(
 Desc:		Convert from seconds to the F_TMSTAMP structure.
 Notes:
 ****************************************************************************/
-void	f_timeSecondsToDate(
+void FLMAPI f_timeSecondsToDate(
 	FLMUINT 			uiSeconds,
 	F_TMSTAMP *		date)
 {
@@ -286,7 +286,7 @@ void	f_timeSecondsToDate(
 /****************************************************************************
 Desc:		Convert a time stamp to the number of seconds.
 ****************************************************************************/
-void f_timeDateToSeconds(
+void FLMAPI f_timeDateToSeconds(
 	F_TMSTAMP *		pTimeStamp,
 	FLMUINT *		puiSeconds)
 {
@@ -332,7 +332,7 @@ Ret:	-1 if date1 is less than date2
 		 1 if date1 is greater than date2
 Notes:
 ****************************************************************************/
-FLMINT f_timeCompareTimeStamps(
+FLMINT FLMAPI f_timeCompareTimeStamps(
 	F_TMSTAMP *		pTimeStamp1,
 	F_TMSTAMP *		pTimeStamp2,
 	FLMUINT			flag)
@@ -455,7 +455,7 @@ FLMUINT FLMAPI FLM_TIMER_UNITS_TO_SECS(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLM_TIMER_UNITS_TO_MILLI( 
+FLMUINT FLMAPI FLM_TIMER_UNITS_TO_MILLI( 
 	FLMUINT			uiTU)
 {
 #ifndef FLM_RING_ZERO_NLM
@@ -472,7 +472,7 @@ FLMUINT FLM_TIMER_UNITS_TO_MILLI(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLM_MILLI_TO_TIMER_UNITS( 
+FLMUINT FLMAPI FLM_MILLI_TO_TIMER_UNITS( 
 	FLMUINT			uiMilliSeconds)
 {
 #ifndef FLM_RING_ZERO_NLM

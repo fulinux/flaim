@@ -1813,7 +1813,7 @@
 		FLMUINT						uiMsgType,
 		eLogMessageSeverity		eMsgSeverity);
 
-	FTKEXPC void FLMAPI f_logPrintf(
+	FTKEXP void FLMAPI f_logPrintf(
 		IF_LogMessageClient *	pLogMessage,
 		const char *				pszFormatStr, ...);
 	
@@ -1831,7 +1831,7 @@
 		const char *				pszFileName,
 		FLMINT						iLineNumber);
 
-	void f_logPrintf(
+	FTKEXP void FLMAPI f_logPrintf(
 		eLogMessageSeverity		msgSeverity,
 		const char *				pszFormatStr, ...);
 		
@@ -1845,7 +1845,7 @@
 			eLogMessageSeverity	eMsgSeverity = F_DEBUG_MESSAGE) = 0;
 	};
 	
-	void f_setLoggerClient(
+	FTKEXPC void FLMAPI f_setLoggerClient(
 		IF_LoggerClient *			pLogger);
 
 	/****************************************************************************
@@ -3974,28 +3974,28 @@
 	#define f_timeIsLeapYear(year) \
 		(((((year) & 0x03) == 0) && (((year) % 100) != 0)) || (((year) % 400) == 0))
 
-	void f_timeGetSeconds(
+	FTKEXPC void FLMAPI f_timeGetSeconds(
 		FLMUINT	*		puiSeconds);
 
-	void f_timeGetTimeStamp(
+	FTKEXPC void FLMAPI f_timeGetTimeStamp(
 		F_TMSTAMP *		pTimeStamp);
 
-	FLMINT f_timeGetLocalOffset( void);
+	FTKEXPC FLMINT FLMAPI f_timeGetLocalOffset( void);
 
-	void f_timeSecondsToDate(
+	FTKEXPC void FLMAPI f_timeSecondsToDate(
 		FLMUINT			uiSeconds,
 		F_TMSTAMP *		pTimeStamp);
 
-	void f_timeDateToSeconds(
+	FTKEXPC void FLMAPI f_timeDateToSeconds(
 		F_TMSTAMP *		pTimeStamp,
 		FLMUINT *		puiSeconds);
 
-	FLMINT f_timeCompareTimeStamps(
+	FTKEXPC FLMINT FLMAPI f_timeCompareTimeStamps(
 		F_TMSTAMP *		pTimeStamp1,
 		F_TMSTAMP *		pTimeStamp2,
 		FLMUINT			flag);
 
-	FINLINE FLMUINT f_localTimeToUTC(
+	FINLINE FLMUINT FLMAPI f_localTimeToUTC(
 		FLMUINT			uiSeconds)
 	{
 		return( uiSeconds + f_timeGetLocalOffset());
@@ -4013,10 +4013,10 @@
 	FTKEXPC FLMUINT FLMAPI FLM_TIMER_UNITS_TO_SECS( 
 		FLMUINT			uiTU);
 	
-	FTKEXPC FLMUINT FLM_TIMER_UNITS_TO_MILLI( 
+	FTKEXPC FLMUINT FLMAPI FLM_TIMER_UNITS_TO_MILLI( 
 		FLMUINT			uiTU);
 		
-	FLMUINT FLM_MILLI_TO_TIMER_UNITS( 
+	FTKEXPC FLMUINT FLMAPI FLM_MILLI_TO_TIMER_UNITS( 
 		FLMUINT			uiMilliSeconds);
 		
 	FTKEXPC void FLMAPI f_addElapsedTime(
