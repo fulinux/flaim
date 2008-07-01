@@ -28,7 +28,7 @@
 /*****************************************************************************
 Desc:	Get node information and add it to the node information object.
 ******************************************************************************/
-RCODE FLMAPI F_NodeInfo::addNodeInfo(
+RCODE XFLAPI F_NodeInfo::addNodeInfo(
 	IF_Db *			ifpDb,
 	IF_DOMNode *	pNode,
 	FLMBOOL			bDoNodeSubTree,
@@ -224,7 +224,7 @@ Exit:
 /****************************************************************************
 Desc:	Create an empty node info. object and return it's interface...
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::createIFNodeInfo(
+RCODE XFLAPI F_DbSystem::createIFNodeInfo(
 	IF_NodeInfo **	ppNodeInfo)
 {
 	RCODE	rc = NE_XFLM_OK;

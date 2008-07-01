@@ -35,7 +35,7 @@ FSTATIC RCODE fqGetDocId(
 /***************************************************************************
 Desc:	Add a sort key to the query.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addSortKey(
+RCODE XFLAPI F_Query::addSortKey(
 	void *			pvSortKeyContext,
 	FLMBOOL			bChildToContext,
 	FLMBOOL			bElement,
@@ -1316,7 +1316,7 @@ Exit:
 /***************************************************************************
 Desc:	Stop building the result set.
 ***************************************************************************/
-void FLMAPI F_Query::stopBuildingResultSet( void)
+void XFLAPI F_Query::stopBuildingResultSet( void)
 {
 	if (m_pSortResultSet)
 	{
@@ -1349,7 +1349,7 @@ void FLMAPI F_Query::stopBuildingResultSet( void)
 Desc:	Build the query result set.  This is the method that applications
 		can call.  It implies enabling of positioning.
 ***************************************************************************/
-RCODE FLMAPI F_Query::buildResultSet(
+RCODE XFLAPI F_Query::buildResultSet(
 	IF_Db *	pDb,
 	FLMUINT	uiTimeLimit)
 {
@@ -2254,7 +2254,7 @@ Exit:
 /***************************************************************************
 Desc:	Get previous node/document that passes query expression.
 ***************************************************************************/
-RCODE FLMAPI F_Query::positionTo(
+RCODE XFLAPI F_Query::positionTo(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit,
@@ -2418,7 +2418,7 @@ Exit:
 /***************************************************************************
 Desc:	Get previous node/document that passes query expression.
 ***************************************************************************/
-RCODE FLMAPI F_Query::positionTo(
+RCODE XFLAPI F_Query::positionTo(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ppNode,
 	FLMUINT				uiTimeLimit,
@@ -2567,7 +2567,7 @@ Exit:
 /***************************************************************************
 Desc:	Get current position.
 ***************************************************************************/
-RCODE FLMAPI F_Query::getPosition(
+RCODE XFLAPI F_Query::getPosition(
 	IF_Db *			ifpDb,
 	FLMUINT *		puiPosition
 	)
@@ -2646,7 +2646,7 @@ Exit:
 /***************************************************************************
 Desc:	Get count.  Only works for queries that are building result sets.
 ***************************************************************************/
-RCODE FLMAPI F_Query::getCounts(
+RCODE XFLAPI F_Query::getCounts(
 	IF_Db *		ifpDb,
 	FLMUINT		uiTimeLimit,
 	FLMBOOL		bPartialCountOk,

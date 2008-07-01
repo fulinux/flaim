@@ -500,11 +500,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void XFLAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL XFLAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1338,7 +1338,7 @@ private:
 		m_pPrevInHashBucket = NULL;
 	}
 
-	static void FLMAPI objectAllocInit(
+	static void XFLAPI objectAllocInit(
 		void *				pvAlloc,
 		FLMUINT				uiSize);
 
@@ -1441,11 +1441,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void XFLAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL XFLAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1464,11 +1464,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void XFLAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL XFLAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1487,11 +1487,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void XFLAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL XFLAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1510,11 +1510,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void XFLAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL XFLAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1533,11 +1533,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void XFLAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL XFLAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1556,11 +1556,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void XFLAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL XFLAPI canRelocate(
 		void *	pvOldAlloc);
 };
 

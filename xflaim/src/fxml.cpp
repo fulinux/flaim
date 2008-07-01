@@ -6103,7 +6103,7 @@ Exit:
 Desc:	Outputs a UTF8 stream of XML, starting at the specified node.  Node and
 		all of its descendant nodes are output.
 *****************************************************************************/
-RCODE FLMAPI F_Db::exportXML(
+RCODE XFLAPI F_Db::exportXML(
 	IF_DOMNode *			pStartNode,
 	IF_OStream *			pOStream,
 	eExportFormatType		eFormatType)

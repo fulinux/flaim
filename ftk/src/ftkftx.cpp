@@ -447,17 +447,17 @@ FSTATIC FLMUINT ftxMapFlmColorToWin32(
 	eColorType		uiColor);
 #endif
 	
-RCODE FLMAPI _ftxBackgroundThread(
+RCODE FTKAPI _ftxBackgroundThread(
 	IF_Thread *		pThread);
 
 FLMBOOL ftxKBTest( void);
 
 FLMUINT ftxKBGetChar( void);
 
-RCODE FLMAPI _ftxDefaultDisplayHandler(
+RCODE FTKAPI _ftxDefaultDisplayHandler(
 	IF_Thread *		pThread);
 
-RCODE FLMAPI _ftxDefaultKeyboardHandler(
+RCODE FTKAPI _ftxDefaultKeyboardHandler(
 	IF_Thread *		pThread);
 
 #if defined( FLM_UNIX)
@@ -522,7 +522,7 @@ static FLMUINT ScanCodeToFKB[] = {
 /****************************************************************************
 Desc:		Initializes the FTX environment.
 ****************************************************************************/
-RCODE FLMAPI FTXInit(
+RCODE FTKAPI FTXInit(
 	const char *		pszAppName,
 	FLMUINT				uiCols,
 	FLMUINT				uiRows,
@@ -634,7 +634,7 @@ Exit:
 Desc:		Frees all resources allocated to the FTX environment
 Notes:	All screens and windows are freed automatically
 ****************************************************************************/
-void FLMAPI FTXExit( void)
+void FTKAPI FTXExit( void)
 {
 	FTX_SCREEN *		pScreen;
 
@@ -700,7 +700,7 @@ void FLMAPI FTXExit( void)
 /****************************************************************************
 Desc:		Refreshes the current screen
 ****************************************************************************/
-void FLMAPI FTXRefresh( void)
+void FTKAPI FTXRefresh( void)
 {
 	FTX_WINDOW *	pWinScreen;
 
@@ -747,7 +747,7 @@ void FLMAPI FTXRefresh( void)
 /****************************************************************************
 Desc:		Enables or disables refresh
 ****************************************************************************/
-void FLMAPI FTXSetRefreshState(
+void FTKAPI FTXSetRefreshState(
 	FLMBOOL			bDisable)
 {
 	f_mutexLock( gv_pFtxInfo->hFtxMutex);
@@ -758,7 +758,7 @@ void FLMAPI FTXSetRefreshState(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI FTXRefreshDisabled( void)
+FLMBOOL FTKAPI FTXRefreshDisabled( void)
 {
 	FLMBOOL		bDisabled;
 	
@@ -772,7 +772,7 @@ FLMBOOL FLMAPI FTXRefreshDisabled( void)
 /****************************************************************************
 Desc:		Allows a keyboard handler to add a key to the FTX key buffer
 ****************************************************************************/
-RCODE FLMAPI FTXAddKey(
+RCODE FTKAPI FTXAddKey(
 	FLMUINT			uiKey)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -830,7 +830,7 @@ Exit:
 /****************************************************************************
 Desc:		Cycles to the next screen in the FTX environment
 ****************************************************************************/
-void FLMAPI FTXCycleScreensNext( void)
+void FTKAPI FTXCycleScreensNext( void)
 {
 	FTX_SCREEN *		pScreenTmp;
 	FTX_SCREEN *		pScreenLast;
@@ -862,7 +862,7 @@ void FLMAPI FTXCycleScreensNext( void)
 /****************************************************************************
 Desc:		Cycles to the previous screen in the FTX environment
 ****************************************************************************/
-void FLMAPI FTXCycleScreensPrev( void)
+void FTKAPI FTXCycleScreensPrev( void)
 {
 	FTX_SCREEN *	pScreenPreviousFront;
 	FTX_SCREEN *	pScreenLast;
@@ -894,7 +894,7 @@ void FLMAPI FTXCycleScreensPrev( void)
 /****************************************************************************
 Desc:		Force cursor refresh
 ****************************************************************************/
-void FLMAPI FTXRefreshCursor( void)
+void FTKAPI FTXRefreshCursor( void)
 {
 	f_mutexLock( gv_pFtxInfo->hFtxMutex);
 
@@ -909,7 +909,7 @@ void FLMAPI FTXRefreshCursor( void)
 /****************************************************************************
 Desc:		Invalidates the current screen so that it will be completly redrawn
 ****************************************************************************/
-void FLMAPI FTXInvalidate( void)
+void FTKAPI FTXInvalidate( void)
 {
 	FTX_WINDOW *	pWinScreen;
 
@@ -935,7 +935,7 @@ void FLMAPI FTXInvalidate( void)
 /****************************************************************************
 Desc:		Allocates and initializes a new screen object
 ****************************************************************************/
-RCODE FLMAPI FTXScreenInit(
+RCODE FTKAPI FTXScreenInit(
 	const char *	pszName,
 	FTX_SCREEN **	ppScreen)
 {
@@ -1034,7 +1034,7 @@ Exit:
 Desc:		Frees all resources allocated to a screen, including all window
 			objects
 ****************************************************************************/
-void FLMAPI FTXScreenFree(
+void FTKAPI FTXScreenFree(
 	FTX_SCREEN **	ppScreen)
 {
 	FTX_SCREEN *	pScreen;
@@ -1069,7 +1069,7 @@ Exit:
 /****************************************************************************
 Desc:		Makes the passed-in screen the visible screen
 ****************************************************************************/
-RCODE FLMAPI FTXScreenDisplay(
+RCODE FTKAPI FTXScreenDisplay(
 	FTX_SCREEN *	pScreen)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -1140,7 +1140,7 @@ Exit:
 /****************************************************************************
 Desc:		Retrieves the size of the passed-in screen
 ****************************************************************************/
-RCODE FLMAPI FTXScreenGetSize(
+RCODE FTKAPI FTXScreenGetSize(
 	FTX_SCREEN *	pScreen,
 	FLMUINT *		puiNumCols,
 	FLMUINT *		puiNumRows)
@@ -1172,7 +1172,7 @@ Exit:
 /****************************************************************************
 Desc:		Sets the screen's shutdown flag
 ****************************************************************************/
-void FLMAPI FTXScreenSetShutdownFlag(
+void FTKAPI FTXScreenSetShutdownFlag(
 	FTX_SCREEN *	pScreen,
 	FLMBOOL *		pbShutdownFlag)
 {
@@ -1191,7 +1191,7 @@ Exit:
 /****************************************************************************
 Desc:		Creates a title window and main window (with border)
 ****************************************************************************/
-RCODE FLMAPI FTXScreenInitStandardWindows(
+RCODE FTKAPI FTXScreenInitStandardWindows(
 	FTX_SCREEN *	pScreen,
 	eColorType		titleBackColor,
 	eColorType		titleForeColor,
@@ -1281,7 +1281,7 @@ Exit:
 /****************************************************************************
 Desc:		Allocates and initializes a window object
 ****************************************************************************/
-RCODE FLMAPI FTXWinInit(
+RCODE FTKAPI FTXWinInit(
 	FTX_SCREEN *	pScreen,
 	FLMUINT			uiCols,
 	FLMUINT			uiRows,
@@ -1387,7 +1387,7 @@ Exit:
 /****************************************************************************
 Desc:		Frees all resources associated with the passed-in window object
 ****************************************************************************/
-void FLMAPI FTXWinFree(
+void FTKAPI FTXWinFree(
 	FTX_WINDOW **	ppWindow)
 {
 	FTX_WINDOW *	pWindow;
@@ -1418,7 +1418,7 @@ Exit:
 /****************************************************************************
 Desc:		Opens the specified window and makes it visible
 ****************************************************************************/
-RCODE FLMAPI FTXWinOpen(
+RCODE FTKAPI FTXWinOpen(
 	FTX_WINDOW *	pWindow)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -1441,7 +1441,7 @@ Exit:
 /****************************************************************************
 Desc:		Closes (or hides) the specified window
 ****************************************************************************/
-void FLMAPI FTXWinClose(
+void FTKAPI FTXWinClose(
 	FTX_WINDOW *	pWindow)
 {
 	if( !pWindow)
@@ -1466,7 +1466,7 @@ Exit:
 /****************************************************************************
 Desc:		Sets the specified window's name
 ****************************************************************************/
-RCODE FLMAPI FTXWinSetName(
+RCODE FTKAPI FTXWinSetName(
 	FTX_WINDOW *	pWindow,
 	const char *	pszName)
 {
@@ -1491,7 +1491,7 @@ Exit:
 /****************************************************************************
 Desc:		Moves the specified window to a new location on the screen
 ****************************************************************************/
-void FLMAPI FTXWinMove(
+void FTKAPI FTXWinMove(
 	FTX_WINDOW *	pWindow,
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
@@ -1528,7 +1528,7 @@ Exit:
 /****************************************************************************
 Desc:		Sets the input focus to the specified window
 ****************************************************************************/
-void FLMAPI FTXWinSetFocus(
+void FTKAPI FTXWinSetFocus(
 	FTX_WINDOW *	pWindow)
 {
 	f_mutexLock( pWindow->pScreen->hScreenMutex);
@@ -1546,7 +1546,7 @@ void FLMAPI FTXWinSetFocus(
 Desc:		Sets the background color of all characters in the specified window
 			to the same color
 ****************************************************************************/
-void FLMAPI FTXWinPaintBackground(
+void FTKAPI FTXWinPaintBackground(
 	FTX_WINDOW *	pWindow,
 	eColorType		backgroundColor)
 {
@@ -1570,7 +1570,7 @@ void FLMAPI FTXWinPaintBackground(
 Desc:		Sets the background and/or foreground color of a row in the
 			specified window
 ****************************************************************************/
-void FLMAPI FTXWinPaintRow(
+void FTKAPI FTXWinPaintRow(
 	FTX_WINDOW *	pWindow,
 	eColorType *	pBackground,
 	eColorType *	pForeground,
@@ -1606,7 +1606,7 @@ void FLMAPI FTXWinPaintRow(
 /****************************************************************************
 Desc:		Sets all of the characters in the window to the specified character
 ****************************************************************************/
-void FLMAPI FTXWinSetChar(
+void FTKAPI FTXWinSetChar(
 	FTX_WINDOW *	pWindow,
 	FLMUINT			uiChar)
 {
@@ -1630,7 +1630,7 @@ void FLMAPI FTXWinSetChar(
 /****************************************************************************
 Desc:		Sets the background color of a row in the specified window.
 ****************************************************************************/
-void FLMAPI FTXWinPaintRowBackground(
+void FTKAPI FTXWinPaintRowBackground(
 	FTX_WINDOW *	pWindow,
 	eColorType		backgroundColor,
 	FLMUINT			uiRow)
@@ -1641,7 +1641,7 @@ void FLMAPI FTXWinPaintRowBackground(
 /****************************************************************************
 Desc:		Sets the foreground color of all characters in the specified window
 ****************************************************************************/
-void FLMAPI FTXWinPaintForeground(
+void FTKAPI FTXWinPaintForeground(
 	FTX_WINDOW *	pWindow,
 	eColorType		foregroundColor)
 {
@@ -1664,7 +1664,7 @@ void FLMAPI FTXWinPaintForeground(
 /****************************************************************************
 Desc:		Sets the foreground color of a row in the specified window.
 ****************************************************************************/
-void FLMAPI FTXWinPaintRowForeground(
+void FTKAPI FTXWinPaintRowForeground(
 	FTX_WINDOW *	pWindow,
 	eColorType		foregroundColor,
 	FLMUINT			uiRow)
@@ -1676,7 +1676,7 @@ void FLMAPI FTXWinPaintRowForeground(
 Desc:		Sets the background and foreground color of the pen associated
 			with the current window
 ****************************************************************************/
-void FLMAPI FTXWinSetBackFore(
+void FTKAPI FTXWinSetBackFore(
 	FTX_WINDOW *	pWindow,
 	eColorType		backgroundColor,
 	eColorType		foregroundColor)
@@ -1693,7 +1693,7 @@ void FLMAPI FTXWinSetBackFore(
 Desc:		Retrieves the current background and/or foreground color of
 			the pen associated with the specified window
 ****************************************************************************/
-void FLMAPI FTXWinGetBackFore(
+void FTKAPI FTXWinGetBackFore(
 	FTX_WINDOW *	pWindow,
 	eColorType *	pBackgroundColor,
 	eColorType *	pForegroundColor)
@@ -1717,7 +1717,7 @@ void FLMAPI FTXWinGetBackFore(
 Desc:		Prints a character at the current cursor location in the
 			specified window.
 ****************************************************************************/
-void FLMAPI FTXWinPrintChar(
+void FTKAPI FTXWinPrintChar(
 	FTX_WINDOW *	pWindow,
 	FLMUINT			uiChar)
 {
@@ -1730,7 +1730,7 @@ void FLMAPI FTXWinPrintChar(
 Desc:	Prints a string starting at the current cursor location in the
 		specified window.
 ****************************************************************************/
-void FLMAPI FTXWinPrintStr(
+void FTKAPI FTXWinPrintStr(
 	FTX_WINDOW *	pWindow,
 	const char *	pszString)
 {
@@ -1761,7 +1761,7 @@ Exit:
 /****************************************************************************
 Desc:		Output a formatted string at present cursor location.
 ****************************************************************************/
-void FLMAPI FTXWinPrintf(
+void FTKAPI FTXWinPrintf(
 	FTX_WINDOW *	pWindow,
 	const char *	pszFormat, ...)
 {
@@ -1777,7 +1777,7 @@ void FLMAPI FTXWinPrintf(
 /****************************************************************************
 Desc:		Output a formatted string (with color) at present cursor location.
 ****************************************************************************/
-void FLMAPI FTXWinCPrintf(
+void FTKAPI FTXWinCPrintf(
 	FTX_WINDOW *	pWindow,
 	eColorType		backgroundColor,
 	eColorType		foregroundColor,
@@ -1807,7 +1807,7 @@ void FLMAPI FTXWinCPrintf(
 /****************************************************************************
 Desc:		Prints a string at a specific offset in the specified window.
 ****************************************************************************/
-void FLMAPI FTXWinPrintStrXY(
+void FTKAPI FTXWinPrintStrXY(
 	FTX_WINDOW *	pWindow,
 	const char *	pszString,
 	FLMUINT			uiCol,
@@ -1820,7 +1820,7 @@ void FLMAPI FTXWinPrintStrXY(
 /****************************************************************************
 Desc:		Sets the cursor position in the specified window
 ****************************************************************************/
-void FLMAPI FTXWinSetCursorPos(
+void FTKAPI FTXWinSetCursorPos(
 	FTX_WINDOW *	pWindow,
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
@@ -1833,7 +1833,7 @@ void FLMAPI FTXWinSetCursorPos(
 /****************************************************************************
 Desc:		Enables or disables scrolling in the specified window
 ****************************************************************************/
-void FLMAPI FTXWinSetScroll(
+void FTKAPI FTXWinSetScroll(
 	FTX_WINDOW *	pWindow,
 	FLMBOOL			bScroll)
 {
@@ -1857,7 +1857,7 @@ Exit:
 /****************************************************************************
 Desc:		Enables or disables line wrap
 ****************************************************************************/
-void FLMAPI FTXWinSetLineWrap(
+void FTKAPI FTXWinSetLineWrap(
 	FTX_WINDOW *	pWindow,
 	FLMBOOL			bLineWrap)
 {
@@ -1881,7 +1881,7 @@ Exit:
 /****************************************************************************
 Desc:		Retrieves the scroll flag for the specified window
 ****************************************************************************/
-void FLMAPI FTXWinGetScroll(
+void FTKAPI FTXWinGetScroll(
 	FTX_WINDOW *	pWindow,
 	FLMBOOL *		pbScroll)
 {
@@ -1905,7 +1905,7 @@ Exit:
 /****************************************************************************
 Desc:		Retrieves the screen of the current window
 ****************************************************************************/
-RCODE FLMAPI FTXWinGetScreen(
+RCODE FTKAPI FTXWinGetScreen(
 	FTX_WINDOW *	pWindow,
 	FTX_SCREEN **	ppScreen)
 {
@@ -1935,7 +1935,7 @@ Exit:
 /****************************************************************************
 Desc:		Retrieves the windows position on the screen
 ****************************************************************************/
-RCODE FLMAPI FTXWinGetPosition(
+RCODE FTKAPI FTXWinGetPosition(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiCol,
 	FLMUINT *		puiRow)
@@ -1973,7 +1973,7 @@ Exit:
 Desc:		Clears from the specified column and row to the end of the row in
 			the specified window
 ****************************************************************************/
-void FLMAPI FTXWinClearLine(
+void FTKAPI FTXWinClearLine(
 	FTX_WINDOW *	pWindow,
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
@@ -1987,7 +1987,7 @@ void FLMAPI FTXWinClearLine(
 Desc:		Clears from the current cursor position to the end of the current
 			line
 ****************************************************************************/
-void FLMAPI FTXWinClearToEOL(
+void FTKAPI FTXWinClearToEOL(
 	FTX_WINDOW *	pWindow)
 {
 	f_mutexLock( pWindow->pScreen->hScreenMutex);
@@ -2001,7 +2001,7 @@ void FLMAPI FTXWinClearToEOL(
 Desc:		Clears the canvas of the specified window starting at the requested
 			row and column offset
 ****************************************************************************/
-void FLMAPI FTXWinClearXY(
+void FTKAPI FTXWinClearXY(
 	FTX_WINDOW *	pWindow,
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
@@ -2033,7 +2033,7 @@ void FLMAPI FTXWinClearXY(
 /****************************************************************************
 Desc:		Clears the canvas area of the specified window
 ****************************************************************************/
-void FLMAPI FTXWinClear(
+void FTKAPI FTXWinClear(
 	FTX_WINDOW *	pWindow)
 {
 	FTXWinClearXY( pWindow, 0, 0);
@@ -2043,7 +2043,7 @@ void FLMAPI FTXWinClear(
 /****************************************************************************
 Desc:		Draws a border around the canvas area of the specified window
 ****************************************************************************/
-void FLMAPI FTXWinDrawBorder(
+void FTKAPI FTXWinDrawBorder(
 	FTX_WINDOW *	pWindow)
 {
 	FLMUINT			uiLoop;
@@ -2144,7 +2144,7 @@ void FLMAPI FTXWinDrawBorder(
 /****************************************************************************
 Desc:		Draws a border around the canvas area of the specified window
 ****************************************************************************/
-void FLMAPI FTXWinSetTitle(
+void FTKAPI FTXWinSetTitle(
 	FTX_WINDOW *	pWindow,
 	const char *	pszTitle,
 	eColorType		backgroundColor,
@@ -2206,7 +2206,7 @@ void FLMAPI FTXWinSetTitle(
 /****************************************************************************
 Desc:		Draws a border around the canvas area of the specified window
 ****************************************************************************/
-void FLMAPI FTXWinSetHelp(
+void FTKAPI FTXWinSetHelp(
 	FTX_WINDOW *	pWindow,
 	const char *	pszHelp,
 	eColorType		backgroundColor,
@@ -2268,7 +2268,7 @@ void FLMAPI FTXWinSetHelp(
 /****************************************************************************
 Desc:		Tests the key buffer for an available key
 ****************************************************************************/
-RCODE FLMAPI FTXWinTestKB(
+RCODE FTKAPI FTXWinTestKB(
 	FTX_WINDOW *	pWindow)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -2297,7 +2297,7 @@ Exit:
 /****************************************************************************
 Desc:		Gets a character from the keyboard
 ****************************************************************************/
-RCODE FLMAPI FTXWinInputChar(
+RCODE FTKAPI FTXWinInputChar(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiChar)
 {
@@ -2376,7 +2376,7 @@ Exit:
 /****************************************************************************
 Desc:		Line editor routine
 ****************************************************************************/
-RCODE FLMAPI FTXLineEdit(
+RCODE FTKAPI FTXLineEdit(
 	FTX_WINDOW *	pWindow,
 	char *			pszBuffer,
 	FLMUINT			uiBufSize,
@@ -2800,7 +2800,7 @@ Exit:
 /****************************************************************************
 Desc:		Line editor routine which assumes some defaults
 ****************************************************************************/
-FLMUINT FLMAPI FTXLineEd(
+FLMUINT FTKAPI FTXLineEd(
 	FTX_WINDOW *	pWindow,
 	char *			pszBuffer,
 	FLMUINT			uiBufSize)
@@ -2865,7 +2865,7 @@ Exit:
 /****************************************************************************
 Desc: Displays a message window
 *****************************************************************************/
-RCODE FLMAPI FTXMessageWindow(
+RCODE FTKAPI FTXMessageWindow(
 	FTX_SCREEN *		pScreen,
 	eColorType			backgroundColor,
 	eColorType			foregroundColor,
@@ -2952,7 +2952,7 @@ Exit:
 /****************************************************************************
 Desc: Displays a dialog-style message box
 *****************************************************************************/
-RCODE FLMAPI FTXDisplayMessage(
+RCODE FTKAPI FTXDisplayMessage(
 	FTX_SCREEN *		pScreen,
 	eColorType			backgroundColor,
 	eColorType			foregroundColor,
@@ -3017,7 +3017,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI FTXGetInput(
+RCODE FTKAPI FTXGetInput(
 	FTX_SCREEN *	pScreen,
 	const char *	pszMessage,
 	char *			pszResponse,
@@ -3078,7 +3078,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI FTXWinGetCanvasSize(
+void FTKAPI FTXWinGetCanvasSize(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiNumCols,
 	FLMUINT *		puiNumRows)
@@ -3099,7 +3099,7 @@ void FLMAPI FTXWinGetCanvasSize(
 Desc:		Sets or changes the appearance of the cursor in the specified
 			window.
 ****************************************************************************/
-void FLMAPI FTXWinSetCursorType(
+void FTKAPI FTXWinSetCursorType(
 	FTX_WINDOW *	pWindow,
 	FLMUINT			uiType)
 {
@@ -3112,7 +3112,7 @@ void FLMAPI FTXWinSetCursorType(
 /****************************************************************************
 Desc:		Retrieves the cursor type of the specified window
 ****************************************************************************/
-FLMUINT FLMAPI FTXWinGetCursorType(
+FLMUINT FTKAPI FTXWinGetCursorType(
 	FTX_WINDOW *	pWindow)
 {
 	return( pWindow->uiCursorType);
@@ -3121,7 +3121,7 @@ FLMUINT FLMAPI FTXWinGetCursorType(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI FTXSetShutdownFlag(
+void FTKAPI FTXSetShutdownFlag(
 	FLMBOOL *		pbShutdownFlag)
 {
 	f_mutexLock( gv_pFtxInfo->hFtxMutex);
@@ -3132,7 +3132,7 @@ void FLMAPI FTXSetShutdownFlag(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI FTXWinGetSize(
+void FTKAPI FTXWinGetSize(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiNumCols,
 	FLMUINT *		puiNumRows)
@@ -3151,7 +3151,7 @@ void FLMAPI FTXWinGetSize(
 /****************************************************************************
 Desc: Retrieves the current cursor row in the specified window
 ****************************************************************************/
-FLMUINT FLMAPI FTXWinGetCurrRow(
+FLMUINT FTKAPI FTXWinGetCurrRow(
 	FTX_WINDOW *	pWindow)
 {
 	return( (FLMUINT)(pWindow->uiCurY - pWindow->uiOffset));
@@ -3160,7 +3160,7 @@ FLMUINT FLMAPI FTXWinGetCurrRow(
 /****************************************************************************
 Desc:		Retrieves the current cursor column in the specified window
 ****************************************************************************/
-FLMUINT FLMAPI FTXWinGetCurrCol(
+FLMUINT FTKAPI FTXWinGetCurrCol(
 	FTX_WINDOW *	pWindow)
 {
 	return( (FLMUINT)(pWindow->uiCurX - pWindow->uiOffset));
@@ -3169,7 +3169,7 @@ FLMUINT FLMAPI FTXWinGetCurrCol(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI FTXWinGetCursorPos(
+void FTKAPI FTXWinGetCursorPos(
 	FTX_WINDOW *	pWindow,
 	FLMUINT *		puiCol,
 	FLMUINT *		puiRow)
@@ -4642,7 +4642,7 @@ Exit:
 Desc:		Causes the console to "beep"
 Ret:		If the console does not support this feature, FALSE is returned.
 ****************************************************************************/
-void FLMAPI FTXBeep( void)
+void FTKAPI FTXBeep( void)
 {
 #if defined( FLM_WIN)
 
@@ -4819,7 +4819,7 @@ FSTATIC ftxWin32CharPair * ftxWin32GetExtendedKeycode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI _ftxDefaultDisplayHandler(
+RCODE FTKAPI _ftxDefaultDisplayHandler(
 	IF_Thread *		pThread)
 {
 #if defined( FLM_WIN)
@@ -4864,7 +4864,7 @@ RCODE FLMAPI _ftxDefaultDisplayHandler(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI _ftxDefaultKeyboardHandler(
+RCODE FTKAPI _ftxDefaultKeyboardHandler(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiChar;
@@ -4967,7 +4967,7 @@ RCODE FLMAPI _ftxDefaultKeyboardHandler(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI _ftxBackgroundThread(
+RCODE FTKAPI _ftxBackgroundThread(
 	IF_Thread *		pThread)
 {
 	for( ;;)
@@ -5012,7 +5012,7 @@ RCODE FLMAPI _ftxBackgroundThread(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FTXDisplayScrollWindow(
+RCODE FTKAPI FTXDisplayScrollWindow(
 	FTX_SCREEN *	pScreen,
 	const char *	pszTitle,
 	const char *	pszMessage,
@@ -5871,7 +5871,7 @@ FSTATIC FLMBOOL ftxUnixKBTest( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_conInit(
+RCODE FTKAPI f_conInit(
 	FLMUINT			uiRows,
 	FLMUINT			uiCols,
 	const char *	pszTitle)
@@ -5923,7 +5923,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_conExit( void)
+void FTKAPI f_conExit( void)
 {
 	if( !gv_conInitCount || f_atomicDec( &gv_conInitCount) > 0)
 	{
@@ -5951,7 +5951,7 @@ void FLMAPI f_conExit( void)
 /****************************************************************************
 Desc: Returns the size of the screen in columns and rows.
 ****************************************************************************/
-void FLMAPI f_conGetScreenSize(
+void FTKAPI f_conGetScreenSize(
 	FLMUINT *	puiNumColsRV,
 	FLMUINT *	puiNumRowsRV)
 {
@@ -5963,7 +5963,7 @@ void FLMAPI f_conGetScreenSize(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_conStrOut(
+void FTKAPI f_conStrOut(
 	const char *	pszString)
 {
 	f_mutexLock( gv_hConMutex);
@@ -5974,7 +5974,7 @@ void FLMAPI f_conStrOut(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_conStrOutXY(
+void FTKAPI f_conStrOutXY(
 	const char *	pszString,
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
@@ -5987,7 +5987,7 @@ void FLMAPI f_conStrOutXY(
 /****************************************************************************
 Desc:	Output a formatted string at present cursor location.
 ****************************************************************************/
-void FLMAPI f_conPrintf(
+void FTKAPI f_conPrintf(
 	const char *	pszFormat, ...)
 {
 	char			szBuffer[ 512];
@@ -6005,7 +6005,7 @@ void FLMAPI f_conPrintf(
 /****************************************************************************
 Desc:	Output a formatted string at present cursor location with color
 ****************************************************************************/
-void FLMAPI f_conCPrintf(
+void FTKAPI f_conCPrintf(
 	eColorType			back,
 	eColorType			fore,
 	const char *		pszFormat, ...)
@@ -6030,7 +6030,7 @@ void FLMAPI f_conCPrintf(
 /****************************************************************************
 Desc:    Clear the screen from the col/row down
 ****************************************************************************/
-void FLMAPI f_conClearScreen(
+void FTKAPI f_conClearScreen(
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
 {
@@ -6061,7 +6061,7 @@ void FLMAPI f_conClearScreen(
 Desc:    Position to the column and row specified.
 Notes:   The NLM could call GetPositionOfOutputCursor(&r,&c);
 ****************************************************************************/
-void FLMAPI f_conSetCursorPos(
+void FTKAPI f_conSetCursorPos(
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
 {
@@ -6090,7 +6090,7 @@ void FLMAPI f_conSetCursorPos(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_conClearLine(
+void FTKAPI f_conClearLine(
 	FLMUINT			uiCol,
 	FLMUINT			uiRow)
 {
@@ -6119,7 +6119,7 @@ void FLMAPI f_conClearLine(
 /****************************************************************************
 Desc:    Edit a line of data like gets(s).  Newline replaced by NULL character.
 ****************************************************************************/
-FLMUINT FLMAPI f_conLineEdit(
+FLMUINT FTKAPI f_conLineEdit(
 	char *		pszString,
 	FLMUINT		uiMaxLen)
 {
@@ -6141,7 +6141,7 @@ FLMUINT FLMAPI f_conLineEdit(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_conSetShutdown(
+void FTKAPI f_conSetShutdown(
 	FLMBOOL *    pbShutdown)
 {
 	FTXSetShutdownFlag( pbShutdown);
@@ -6151,7 +6151,7 @@ void FLMAPI f_conSetShutdown(
 Desc:    Edit a line of data with advanced features.
 Ret:     Number of characters input.
 ****************************************************************************/
-FLMUINT FLMAPI f_conLineEditExt(
+FLMUINT FTKAPI f_conLineEditExt(
 	char *		pszBuffer,
 	FLMUINT		uiBufSize,
 	FLMUINT		uiMaxWidth,
@@ -6175,7 +6175,7 @@ FLMUINT FLMAPI f_conLineEditExt(
 /****************************************************************************
 Desc:	Get the current X coordinate of the cursor
 ****************************************************************************/
-FLMUINT FLMAPI f_conGetCursorColumn( void)
+FLMUINT FTKAPI f_conGetCursorColumn( void)
 {
 	FLMUINT		uiCol;
 
@@ -6189,7 +6189,7 @@ FLMUINT FLMAPI f_conGetCursorColumn( void)
 /****************************************************************************
 Desc:	Get the current Y coordinate of the cursor
 ****************************************************************************/
-FLMUINT FLMAPI f_conGetCursorRow( void)
+FLMUINT FTKAPI f_conGetCursorRow( void)
 {
 	FLMUINT		uiRow;
 
@@ -6203,7 +6203,7 @@ FLMUINT FLMAPI f_conGetCursorRow( void)
 /****************************************************************************
 Desc:    Set the background and foreground colors
 ****************************************************************************/
-void FLMAPI f_conSetBackFore(
+void FTKAPI f_conSetBackFore(
 	eColorType		backColor,
 	eColorType		foreColor)
 {
@@ -6215,7 +6215,7 @@ void FLMAPI f_conSetBackFore(
 /****************************************************************************
 Desc : Sets the cursor attributes.
 ****************************************************************************/
-void FLMAPI f_conSetCursorType(
+void FTKAPI f_conSetCursorType(
 	FLMUINT		uiType)
 {
 	f_mutexLock( gv_hConMutex);
@@ -6226,7 +6226,7 @@ void FLMAPI f_conSetCursorType(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_conDrawBorder( void)
+void FTKAPI f_conDrawBorder( void)
 {
 	f_mutexLock( gv_hConMutex);
 	FTXWinDrawBorder( gv_pConWindow);
@@ -6236,7 +6236,7 @@ void FLMAPI f_conDrawBorder( void)
 /****************************************************************************
 Desc:
 Not*************************************************************************/
-FLMUINT FLMAPI f_conGetKey( void)
+FLMUINT FTKAPI f_conGetKey( void)
 {
 	FLMUINT		uiChar;
 
@@ -6250,7 +6250,7 @@ FLMUINT FLMAPI f_conGetKey( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_conHaveKey( void)
+FLMBOOL FTKAPI f_conHaveKey( void)
 {
 	FLMBOOL		bHaveKey;
 

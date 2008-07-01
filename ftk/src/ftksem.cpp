@@ -63,7 +63,7 @@ typedef struct
 Desc:
 ****************************************************************************/
 #if defined( FLM_WIN)
-RCODE FLMAPI f_mutexCreate(
+RCODE FTKAPI f_mutexCreate(
 	F_MUTEX *	phMutex)
 {
 	f_assert( phMutex != NULL);
@@ -88,7 +88,7 @@ RCODE FLMAPI f_mutexCreate(
 Desc:
 ****************************************************************************/
 #if defined( FLM_WIN)
-void FLMAPI f_mutexDestroy(
+void FTKAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
 	f_assert( phMutex != NULL);
@@ -105,7 +105,7 @@ void FLMAPI f_mutexDestroy(
 Desc:
 ****************************************************************************/
 #if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
-RCODE FLMAPI f_mutexCreate(
+RCODE FTKAPI f_mutexCreate(
 	F_MUTEX *			phMutex)
 {
 	RCODE								rc = NE_FLM_OK;
@@ -162,7 +162,7 @@ Exit:
 Desc:
 ****************************************************************************/
 #if defined( FLM_SOLARIS)
-RCODE FLMAPI f_mutexCreate(
+RCODE FTKAPI f_mutexCreate(
 	F_MUTEX *			phMutex)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -191,7 +191,7 @@ Exit:
 Desc:
 ****************************************************************************/
 #if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
-void FLMAPI f_mutexDestroy(
+void FTKAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
 	f_assert( phMutex != NULL);
@@ -214,7 +214,7 @@ void FLMAPI f_mutexDestroy(
 Desc:
 ****************************************************************************/
 #if defined( FLM_SOLARIS) 
-void FLMAPI f_mutexDestroy(
+void FTKAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
 	f_assert( phMutex != NULL);
@@ -231,7 +231,7 @@ void FLMAPI f_mutexDestroy(
 Desc:
 ****************************************************************************/
 #if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
-void FLMAPI f_mutexLock(
+void FTKAPI f_mutexLock(
 	F_MUTEX		hMutex)
 {
 	(void)pthread_mutex_lock( (pthread_mutex_t *)hMutex);
@@ -242,7 +242,7 @@ void FLMAPI f_mutexLock(
 Desc:
 ****************************************************************************/
 #if defined( FLM_SOLARIS)
-void FLMAPI f_mutexLock(
+void FTKAPI f_mutexLock(
 	F_MUTEX		hMutex)
 {
 	for( ;;)
@@ -259,7 +259,7 @@ void FLMAPI f_mutexLock(
 Desc:
 ****************************************************************************/
 #if (defined( FLM_UNIX) || defined( FLM_LIBC_NLM)) && !defined( FLM_SOLARIS)
-void FLMAPI f_mutexUnlock(
+void FTKAPI f_mutexUnlock(
 	F_MUTEX		hMutex)
 {
 	(void)pthread_mutex_unlock( (pthread_mutex_t *)hMutex);
@@ -270,7 +270,7 @@ void FLMAPI f_mutexUnlock(
 Desc:
 ****************************************************************************/
 #if defined( FLM_SOLARIS)
-void FLMAPI f_mutexUnlock(
+void FTKAPI f_mutexUnlock(
 	F_MUTEX		hMutex)
 {
 	_lwp_mutex_unlock( (lwp_mutex_t *)hMutex);
@@ -284,7 +284,7 @@ void FLMAPI f_mutexUnlock(
 Desc:
 ****************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_NLM)
-void FLMAPI f_assertMutexLocked(
+void FTKAPI f_assertMutexLocked(
 	F_MUTEX)
 {
 }
@@ -294,7 +294,7 @@ void FLMAPI f_assertMutexLocked(
 Desc:
 ****************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_NLM)
-void FLMAPI f_assertMutexNotLocked(
+void FTKAPI f_assertMutexNotLocked(
 	F_MUTEX)
 {
 }
@@ -304,7 +304,7 @@ void FLMAPI f_assertMutexNotLocked(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-void FLMAPI f_assertMutexLocked(
+void FTKAPI f_assertMutexLocked(
 	F_MUTEX		hMutex)
 {
 #ifdef FLM_DEBUG
@@ -320,7 +320,7 @@ void FLMAPI f_assertMutexLocked(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-void FLMAPI f_assertMutexNotLocked(
+void FTKAPI f_assertMutexNotLocked(
 	F_MUTEX		hMutex)
 {
 #ifdef FLM_DEBUG
@@ -335,7 +335,7 @@ void FLMAPI f_assertMutexNotLocked(
 Desc:
 *************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI f_mutexCreate(
+RCODE FTKAPI f_mutexCreate(
 	F_MUTEX *	phMutex)
 {
 	if( (*phMutex = (F_MUTEX)kMutexAlloc( (BYTE *)"FTK_MUTEX")) == F_MUTEX_NULL)
@@ -351,7 +351,7 @@ RCODE FLMAPI f_mutexCreate(
 Desc:
 *************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-void FLMAPI f_mutexDestroy(
+void FTKAPI f_mutexDestroy(
 	F_MUTEX *	phMutex)
 {
 	if (*phMutex != F_MUTEX_NULL)
@@ -366,7 +366,7 @@ void FLMAPI f_mutexDestroy(
 Desc:
 *************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-void FLMAPI f_mutexLock( 
+void FTKAPI f_mutexLock( 
 	F_MUTEX		hMutex)
 {
 	(void)kMutexLock( (MUTEX)hMutex);
@@ -377,7 +377,7 @@ void FLMAPI f_mutexLock(
 Desc:
 *************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-void FLMAPI f_mutexUnlock(
+void FTKAPI f_mutexUnlock(
 	F_MUTEX		hMutex)
 {
 	(void)kMutexUnlock( (MUTEX)hMutex);
@@ -704,7 +704,7 @@ RCODE f_semWait(
 Desc:   Get the lock on a semaphore - p operation
 ****************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
-void FLMAPI f_semSignal(
+void FTKAPI f_semSignal(
 	F_SEM			hSem)
 {
 #if defined( FLM_SOLARIS)
@@ -719,7 +719,7 @@ void FLMAPI f_semSignal(
 Desc:
 ****************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
-FLMUINT FLMAPI f_semGetSignalCount(
+FLMUINT FTKAPI f_semGetSignalCount(
 	F_SEM							hSem)
 {
 	return( (FLMUINT)((sema_t *)hSem)->count);
@@ -730,7 +730,7 @@ FLMUINT FLMAPI f_semGetSignalCount(
 Desc:
 *************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI f_semCreate(
+RCODE FTKAPI f_semCreate(
 	F_SEM *		phSem)
 {
 	if( (*phSem = (F_SEM)kSemaphoreAlloc( (BYTE *)"FTK_SEM", 0)) == F_SEM_NULL)
@@ -746,7 +746,7 @@ RCODE FLMAPI f_semCreate(
 Desc:
 *************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-void FLMAPI f_semDestroy(
+void FTKAPI f_semDestroy(
 	F_SEM *		phSem)
 {
 	if (*phSem != F_SEM_NULL)
@@ -761,7 +761,7 @@ void FLMAPI f_semDestroy(
 Desc:
 *************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI f_semWait(
+RCODE FTKAPI f_semWait(
 	F_SEM			hSem,
 	FLMUINT		uiTimeout)
 {
@@ -790,7 +790,7 @@ RCODE FLMAPI f_semWait(
 Desc:
 *************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-void FLMAPI f_semSignal(
+void FTKAPI f_semSignal(
 	F_SEM			hSem)
 {
 	(void)kSemaphoreSignal( (SEMAPHORE)hSem);
@@ -801,7 +801,7 @@ void FLMAPI f_semSignal(
 Desc:
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-FLMUINT FLMAPI f_semGetSignalCount(
+FLMUINT FTKAPI f_semGetSignalCount(
 	F_SEM							hSem)
 {
 	return( (FLMUINT)kSemaphoreExamineCount( (SEMAPHORE)hSem));
@@ -812,7 +812,7 @@ FLMUINT FLMAPI f_semGetSignalCount(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-void FLMAPI f_mutexLock(
+void FTKAPI f_mutexLock(
 	F_MUTEX			hMutex)
 {
 	F_INTERLOCK *		pInterlock = (F_INTERLOCK *)hMutex;
@@ -844,7 +844,7 @@ void FLMAPI f_mutexLock(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-void FLMAPI f_mutexUnlock(
+void FTKAPI f_mutexUnlock(
 	F_MUTEX		hMutex)
 {
 	F_INTERLOCK *		pInterlock = (F_INTERLOCK *)hMutex;
@@ -862,7 +862,7 @@ void FLMAPI f_mutexUnlock(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-RCODE FLMAPI f_semCreate(
+RCODE FTKAPI f_semCreate(
 	F_SEM *		phSem)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -905,7 +905,7 @@ Exit:
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-void FLMAPI f_semDestroy(
+void FTKAPI f_semDestroy(
 	F_SEM *		phSem)
 {
 	sema_t *		pSem = (sema_t *)(*phSem); 
@@ -928,7 +928,7 @@ void FLMAPI f_semDestroy(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-RCODE FLMAPI f_semWait(
+RCODE FTKAPI f_semWait(
 	F_SEM			hSem,
 	FLMUINT		uiTimeout)
 {
@@ -961,7 +961,7 @@ RCODE FLMAPI f_semWait(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-void FLMAPI f_semSignal(
+void FTKAPI f_semSignal(
 	F_SEM			hSem)
 {
 	f_atomicInc( &((sema_t *)hSem)->uiSignalCount);
@@ -973,7 +973,7 @@ void FLMAPI f_semSignal(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-FLMUINT FLMAPI f_semGetSignalCount(
+FLMUINT FTKAPI f_semGetSignalCount(
 	F_SEM							hSem)
 {
 	return( ((sema_t *)hSem)->uiSignalCount);
@@ -1008,7 +1008,7 @@ FSTATIC void f_rwlockNotify(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_rwlockCreate(
+RCODE FTKAPI f_rwlockCreate(
 	F_RWLOCK *			phReadWriteLock)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -1042,7 +1042,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_rwlockDestroy(
+void FTKAPI f_rwlockDestroy(
 	F_RWLOCK *			phReadWriteLock)
 {
 	F_RWLOCK_IMP *		pReadWriteLock = (F_RWLOCK_IMP *)*phReadWriteLock;
@@ -1063,7 +1063,7 @@ void FLMAPI f_rwlockDestroy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_rwlockAcquire(
+RCODE FTKAPI f_rwlockAcquire(
 	F_RWLOCK				hReadWriteLock,
 	F_SEM					hSem,
 	FLMBOOL				bWriter)
@@ -1117,7 +1117,7 @@ RCODE FLMAPI f_rwlockAcquire(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_rwlockPromote(
+RCODE FTKAPI f_rwlockPromote(
 	F_RWLOCK				hReadWriteLock,
 	F_SEM					hSem)
 {
@@ -1164,7 +1164,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_rwlockTryAcquire(
+RCODE FTKAPI f_rwlockTryAcquire(
 	F_RWLOCK				hReadWriteLock,
 	FLMBOOL				bWriter)
 {
@@ -1206,7 +1206,7 @@ RCODE FLMAPI f_rwlockTryAcquire(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_rwlockRelease(
+RCODE FTKAPI f_rwlockRelease(
 	F_RWLOCK				hReadWriteLock)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -1253,7 +1253,7 @@ Desc: This routine links a request into a notification list and
 		then waits to be notified that the event has occurred.  The mutex
 		is assumed to protect the notify list.
 ****************************************************************************/
-RCODE FLMAPI f_notifyWait(
+RCODE FTKAPI f_notifyWait(
 	F_MUTEX						hMutex,
 	F_SEM							hSem,
 	void *						pvData,
@@ -1320,7 +1320,7 @@ Desc:	This routine notifies threads waiting for a pending read or write
 		to complete.  This routine assumes that the notify list mutex
 		is already locked.
 ****************************************************************************/
-void FLMAPI f_notifySignal(
+void FTKAPI f_notifySignal(
 	F_NOTIFY_LIST_ITEM *	pNotifyList,
 	RCODE						notifyRc)
 {

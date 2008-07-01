@@ -28,6 +28,29 @@
 
 	#include <flaimtk.h>
 	
+   // platform-specific API definitions for XFL* macros
+   #if defined( FLM_WIN)
+      #if defined( XFL_STATIC_LINK)
+         #define XFLEXP
+      #else
+         #if defined( XFL_SOURCE)
+            #define XFLEXP                __declspec(dllexport)
+         #else
+            #define XFLEXP                __declspec(dllimport)
+         #endif
+      #endif
+		#define XFLAPI     						__stdcall
+	#elif defined( FLM_NLM)
+      #define XFLEXP
+		#define XFLAPI     						__stdcall
+	#elif defined( FLM_UNIX)
+      #define XFLEXP
+		#define XFLAPI
+	#else
+		#error Platform not supported
+   #endif
+	#define XFLXPC							      extern "C" XFLEXP
+
 	#ifdef FLM_PACK_STRUCTS
 		#pragma pack(push, 1)
 	#endif
@@ -1355,9 +1378,9 @@
 	 * intermittently or throughout the life of the database system.  The class id for
 	 * this interface is CLSID_F_DbSystemFactory and the interface id is IID_IF_DbSystem.
 	 */
-	flminterface IF_DbSystem : public IF_Object
+	flminterface XFLEXP IF_DbSystem : public IF_Object
 	{
-		virtual RCODE FLMAPI updateIniFile(
+		virtual RCODE XFLAPI updateIniFile(
 			const char *	pszParamName,
 			const char *	pszValue) = 0;
 		
@@ -1370,7 +1393,7 @@
 		 * @param ppFileSystem A pointer to a file system object that can 
 		 * be used to perform various operations on files.
 		 */
-		virtual void FLMAPI getFileSystem(
+		virtual void XFLAPI getFileSystem(
 			IF_FileSystem **		ppFileSystem) = 0;
 
 		/**
@@ -1404,7 +1427,7 @@
 		 * @param ppDb A pointer to a database object that references the newly created database.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbCreate(
+		virtual RCODE XFLAPI dbCreate(
 			const char *			pszDbFileName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -1433,7 +1456,7 @@
 		 * @param ppDb A pointer to a database object that references the newly created database.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbOpen(
+		virtual RCODE XFLAPI dbOpen(
 			const char *			pszDbFileName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -1485,7 +1508,7 @@
 		 * @param pui64NodesDiscardedDocs The total number of documents that couldn't be recovered.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbRebuild(
+		virtual RCODE XFLAPI dbRebuild(
 			const char *			pszSourceDbPath,
 			const char *			pszSourceDataDir,
 			const char *			pszDestDbPath,
@@ -1526,7 +1549,7 @@
 		 * a B-tree, number of keys, etc.  Methods of the  IF_DbInfo object provide for retrieval of this information.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbCheck(
+		virtual RCODE XFLAPI dbCheck(
 			const char *			pszDbFileName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -1572,7 +1595,7 @@
 		 * methods of that interface.  Those methods may be called by dbCopy to report copy progress.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbCopy(
+		virtual RCODE XFLAPI dbCopy(
 			const char *			pszSrcDbName,
 			const char *			pszSrcDataDir,
 			const char *			pszSrcRflDir,
@@ -1612,7 +1635,7 @@
 		 * interface and implements the pure virtual methods of that interface.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbRename(
+		virtual RCODE XFLAPI dbRename(
 			const char *			pszDbName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -1640,7 +1663,7 @@
 		 * @param bRemoveRflFiles A flag that indicate whether or not the RFL file(s) should be removed as well.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbRemove(
+		virtual RCODE XFLAPI dbRemove(
 			const char *			pszDbName,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -1676,7 +1699,7 @@
 		 * The application is responsible for implementing this object.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbRestore(
+		virtual RCODE XFLAPI dbRestore(
 			const char *			pszDbPath,
 			const char *			pszDataDir,
 			const char *			pszRflDir,
@@ -1709,7 +1732,7 @@
 		 * @param ppDb A new database object.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI dbDup(
+		virtual RCODE XFLAPI dbDup(
 			IF_Db *					pDb,
 			IF_Db **					ppDb) = 0;
 
@@ -1722,7 +1745,7 @@
 		 * @param iErrCode The error code to be translated.
 		 * @return const char *
 		 */
-		virtual const char * FLMAPI checkErrorToStr(
+		virtual const char * XFLAPI checkErrorToStr(
 			FLMINT	iCheckErrorCode) = 0;
 
 		/**
@@ -1737,7 +1760,7 @@
 		 * @param ppIStream The input stream object used to read the data in.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI openBufferIStream(
+		virtual RCODE XFLAPI openBufferIStream(
 			const char *			pucBuffer,
 			FLMUINT					uiLength,
 			IF_PosIStream **		ppIStream) = 0;
@@ -1753,7 +1776,7 @@
 		 * @param ppIStream The input stream object used to read the data in.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI openFileIStream(
+		virtual RCODE XFLAPI openFileIStream(
 			const char *			pszPath,
 			IF_PosIStream **		ppIStream) = 0;
 
@@ -1765,7 +1788,7 @@
 		 * more files to read from.  File names start with pszBaseName, then
 		 * pszBaseName.00000001, pszBaseName.00000002, etc.  The extension is a hex number.
 		 */
-		virtual RCODE FLMAPI openMultiFileIStream(
+		virtual RCODE XFLAPI openMultiFileIStream(
 			const char *			pszDirectory,
 			const char *			pszBaseName,
 			IF_IStream **			ppIStream) = 0;
@@ -1779,7 +1802,7 @@
 		 * until pIStream has no more data to return.  This method allows any input stream
 		 * to be turned into a buffered stream.
 		 */
-		virtual RCODE FLMAPI openBufferedIStream(
+		virtual RCODE XFLAPI openBufferedIStream(
 			IF_IStream *			pIStream,
 			FLMUINT					uiBufferSize,
 			IF_IStream **			ppIStream) = 0;
@@ -1790,7 +1813,7 @@
 		 * When (*ppIStream)->read() is called, it will read and uncompress data from 
 		 * pIStream.
 		 */
-		virtual RCODE FLMAPI openUncompressingIStream(
+		virtual RCODE XFLAPI openUncompressingIStream(
 			IF_IStream *			pIStream,
 			IF_IStream **			ppIStream) = 0;
 			
@@ -1802,7 +1825,7 @@
 		 * Data is written out to the specified file.  The file may be created, overwritten, or
 		 * appended to, depending on iAccessFlags.
 		 */
-		virtual RCODE FLMAPI openFileOStream(
+		virtual RCODE XFLAPI openFileOStream(
 			const char *		pszFileName,
 			FLMBOOL				bTruncateIfExists,
 			IF_OStream **		ppOStream) = 0;
@@ -1815,7 +1838,7 @@
 		 * be created by appending a suffix with an incrementing HEX number.  The
 		 * bOverwrite flag indicates whether to overwrite files that already exist.
 		 */
-		virtual RCODE FLMAPI openMultiFileOStream(
+		virtual RCODE XFLAPI openMultiFileOStream(
 			const char *		pszDirectory,
 			const char *		pszBaseName,
 			FLMUINT				uiMaxFileSize,
@@ -1825,7 +1848,7 @@
 		/**
 		 * @brief Remove a multi-file stream
 		 */
-		virtual RCODE FLMAPI removeMultiFileStream(
+		virtual RCODE XFLAPI removeMultiFileStream(
 			const char *		pszDirectory,
 			const char *		pszBaseName) = 0;
 			
@@ -1835,7 +1858,7 @@
 		 * As data is written to *ppOStream, it is buffered before ultimately being
 		 * written to pOStream.
 		 */
-		virtual RCODE FLMAPI openBufferedOStream(
+		virtual RCODE XFLAPI openBufferedOStream(
 			IF_OStream *		pOStream,
 			FLMUINT				uiBufferSize,
 			IF_OStream **		ppOStream) = 0;
@@ -1846,7 +1869,7 @@
 		 * As data is written to *ppOStream, it is compressed before ultimately being
 		 * written to pOStream.
 		 */
-		virtual RCODE FLMAPI openCompressingOStream(
+		virtual RCODE XFLAPI openCompressingOStream(
 			IF_OStream *		pOStream,
 			IF_OStream **		ppOStream) = 0;
 			
@@ -1854,7 +1877,7 @@
 		 * @brief All data is read from the input stream (pIStream) and written
 		 * to the output stream (pOStream).  This goes until pIStream returns EOF.
 		 */
-		virtual RCODE FLMAPI writeToOStream(
+		virtual RCODE XFLAPI writeToOStream(
 			IF_IStream *		pIStream,
 			IF_OStream *		pOStream) = 0;
 			
@@ -1870,7 +1893,7 @@
 		 * @param ppEncodedStream The stream object used to read the encoded data.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI openBase64Encoder(
+		virtual RCODE XFLAPI openBase64Encoder(
 			IF_IStream *			pInputStream,
 			FLMBOOL					bInsertLineBreaks,
 			IF_IStream **			ppEncodedStream) = 0;
@@ -1885,7 +1908,7 @@
 		 * @param ppDecodedStream The stream object used to read the decoded data.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI openBase64Decoder(
+		virtual RCODE XFLAPI openBase64Decoder(
 			IF_IStream *			pInputStream,
 			IF_IStream **			ppDecodedStream) = 0;
 
@@ -1898,7 +1921,7 @@
 		 * @param ifppDV The IF_DataVector object.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI createIFDataVector(
+		virtual RCODE XFLAPI createIFDataVector(
 			IF_DataVector **		ifppDV) = 0;
 
 		/**
@@ -1909,7 +1932,7 @@
 		 * @param ifppResultSet The IF_ResultSet object.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI createIFResultSet(
+		virtual RCODE XFLAPI createIFResultSet(
 			IF_ResultSet **		ifppResultSet) = 0;
 
 		/**
@@ -1920,7 +1943,7 @@
 		 * @param ifppQuery The IF_Query object.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI createIFQuery(
+		virtual RCODE XFLAPI createIFQuery(
 			IF_Query **				ifppQuery) = 0;
 
 		/**
@@ -1933,7 +1956,7 @@
 		 * @param ppMem Pointer to the pointer of the memory to be freed.  When the memory is
 		 * successfully freed, the pointer will be set to NULL
 		 */
-		virtual void FLMAPI freeMem(
+		virtual void XFLAPI freeMem(
 			void **					ppMem) = 0;
 
 		// Various configuration routines
@@ -1957,7 +1980,7 @@
 		 * That calculated number becomes the effective maximum to adjust to.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI setDynamicMemoryLimit(
+		virtual RCODE XFLAPI setDynamicMemoryLimit(
 			FLMUINT					uiCacheAdjustPercent,
 			FLMUINT					uiCacheAdjustMin,
 			FLMUINT					uiCacheAdjustMax,
@@ -1993,7 +2016,7 @@
 		 * starts up, rather than allow it to grow as needed.  The default value to FALSE.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI setHardMemoryLimit(
+		virtual RCODE XFLAPI setHardMemoryLimit(
 			FLMUINT					uiPercent,
 			FLMBOOL					bPercentOfAvail,
 			FLMUINT					uiMin,
@@ -2009,7 +2032,7 @@
 		 *
 		 * @return FLMBOOL TRUE=supported or FALSE=not supported.
 		 */
-		virtual FLMBOOL FLMAPI getDynamicCacheSupported( void) = 0;
+		virtual FLMBOOL XFLAPI getDynamicCacheSupported( void) = 0;
 		
 		/**
 		 * @brief Query the database system for information regarding the current cache usage.
@@ -2018,7 +2041,7 @@
 		 *
 		 * @param pCacheInfo The cache info structure.
 		 */
-		virtual void FLMAPI getCacheInfo(
+		virtual void XFLAPI getCacheInfo(
 			XFLM_CACHE_INFO *		pCacheInfo) = 0;
 
 		/**
@@ -2029,7 +2052,7 @@
 		 *
 		 * @param bDebug A boolean to indicate whether to enable or disable cache debug mode.
 		 */
-		virtual void FLMAPI enableCacheDebug(
+		virtual void XFLAPI enableCacheDebug(
 			FLMBOOL					bDebug) = 0;
 
 		/**
@@ -2039,7 +2062,7 @@
 		 *
 		 * @return FLMBOOL True or False
 		 */
-		virtual FLMBOOL FLMAPI cacheDebugEnabled( void) = 0;
+		virtual FLMBOOL XFLAPI cacheDebugEnabled( void) = 0;
 
 		/**
 		 * @brief Close all file handles (descriptors) that have not been used for a specified
@@ -2054,7 +2077,7 @@
 		 * (descriptors), regardless of how long they have been unused.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI closeUnusedFiles(
+		virtual RCODE XFLAPI closeUnusedFiles(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2062,21 +2085,21 @@
 		 *
 		 * This method starts the collection of statistics on the database system.
 		 */
-		virtual void FLMAPI startStats( void) = 0;
+		virtual void XFLAPI startStats( void) = 0;
 
 		/**
 		 * @brief Stop the collection of statistics on the database system.
 		 *
 		 * This method stops the collection of statistics on the database system.
 		 */
-		virtual void FLMAPI stopStats( void) = 0;
+		virtual void XFLAPI stopStats( void) = 0;
 
 		/**
 		 * @brief Reset the statistics counters on the database system.
 		 *
 		 * This method resets the statistics counters on the database system.
 		 */
-		virtual void FLMAPI resetStats( void) = 0;
+		virtual void XFLAPI resetStats( void) = 0;
 
 		/**
 		 * @brief Retrieve the statistics from the database system.
@@ -2086,7 +2109,7 @@
 		 * @param pFlmStats The structure where statistics are returned.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI getStats(
+		virtual RCODE XFLAPI getStats(
 			XFLM_STATS *			pFlmStats) = 0;
 
 		/**
@@ -2098,7 +2121,7 @@
 		 *
 		 * @param pFlmStats The statistics structure whose memory allocations are to be freed.
 		 */
-		virtual void FLMAPI freeStats(
+		virtual void XFLAPI freeStats(
 			XFLM_STATS *			pFlmStats) = 0;
 
 		/**
@@ -2109,7 +2132,7 @@
 		 * @param pszPath The temporary directory path.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI setTempDir(
+		virtual RCODE XFLAPI setTempDir(
 			const char *			pszPath) = 0;
 
 		/**
@@ -2121,7 +2144,7 @@
 		 * @param pszPath The temporary directory path is returned here.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI getTempDir(
+		virtual RCODE XFLAPI getTempDir(
 			char *					pszPath) = 0;
 
 		/**
@@ -2158,7 +2181,7 @@
 		 * active. If an update transaction is active and runs for a long time, the time
 		 * between completed checkpoints could exceed the time specified in this method.
 		 */
-		virtual void FLMAPI setCheckpointInterval(
+		virtual void XFLAPI setCheckpointInterval(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2167,7 +2190,7 @@
 		 * This method returns the current  checkpoint interval.
 		 * @return FLMUINT The current checkpoint interval (seconds).
 		 */
-		virtual FLMUINT FLMAPI getCheckpointInterval( void) = 0;
+		virtual FLMUINT XFLAPI getCheckpointInterval( void) = 0;
 
 		/**
 		 * @brief Set the time interval for dynamically adjusting the cache limit.
@@ -2176,7 +2199,7 @@
 		 *
 		 * @param uiSeconds The time interval for dynamically adjusting the cache limit.
 		 */
-		virtual void FLMAPI setCacheAdjustInterval(
+		virtual void XFLAPI setCacheAdjustInterval(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2186,7 +2209,7 @@
 		 *
 		 * @return FLMUINT The curernt cache adjust interval (seconds).
 		 */
-		virtual FLMUINT FLMAPI getCacheAdjustInterval( void) = 0;
+		virtual FLMUINT XFLAPI getCacheAdjustInterval( void) = 0;
 
 		/**
 		 * @brief Set the time interval for dynamically cleaning out old cache blocks from block cache.
@@ -2195,7 +2218,7 @@
 		 *
 		 * @param uiSeconds The time interval for dynamically cleaning out old cache blocks.
 		 */
-		virtual void FLMAPI setCacheCleanupInterval(
+		virtual void XFLAPI setCacheCleanupInterval(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2205,7 +2228,7 @@
 		 *
 		 * @return FLMUINT The current cache cleanup inerval (seconds).
 		 */
-		virtual FLMUINT FLMAPI getCacheCleanupInterval( void) = 0;
+		virtual FLMUINT XFLAPI getCacheCleanupInterval( void) = 0;
 
 		/**
 		 * @brief Set time interval for cleaning up unused resources (such as file handles).
@@ -2214,7 +2237,7 @@
 		 *
 		 * @param uiSeconds  	The time interval for cleaning up unused resources (such as file handles).
 		 */
-		virtual void FLMAPI setUnusedCleanupInterval(
+		virtual void XFLAPI setUnusedCleanupInterval(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2224,7 +2247,7 @@
 		 *
 		 * @return FLMUINT The current unused cleanup interval (seconds).
 		 */
-		virtual FLMUINT FLMAPI getUnusedCleanupInterval( void) = 0;
+		virtual FLMUINT XFLAPI getUnusedCleanupInterval( void) = 0;
 
 		/**
 		 * @brief Set maximum time for a resource (such as a file handle) to be unused before it is cleaned up.
@@ -2235,7 +2258,7 @@
 		 * @param uiSeconds The maximum time for a resource (such as a file handle) to be unused before it is
 		 * cleaned up.
 		 */
-		virtual void FLMAPI setMaxUnusedTime(
+		virtual void XFLAPI setMaxUnusedTime(
 			FLMUINT					uiSeconds) = 0;
 
 		/**
@@ -2246,14 +2269,14 @@
 		 *
 		 * @return FLMUINT The current maximum unused time (seconds).
 		 */
-		virtual FLMUINT FLMAPI getMaxUnusedTime( void) = 0;
+		virtual FLMUINT XFLAPI getMaxUnusedTime( void) = 0;
 
 		/**
 		 * @brief Set the logger client.
 		 *
 		 * @param pLogger Pointer to the logger client object.
 		 */
-		virtual void FLMAPI setLogger(
+		virtual void XFLAPI setLogger(
 			IF_LoggerClient *		pLogger) = 0;
 
 		/**
@@ -2272,7 +2295,7 @@
 		 * (as specified by the pszDbFileName parameter). See the XFlaim Concepts/Database Files for
 		 * a discussion on the different database files.
 		 */
-		virtual void FLMAPI deactivateOpenDb(
+		virtual void XFLAPI deactivateOpenDb(
 			const char *			pszDatabasePath,
 			const char *			pszDataFilePath) = 0;
 
@@ -2283,7 +2306,7 @@
 		 *
 		 * @param uiMaxToSave The maximum number of queries to save.
 		 */
-		virtual void FLMAPI setQuerySaveMax(
+		virtual void XFLAPI setQuerySaveMax(
 			FLMUINT					uiMaxToSave) = 0;
 
 		/**
@@ -2293,7 +2316,7 @@
 		 *
 		 * @return FLMUINT The maximum number of queries to save.
 		 */
-		virtual FLMUINT FLMAPI getQuerySaveMax( void) = 0;
+		virtual FLMUINT XFLAPI getQuerySaveMax( void) = 0;
 
 		/**
 		 * @brief Set the minimum and maximum dirty cache limits.
@@ -2324,7 +2347,7 @@
 		 * @param uiMaxDirty The maximum amount (in bytes) of dirty cache allowed.
 		 * @param uiLowDirty The low threshold (in bytes) for dirty cache.
 		 */
-		virtual void FLMAPI setDirtyCacheLimits(
+		virtual void XFLAPI setDirtyCacheLimits(
 			FLMUINT					uiMaxDirty,
 			FLMUINT					uiLowDirty) = 0;
 
@@ -2336,7 +2359,7 @@
 		 * @param puiMaxDirty The maximum number of dirty blocks allowed in the cache.
 		 * @param puiLowDirty The low threshold for the number of dirty blocks in cache.
 		 */
-		virtual void FLMAPI getDirtyCacheLimits(
+		virtual void XFLAPI getDirtyCacheLimits(
 			FLMUINT *				puiMaxDirty,
 			FLMUINT *				puiLowDirty) = 0;
 
@@ -2351,7 +2374,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI getThreadInfo(
+		virtual RCODE XFLAPI getThreadInfo(
 			IF_ThreadInfo **		ifppThreadInfo) = 0;
 
 		/**
@@ -2364,7 +2387,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI registerForEvent(
+		virtual RCODE XFLAPI registerForEvent(
 			eEventCategory			eCategory,
 			IF_EventClient *		ifpEventClient) = 0;
 
@@ -2380,7 +2403,7 @@
 		 * registered for an event, XFlaim can know exactly which object to
 		 * deregister.
 		 */
-		virtual void FLMAPI deregisterForEvent(
+		virtual void XFLAPI deregisterForEvent(
 			eEventCategory			eCategory,
 			IF_EventClient *		ifpEventClient) = 0;
 
@@ -2397,7 +2420,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI getNextMetaphone(
+		virtual RCODE XFLAPI getNextMetaphone(
 			IF_IStream *			ifpIStream,
 			FLMUINT *				puiMetaphone,
 			FLMUINT *				puiAltMetaphone = NULL) = 0;
@@ -2405,7 +2428,7 @@
 		/**
 		 * @brief Compares two UTF-8 strings
 		 */
-		virtual RCODE FLMAPI compareUTF8Strings(
+		virtual RCODE XFLAPI compareUTF8Strings(
 			const FLMBYTE *	pucLString,
 			FLMUINT				uiLStrBytes,
 			FLMBOOL				bLeftWild,
@@ -2419,7 +2442,7 @@
 		/**
 		 * @brief Compares two Unicode strings
 		 */
-		virtual RCODE FLMAPI compareUnicodeStrings(
+		virtual RCODE XFLAPI compareUnicodeStrings(
 			const FLMUNICODE *	puzLString,
 			FLMUINT					uiLStrBytes,
 			FLMBOOL					bLeftWild,
@@ -2430,26 +2453,26 @@
 			FLMUINT					uiLanguage,
 			FLMINT *					piResult) = 0;
 
-		virtual RCODE FLMAPI utf8IsSubStr(
+		virtual RCODE XFLAPI utf8IsSubStr(
 			const FLMBYTE *	pszString,
 			const FLMBYTE *	pszSubString,
 			FLMUINT				uiCompareRules,
 			FLMUINT				uiLanguage,
 			FLMBOOL *			pbExists) = 0;
 		
-		virtual FLMBOOL FLMAPI uniIsUpper(
+		virtual FLMBOOL XFLAPI uniIsUpper(
 			FLMUNICODE			uzChar) = 0;
 
-		virtual FLMBOOL FLMAPI uniIsLower(
+		virtual FLMBOOL XFLAPI uniIsLower(
 			FLMUNICODE			uzChar) = 0;
 
-		virtual FLMBOOL FLMAPI uniIsAlpha(
+		virtual FLMBOOL XFLAPI uniIsAlpha(
 			FLMUNICODE			uzChar) = 0;
 
-		virtual FLMBOOL FLMAPI uniIsDecimalDigit(
+		virtual FLMBOOL XFLAPI uniIsDecimalDigit(
 			FLMUNICODE			uzChar) = 0;
 
-		virtual FLMUNICODE FLMAPI uniToLower(
+		virtual FLMUNICODE XFLAPI uniToLower(
 			FLMUNICODE			uzChar) = 0;
 			
 		// When the nextUCS2Char method is called, the UCS-2 version of the character 
@@ -2459,12 +2482,12 @@
 		// Note: Remember to keep a copy of the pointer to the start of the
 		// string, because whatever is passed in as ppszUTF8 will be modified.
 		
-		virtual RCODE FLMAPI nextUCS2Char(
+		virtual RCODE XFLAPI nextUCS2Char(
 			const FLMBYTE **	ppszUTF8,
 			const FLMBYTE *	pszEndOfUTF8String,
 			FLMUNICODE *		puzChar) = 0;
 			
-		virtual RCODE FLMAPI numUCS2Chars(
+		virtual RCODE XFLAPI numUCS2Chars(
 			const FLMBYTE *	pszUTF8,
 			FLMUINT *			puiNumChars) = 0;
 			
@@ -2476,7 +2499,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI waitToClose(
+		virtual RCODE XFLAPI waitToClose(
 			const char *	pszDbFileName) = 0;
 
 		/**
@@ -2487,7 +2510,7 @@
 		 * @param ifppNodeInfo The IF_NodeInfo object.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI createIFNodeInfo(
+		virtual RCODE XFLAPI createIFNodeInfo(
 			IF_NodeInfo **				ifppNodeInfo) = 0;
 			
 		/**
@@ -2498,7 +2521,7 @@
 		 * @param ifppBTreeInfo The IF_BTreeInfo object.
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI createIFBTreeInfo(
+		virtual RCODE XFLAPI createIFBTreeInfo(
 			IF_BTreeInfo **			ifppBTreeInfo) = 0;
 
 		/**
@@ -2511,7 +2534,7 @@
 		 *
 		 * @return RCODE
 		 */
-		virtual RCODE FLMAPI clearCache(
+		virtual RCODE XFLAPI clearCache(
 			IF_Db *					pDb) = 0;
 	};
 
@@ -2525,45 +2548,45 @@
 		XFLM_EXPORT_INDENT_DATA =		0x03		// Indent Data - this changes the data
 	} eExportFormatType;
 
-	FLMEXP RCODE FLMAPI FlmAllocDbSystem(
+	XFLXPC RCODE XFLAPI FlmAllocDbSystem(
 		IF_DbSystem **				ppDbSystem);
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_Db : public F_Object
+	flminterface XFLEXP IF_Db : public F_Object
 	{
-		virtual RCODE FLMAPI transBegin(
+		virtual RCODE XFLAPI transBegin(
 			eDbTransType			eTransType,
 			FLMUINT					uiMaxLockWait = FLM_NO_TIMEOUT,
 			FLMUINT					uiFlags = 0,
 			XFLM_DB_HDR *			pDbHeader = NULL) = 0;
 
-		virtual RCODE FLMAPI transBegin(
+		virtual RCODE XFLAPI transBegin(
 			IF_Db *					pDb) = 0;
 
-		virtual RCODE FLMAPI transCommit(
+		virtual RCODE XFLAPI transCommit(
 			FLMBOOL *				pbEmpty = NULL) = 0;
 
-		virtual RCODE FLMAPI transAbort( void) = 0;
+		virtual RCODE XFLAPI transAbort( void) = 0;
 
-		virtual eDbTransType FLMAPI getTransType( void) = 0;
+		virtual eDbTransType XFLAPI getTransType( void) = 0;
 
-		virtual RCODE FLMAPI doCheckpoint(
+		virtual RCODE XFLAPI doCheckpoint(
 			FLMUINT					uiTimeout) = 0;
 
-		virtual RCODE FLMAPI dbLock(
+		virtual RCODE XFLAPI dbLock(
 			eLockType				lockType,
 			FLMINT					iPriority,
 			FLMUINT					uiTimeout) = 0;
 
-		virtual RCODE FLMAPI dbUnlock( void) = 0;
+		virtual RCODE XFLAPI dbUnlock( void) = 0;
 
-		virtual RCODE FLMAPI getLockType(
+		virtual RCODE XFLAPI getLockType(
 			eLockType *				pLockType,
 			FLMBOOL *				pbImplicit) = 0;
 
-		virtual RCODE FLMAPI getLockInfo(
+		virtual RCODE XFLAPI getLockInfo(
 			FLMINT					iPriority,
 			eLockType *				pCurrLockType,
 			FLMUINT *				puiThreadId,
@@ -2571,204 +2594,204 @@
 			FLMUINT *				puiNumSharedQueued,
 			FLMUINT *				puiPriorityCount) = 0;
 
-		virtual RCODE FLMAPI indexStatus(
+		virtual RCODE XFLAPI indexStatus(
 			FLMUINT					uiIndexNum,
 			XFLM_INDEX_STATUS *	pIndexStatus) = 0;
 
-		virtual RCODE FLMAPI indexGetNext(
+		virtual RCODE XFLAPI indexGetNext(
 			FLMUINT *				puiIndexNum) = 0;
 
-		virtual RCODE FLMAPI indexSuspend(
+		virtual RCODE XFLAPI indexSuspend(
 			FLMUINT					uiIndexNum) = 0;
 
-		virtual RCODE FLMAPI indexResume(
+		virtual RCODE XFLAPI indexResume(
 			FLMUINT					uiIndexNum) = 0;
 
-		virtual RCODE FLMAPI keyRetrieve(
+		virtual RCODE XFLAPI keyRetrieve(
 			FLMUINT					uiIndex,
 			IF_DataVector *		pSearchKey,
 			FLMUINT					uiFlags,
 			IF_DataVector *		pFoundKey) = 0;
 
-		virtual RCODE FLMAPI enableEncryption( void) = 0;
+		virtual RCODE XFLAPI enableEncryption( void) = 0;
 
-		virtual RCODE FLMAPI wrapKey(
+		virtual RCODE XFLAPI wrapKey(
 			const char *	pszPassword = NULL) = 0;
 		
-		virtual RCODE FLMAPI rollOverDbKey( void) = 0;
+		virtual RCODE XFLAPI rollOverDbKey( void) = 0;
 			
-		virtual RCODE FLMAPI changeItemState(
+		virtual RCODE XFLAPI changeItemState(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNum,
 			const char *			pszState) = 0;
 
-		virtual RCODE FLMAPI reduceSize(
+		virtual RCODE XFLAPI reduceSize(
 			FLMUINT					uiCount,
 			FLMUINT *				puiCount) = 0;
 
-		virtual RCODE FLMAPI upgrade(
+		virtual RCODE XFLAPI upgrade(
 			IF_UpgradeClient *	pUpgradeClient) = 0;
 
-		virtual RCODE FLMAPI createRootElement(
+		virtual RCODE XFLAPI createRootElement(
 			FLMUINT					uiCollection,
 			FLMUINT					uiNameId,
 			IF_DOMNode **			ppElementNode,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 
-		virtual RCODE FLMAPI createDocument(
+		virtual RCODE XFLAPI createDocument(
 			FLMUINT					uiCollection,
 			IF_DOMNode **			ppDocumentNode,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 
-		virtual RCODE FLMAPI getFirstDocument(
+		virtual RCODE XFLAPI getFirstDocument(
 			FLMUINT					uiCollection,
 			IF_DOMNode **			ppDocumentNode) = 0;
 
-		virtual RCODE FLMAPI getLastDocument(
+		virtual RCODE XFLAPI getLastDocument(
 			FLMUINT					uiCollection,
 			IF_DOMNode **			ppDocumentNode) = 0;
 
-		virtual RCODE FLMAPI getDocument(
+		virtual RCODE XFLAPI getDocument(
 			FLMUINT					uiCollection,
 			FLMUINT					uiFlags,
 			FLMUINT64				ui64DocumentId,
 			IF_DOMNode **			ppDocumentNode) = 0;
 
-		virtual RCODE FLMAPI documentDone(
+		virtual RCODE XFLAPI documentDone(
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64RootId) = 0;
 
-		virtual RCODE FLMAPI documentDone(
+		virtual RCODE XFLAPI documentDone(
 			IF_DOMNode *			pDocNode) = 0;
 
-		virtual RCODE FLMAPI createElementDef(
+		virtual RCODE XFLAPI createElementDef(
 			const char *			pszNamespaceURI,
 			const char *			pszElementName,
 			FLMUINT					uiDataType,
 			FLMUINT * 				puiElementNameId = NULL,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE FLMAPI createElementDef(
+		virtual RCODE XFLAPI createElementDef(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzElementName,
 			FLMUINT					uiDataType,
 			FLMUINT * 				puiElementNameId = NULL,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE FLMAPI createUniqueElmDef(
+		virtual RCODE XFLAPI createUniqueElmDef(
 			const char *			pszNamespaceURI,
 			const char *			pszElementName,
 			FLMUINT * 				puiElementNameId = NULL,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE FLMAPI createUniqueElmDef(
+		virtual RCODE XFLAPI createUniqueElmDef(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzElementName,
 			FLMUINT * 				puiElementNameId = NULL,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE FLMAPI getElementNameId(
+		virtual RCODE XFLAPI getElementNameId(
 			const char *			pszNamespaceURI,
 			const char *			pszElementName,
 			FLMUINT *				puiElementNameId) = 0;
 
-		virtual RCODE FLMAPI getElementNameId(
+		virtual RCODE XFLAPI getElementNameId(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzElementName,
 			FLMUINT *				puiElementNameId) = 0;
 
-		virtual RCODE FLMAPI createAttributeDef(
+		virtual RCODE XFLAPI createAttributeDef(
 			const char *			pszNamespaceURI,
 			const char *			pszAttributeName,
 			FLMUINT					uiDataType,
 			FLMUINT * 				puiAttributeNameId,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE FLMAPI createAttributeDef(
+		virtual RCODE XFLAPI createAttributeDef(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzAttributeName,
 			FLMUINT					uiDataType,
 			FLMUINT * 				puiAttributeNameId,
 			IF_DOMNode **			ppDocumentNode = NULL) = 0;
 
-		virtual RCODE FLMAPI getAttributeNameId(
+		virtual RCODE XFLAPI getAttributeNameId(
 			const char *			pszNamespaceURI,
 			const char *			pszAttributeName,
 			FLMUINT *				puiAttributeNameId) = 0;
 
-		virtual RCODE FLMAPI getAttributeNameId(
+		virtual RCODE XFLAPI getAttributeNameId(
 			const FLMUNICODE *	puzNamespaceURI,
 			const FLMUNICODE *	puzAttributeName,
 			FLMUINT *				puiAttributeNameId) = 0;
 
-		virtual RCODE FLMAPI createPrefixDef(
+		virtual RCODE XFLAPI createPrefixDef(
 			const char *			pszPrefixName,
 			FLMUINT * 				puiPrefixNumber) = 0;
 
-		virtual RCODE FLMAPI createPrefixDef(
+		virtual RCODE XFLAPI createPrefixDef(
 			const FLMUNICODE *	puzPrefixName,
 			FLMUINT * 				puiPrefixNumber) = 0;
 
-		virtual RCODE FLMAPI getPrefixId(
+		virtual RCODE XFLAPI getPrefixId(
 			const char *			pszPrefixName,
 			FLMUINT *				puiPrefixNumber) = 0;
 
-		virtual RCODE FLMAPI getPrefixId(
+		virtual RCODE XFLAPI getPrefixId(
 			const FLMUNICODE *	puzPrefixName,
 			FLMUINT *				puiPrefixNumber) = 0;
 
-		virtual RCODE FLMAPI createEncDef(
+		virtual RCODE XFLAPI createEncDef(
 			const char *			pszEncType,
 			const char *			pszEncName,
 			FLMUINT					uiKeySize,
 			FLMUINT *				puiEncDefNumber) = 0;
 
-		virtual RCODE FLMAPI createEncDef(
+		virtual RCODE XFLAPI createEncDef(
 			const FLMUNICODE *	puzEncType,
 			const FLMUNICODE *	puzEncName,
 			FLMUINT					uiKeySize,
 			FLMUINT *				puiEncDefNumber) = 0;
 
-		virtual RCODE FLMAPI getEncDefId(
+		virtual RCODE XFLAPI getEncDefId(
 			const char *			pszEncDefName,
 			FLMUINT *				puiPrefixNumber) = 0;
 
-		virtual RCODE FLMAPI getEncDefId(
+		virtual RCODE XFLAPI getEncDefId(
 			const FLMUNICODE *	puzEncDefName,
 			FLMUINT *				puiEncDefNumber) = 0;
 
-		virtual RCODE FLMAPI createCollectionDef(
+		virtual RCODE XFLAPI createCollectionDef(
 			const char *			pszCollectionName,
 			FLMUINT * 				puiCollectionNumber,
 			FLMUINT					uiEncNumber = 0) = 0;
 
-		virtual RCODE FLMAPI createCollectionDef(
+		virtual RCODE XFLAPI createCollectionDef(
 			const FLMUNICODE *	puzCollectionName,
 			FLMUINT * 				puiCollectionNumber,
 			FLMUINT					uiEncNumber = 0) = 0;
 
-		virtual RCODE FLMAPI getCollectionNumber(
+		virtual RCODE XFLAPI getCollectionNumber(
 			const char *			pszCollectionName,
 			FLMUINT *				puiCollectionNumber) = 0;
 
-		virtual RCODE FLMAPI getCollectionNumber(
+		virtual RCODE XFLAPI getCollectionNumber(
 			const FLMUNICODE *	puzCollectionName,
 			FLMUINT *				puiCollectionNumber) = 0;
 
-		virtual RCODE FLMAPI getIndexNumber(
+		virtual RCODE XFLAPI getIndexNumber(
 			const char *			pszIndexName,
 			FLMUINT *				puiIndexNumber) = 0;
 
-		virtual RCODE FLMAPI getIndexNumber(
+		virtual RCODE XFLAPI getIndexNumber(
 			const FLMUNICODE *	puzIndexName,
 			FLMUINT *				puiIndexNumber) = 0;
 
-		virtual RCODE FLMAPI getDictionaryDef(
+		virtual RCODE XFLAPI getDictionaryDef(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNumber,
 			IF_DOMNode **			ppDocumentNode) = 0;
 
-		virtual RCODE FLMAPI getDictionaryName(
+		virtual RCODE XFLAPI getDictionaryName(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNumber,
 			char *					pszName,
@@ -2776,7 +2799,7 @@
 			char *					pszNamespace = NULL,
 			FLMUINT *				puiNamespaceBufSize = NULL) = 0;
 
-		virtual RCODE FLMAPI getDictionaryName(
+		virtual RCODE XFLAPI getDictionaryName(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNumber,
 			FLMUNICODE *			puzName,
@@ -2784,176 +2807,176 @@
 			FLMUNICODE *			puzNamespace = NULL,
 			FLMUINT *				puiNamespaceBufSize = NULL) = 0;
 
-		virtual RCODE FLMAPI getNode(
+		virtual RCODE XFLAPI getNode(
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId,
 			IF_DOMNode **			ppNode) = 0;
 
-		virtual RCODE FLMAPI getAttribute(
+		virtual RCODE XFLAPI getAttribute(
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64ElementNodeId,
 			FLMUINT					uiAttrNameId,
 			IF_DOMNode **			ppNode) = 0;
 
-		virtual RCODE FLMAPI getDataType(
+		virtual RCODE XFLAPI getDataType(
 			FLMUINT					uiDictType,
 			FLMUINT					uiNameId,
 			FLMUINT *				puiDataType) = 0;
 
-		virtual RCODE FLMAPI backupBegin(
+		virtual RCODE XFLAPI backupBegin(
 			eDbBackupType			eBackupType,
 			eDbTransType			eTransType,
 			FLMUINT					uiMaxLockWait,
 			IF_Backup **			ppBackup) = 0;
 
-		virtual void FLMAPI getRflFileName(
+		virtual void XFLAPI getRflFileName(
 			FLMUINT					uiFileNum,
 			FLMBOOL					bBaseOnly,
 			char *					pszFileName,
 			FLMUINT *				puiFileNameBufSize,
 			FLMBOOL *				pbNameTruncated = NULL) = 0;
 
-		virtual RCODE FLMAPI import(
+		virtual RCODE XFLAPI import(
 			IF_IStream *			pIStream,
 			FLMUINT					uiCollection,
 			IF_DOMNode *			pNodeToLinkTo = NULL,
 			eNodeInsertLoc			eInsertLoc = XFLM_LAST_CHILD,
 			XFLM_IMPORT_STATS *	pImportStats = NULL) = 0;
 
-		virtual RCODE FLMAPI importDocument(
+		virtual RCODE XFLAPI importDocument(
 			IF_IStream *			ifpStream,
 			FLMUINT					uiCollection,
 			IF_DOMNode **			ppDocumentNode = NULL,
 			XFLM_IMPORT_STATS *	pImportStats = NULL) = 0;
 
-		virtual RCODE FLMAPI exportXML(
+		virtual RCODE XFLAPI exportXML(
 			IF_DOMNode *			pStartNode,
 			IF_OStream *			pOStream,
 			eExportFormatType		eFormat = XFLM_EXPORT_INDENT) = 0;
 			
-		virtual RCODE FLMAPI setNextNodeId(
+		virtual RCODE XFLAPI setNextNodeId(
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NextNodeId) = 0;
 
-		virtual RCODE FLMAPI setNextDictNum(
+		virtual RCODE XFLAPI setNextDictNum(
 			FLMUINT					uiDictType,
 			FLMUINT					uiDictNumber) = 0;
 
 		// Configuration "set" and "get" methods
 
-		virtual RCODE FLMAPI setRflKeepFilesFlag(
+		virtual RCODE XFLAPI setRflKeepFilesFlag(
 			FLMBOOL					bKeep) = 0;
 
-		virtual RCODE FLMAPI getRflKeepFlag(
+		virtual RCODE XFLAPI getRflKeepFlag(
 			FLMBOOL *				pbKeep) = 0;
 
-		virtual RCODE FLMAPI setRflDir(
+		virtual RCODE XFLAPI setRflDir(
 			const char *			pszNewRflDir) = 0;
 
-		virtual void FLMAPI getRflDir(
+		virtual void XFLAPI getRflDir(
 			char *					pszRflDir) = 0;
 
-		virtual RCODE FLMAPI getRflFileNum(
+		virtual RCODE XFLAPI getRflFileNum(
 			FLMUINT *				puiRflFileNum) = 0;
 
-		virtual RCODE FLMAPI getHighestNotUsedRflFileNum(
+		virtual RCODE XFLAPI getHighestNotUsedRflFileNum(
 			FLMUINT *				puiHighestNotUsedRflFileNum) = 0;
 
-		virtual RCODE FLMAPI setRflFileSizeLimits(
+		virtual RCODE XFLAPI setRflFileSizeLimits(
 			FLMUINT					uiMinRflSize,
 			FLMUINT					uiMaxRflSize) = 0;
 
-		virtual RCODE FLMAPI getRflFileSizeLimits(
+		virtual RCODE XFLAPI getRflFileSizeLimits(
 			FLMUINT *				puiRflMinFileSize,
 			FLMUINT *				puiRflMaxFileSize) = 0;
 
-		virtual RCODE FLMAPI rflRollToNextFile( void) = 0;
+		virtual RCODE XFLAPI rflRollToNextFile( void) = 0;
 
-		virtual RCODE FLMAPI setKeepAbortedTransInRflFlag(
+		virtual RCODE XFLAPI setKeepAbortedTransInRflFlag(
 			FLMBOOL					bKeep) = 0;
 
-		virtual RCODE FLMAPI getKeepAbortedTransInRflFlag(
+		virtual RCODE XFLAPI getKeepAbortedTransInRflFlag(
 			FLMBOOL *				pbKeep) = 0;
 
-		virtual RCODE FLMAPI setAutoTurnOffKeepRflFlag(
+		virtual RCODE XFLAPI setAutoTurnOffKeepRflFlag(
 			FLMBOOL					bAutoTurnOff) = 0;
 
-		virtual RCODE FLMAPI getAutoTurnOffKeepRflFlag(
+		virtual RCODE XFLAPI getAutoTurnOffKeepRflFlag(
 			FLMBOOL *				pbAutoTurnOff) = 0;
 
-		virtual void FLMAPI setFileExtendSize(
+		virtual void XFLAPI setFileExtendSize(
 			FLMUINT					uiFileExtendSize) = 0;
 
-		virtual FLMUINT FLMAPI getFileExtendSize( void) = 0;
+		virtual FLMUINT XFLAPI getFileExtendSize( void) = 0;
 
-		virtual void FLMAPI setAppData(
+		virtual void XFLAPI setAppData(
 			void *			pvAppData) = 0;
 
-		virtual void * FLMAPI getAppData( void) = 0;
+		virtual void * XFLAPI getAppData( void) = 0;
 
-		virtual void FLMAPI setDeleteStatusObject(
+		virtual void XFLAPI setDeleteStatusObject(
 			IF_DeleteStatus *		pDeleteStatus) = 0;
 
-		virtual void FLMAPI setCommitClientObject(
+		virtual void XFLAPI setCommitClientObject(
 			IF_CommitClient *		pCommitClient) = 0;
 
-		virtual void FLMAPI setIndexingClientObject(
+		virtual void XFLAPI setIndexingClientObject(
 			IF_IxClient *			pIxClient) = 0;
 
-		virtual void FLMAPI setIndexingStatusObject(
+		virtual void XFLAPI setIndexingStatusObject(
 			IF_IxStatus *			pIxStatus) = 0;
 
 		// Configuration information getting methods
 
-		virtual FLMUINT FLMAPI getDbVersion( void) = 0;
+		virtual FLMUINT XFLAPI getDbVersion( void) = 0;
 
-		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
+		virtual FLMUINT XFLAPI getBlockSize( void) = 0;
 
-		virtual FLMUINT FLMAPI getDefaultLanguage( void) = 0;
+		virtual FLMUINT XFLAPI getDefaultLanguage( void) = 0;
 
-		virtual FLMUINT64 FLMAPI getTransID( void) = 0;
+		virtual FLMUINT64 XFLAPI getTransID( void) = 0;
 
-		virtual void FLMAPI getCheckpointInfo(
+		virtual void XFLAPI getCheckpointInfo(
 			XFLM_CHECKPOINT_INFO *	pCheckpointInfo) = 0;
 
-		virtual RCODE FLMAPI getDbControlFileName(
+		virtual RCODE XFLAPI getDbControlFileName(
 			char *					pszControlFileName,
 			FLMUINT					uiControlFileBufSize) = 0;
 
-		virtual RCODE FLMAPI getLockWaiters(
+		virtual RCODE XFLAPI getLockWaiters(
 			IF_LockInfoClient *	pLockInfo) = 0;
 
-		virtual RCODE FLMAPI getLastBackupTransID(
+		virtual RCODE XFLAPI getLastBackupTransID(
 			FLMUINT64 *				pui64LastBackupTransID) = 0;
 
-		virtual RCODE FLMAPI getBlocksChangedSinceBackup(
+		virtual RCODE XFLAPI getBlocksChangedSinceBackup(
 			FLMUINT *				puiBlocksChangedSinceBackup) = 0;
 
-		virtual RCODE FLMAPI getNextIncBackupSequenceNum(
+		virtual RCODE XFLAPI getNextIncBackupSequenceNum(
 			FLMUINT *				puiNextIncBackupSequenceNum) = 0;
 
-		virtual void FLMAPI getSerialNumber(
+		virtual void XFLAPI getSerialNumber(
 			char *					pucSerialNumber) = 0;
 
-		virtual RCODE FLMAPI getDiskSpaceUsage(
+		virtual RCODE XFLAPI getDiskSpaceUsage(
 			FLMUINT64 *				pui64DataSize,
 			FLMUINT64 *				pui64RollbackSize,
 			FLMUINT64 *				pui64RflSize) = 0;
 
-		virtual RCODE FLMAPI getMustCloseRC( void) = 0;
+		virtual RCODE XFLAPI getMustCloseRC( void) = 0;
 
-		virtual RCODE FLMAPI getAbortRC( void) = 0;
+		virtual RCODE XFLAPI getAbortRC( void) = 0;
 
-		virtual void FLMAPI setMustAbortTrans(
+		virtual void XFLAPI setMustAbortTrans(
 			RCODE						rc) = 0;
 	};
 	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DOMNode : public F_Object
+	flminterface XFLEXP IF_DOMNode : public F_Object
 	{
-		virtual RCODE FLMAPI createNode(
+		virtual RCODE XFLAPI createNode(
 			IF_Db *					pDb,
 			eDomNodeType			eNodeType,
 			FLMUINT					uiNameId,
@@ -2961,146 +2984,146 @@
 			IF_DOMNode **			ppNewNode,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 
-		virtual RCODE FLMAPI createChildElement(
+		virtual RCODE XFLAPI createChildElement(
 			IF_Db *					pDb,
 			FLMUINT					uiChildElementNameId,
 			eNodeInsertLoc			eLocation,
 			IF_DOMNode **			ppNewChildElementNode,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 			
-		virtual RCODE FLMAPI deleteNode(
+		virtual RCODE XFLAPI deleteNode(
 			IF_Db *					pDb) = 0;
 
-		virtual RCODE FLMAPI deleteChildren(
+		virtual RCODE XFLAPI deleteChildren(
 			IF_Db *					pDb,
 			FLMUINT					uiNameId = 0) = 0;
 			
-		virtual RCODE FLMAPI createAttribute(
+		virtual RCODE XFLAPI createAttribute(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DOMNode **			ppAttrNode) = 0;
 
-		virtual RCODE FLMAPI getFirstAttribute(
+		virtual RCODE XFLAPI getFirstAttribute(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppAttrNode) = 0;
 
-		virtual RCODE FLMAPI getLastAttribute(
+		virtual RCODE XFLAPI getLastAttribute(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppAttrNode) = 0;
 
-		virtual RCODE FLMAPI getAttribute(
+		virtual RCODE XFLAPI getAttribute(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DOMNode **			ppAttrNode) = 0;
 
-		virtual RCODE FLMAPI deleteAttribute(
+		virtual RCODE XFLAPI deleteAttribute(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId) = 0;
 
-		virtual RCODE FLMAPI hasAttribute(
+		virtual RCODE XFLAPI hasAttribute(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			IF_DOMNode **			ppAttrNode = NULL) = 0;
 
-		virtual RCODE FLMAPI hasAttributes(
+		virtual RCODE XFLAPI hasAttributes(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasAttrs) = 0;
 
-		virtual RCODE FLMAPI hasNextSibling(
+		virtual RCODE XFLAPI hasNextSibling(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasNextSibling) = 0;
 
-		virtual RCODE FLMAPI hasPreviousSibling(
+		virtual RCODE XFLAPI hasPreviousSibling(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasPreviousSibling) = 0;
 
-		virtual RCODE FLMAPI hasChildren(
+		virtual RCODE XFLAPI hasChildren(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasChildren) = 0;
 
-		virtual RCODE FLMAPI isNamespaceDecl(
+		virtual RCODE XFLAPI isNamespaceDecl(
 			IF_Db *					pDb,
 			FLMBOOL *				pbIsNamespaceDecl) = 0;
 
-		virtual eDomNodeType FLMAPI getNodeType( void) = 0;
+		virtual eDomNodeType XFLAPI getNodeType( void) = 0;
 			
-		virtual RCODE FLMAPI getNodeId(
+		virtual RCODE XFLAPI getNodeId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64NodeId) = 0;
 
-		virtual RCODE FLMAPI getParentId(
+		virtual RCODE XFLAPI getParentId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64ParentId) = 0;
 			
-		virtual RCODE FLMAPI getDocumentId(
+		virtual RCODE XFLAPI getDocumentId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64DocumentId) = 0;
 
-		virtual RCODE FLMAPI getPrevSibId(
+		virtual RCODE XFLAPI getPrevSibId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64PrevSibId) = 0;
 
-		virtual RCODE FLMAPI getNextSibId(
+		virtual RCODE XFLAPI getNextSibId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64NextSibId) = 0;
 
-		virtual RCODE FLMAPI getFirstChildId(
+		virtual RCODE XFLAPI getFirstChildId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64FirstChildId) = 0;
 
-		virtual RCODE FLMAPI getLastChildId(
+		virtual RCODE XFLAPI getLastChildId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64LastChildId) = 0;
 
-		virtual RCODE FLMAPI getNameId(
+		virtual RCODE XFLAPI getNameId(
 			IF_Db *					pDb,
 			FLMUINT *				puiNameId) = 0;
 
-		virtual RCODE FLMAPI getEncDefId(
+		virtual RCODE XFLAPI getEncDefId(
 			IF_Db *					pDb,
 			FLMUINT *				puiEncDefId) = 0;
 
-		virtual RCODE FLMAPI getDataType(
+		virtual RCODE XFLAPI getDataType(
 			IF_Db *					pDb,
 			FLMUINT *				puiDataType) = 0;
 
-		virtual RCODE FLMAPI getDataLength(
+		virtual RCODE XFLAPI getDataLength(
 			IF_Db *					pDb,
 			FLMUINT *				puiLength) = 0;
 
-		virtual RCODE FLMAPI getUINT32(
+		virtual RCODE XFLAPI getUINT32(
 			IF_Db *					pDb,
 			FLMUINT32 *				pui32Value) = 0;
 			
-		virtual RCODE FLMAPI getUINT(
+		virtual RCODE XFLAPI getUINT(
 			IF_Db *					pDb,
 			FLMUINT *				puiValue) = 0;
 
-		virtual RCODE FLMAPI getUINT64(
+		virtual RCODE XFLAPI getUINT64(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64Value) = 0;
 
-		virtual RCODE FLMAPI getINT32(
+		virtual RCODE XFLAPI getINT32(
 			IF_Db *					pDb,
 			FLMINT32 *				pi32Value) = 0;
 			
-		virtual RCODE FLMAPI getINT(
+		virtual RCODE XFLAPI getINT(
 			IF_Db *					pDb,
 			FLMINT *					piValue) = 0;
 
-		virtual RCODE FLMAPI getINT64(
+		virtual RCODE XFLAPI getINT64(
 			IF_Db *					pDb,
 			FLMINT64 *				pi64Value) = 0;
 
-		virtual RCODE FLMAPI getMetaValue(
+		virtual RCODE XFLAPI getMetaValue(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64Value) = 0;
 			
-		virtual RCODE FLMAPI getUnicodeChars(
+		virtual RCODE XFLAPI getUnicodeChars(
 			IF_Db *					pDb,
 			FLMUINT *				puiNumChars) = 0;
 
-		virtual RCODE FLMAPI getUnicode(
+		virtual RCODE XFLAPI getUnicode(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzValueBuffer,
 			FLMUINT					uiBufferSize,
@@ -3109,15 +3132,15 @@
 			FLMUINT *				puiCharsReturned = NULL,
 			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
 
-		virtual RCODE FLMAPI getUnicode(
+		virtual RCODE XFLAPI getUnicode(
 			IF_Db *					pDb,
 			FLMUNICODE **			ppuzUnicodeValue) = 0;
 
-		virtual RCODE FLMAPI getUnicode(
+		virtual RCODE XFLAPI getUnicode(
 			IF_Db *					pDb,
 			F_DynaBuf *				pDynaBuf) = 0;
 			
-		virtual RCODE FLMAPI getUTF8(
+		virtual RCODE XFLAPI getUTF8(
 			IF_Db *					pDb,
 			FLMBYTE *				pucValueBuffer,
 			FLMUINT					uiBufferSize,
@@ -3126,81 +3149,81 @@
 			FLMUINT *				puiCharsReturned = NULL,
 			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
 
-		virtual RCODE FLMAPI getUTF8(
+		virtual RCODE XFLAPI getUTF8(
 			IF_Db *					pDb,
 			FLMBYTE **				ppszUTF8Value) = 0;
 			
-		virtual RCODE FLMAPI getUTF8(
+		virtual RCODE XFLAPI getUTF8(
 			IF_Db *					pDb,
 			F_DynaBuf *				pDynaBuf) = 0;
 
-		virtual RCODE FLMAPI getBinary(
+		virtual RCODE XFLAPI getBinary(
 			IF_Db *					pDb,
 			void *					pvValue,
 			FLMUINT					uiByteOffset,
 			FLMUINT					uiBytesRequested,
 			FLMUINT *				puiBytesReturned) = 0;
 
-		virtual RCODE FLMAPI getBinary(
+		virtual RCODE XFLAPI getBinary(
 			IF_Db *					pDb,
 			F_DynaBuf *				pBuffer) = 0;
 			
-		virtual RCODE FLMAPI getAttributeValueUINT32(
+		virtual RCODE XFLAPI getAttributeValueUINT32(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT32 *				pui32Num) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueUINT32(
+		virtual RCODE XFLAPI getAttributeValueUINT32(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT32 *				pui32Num,
 			FLMUINT32				ui32NotFoundDefault) = 0;
 			
-		virtual RCODE FLMAPI getAttributeValueUINT(
+		virtual RCODE XFLAPI getAttributeValueUINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT *				puiNum) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueUINT(
+		virtual RCODE XFLAPI getAttributeValueUINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT *				puiNum,
 			FLMUINT					uiNotFoundDefault) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueUINT64(
+		virtual RCODE XFLAPI getAttributeValueUINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT64 *				pui64Num) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueUINT64(
+		virtual RCODE XFLAPI getAttributeValueUINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT64 *				pui64Num,
 			FLMUINT64				ui64NotFoundDefault) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueINT(
+		virtual RCODE XFLAPI getAttributeValueINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT *					piNum) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueINT(
+		virtual RCODE XFLAPI getAttributeValueINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT *					piNum,
 			FLMINT					iNotFoundDefault) = 0;
 			
-		virtual RCODE FLMAPI getAttributeValueINT64(
+		virtual RCODE XFLAPI getAttributeValueINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT64 *				pi64Num) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueINT64(
+		virtual RCODE XFLAPI getAttributeValueINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT64 *				pi64Num,
 			FLMINT64					i64NotFoundDefault) = 0;
 			
-		virtual RCODE FLMAPI getAttributeValueUnicode(
+		virtual RCODE XFLAPI getAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUNICODE *			puzValueBuffer,
@@ -3208,17 +3231,17 @@
 			FLMUINT *				puiCharsReturned = NULL,
 			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueUnicode(
+		virtual RCODE XFLAPI getAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUNICODE **			ppuzValueBuffer) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueUnicode(
+		virtual RCODE XFLAPI getAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			F_DynaBuf *				pDynaBuf) = 0;
 			
-		virtual RCODE FLMAPI getAttributeValueUTF8(
+		virtual RCODE XFLAPI getAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMBYTE *				pucValueBuffer,
@@ -3226,285 +3249,285 @@
 			FLMUINT *				puiCharsReturned = NULL,
 			FLMUINT *				puiBufferBytesUsed = NULL) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueUTF8(
+		virtual RCODE XFLAPI getAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMBYTE **				ppszValueBuffer) = 0;
 			
-		virtual RCODE FLMAPI getAttributeValueUTF8(
+		virtual RCODE XFLAPI getAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			F_DynaBuf *				pDynaBuf) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueBinary(
+		virtual RCODE XFLAPI getAttributeValueBinary(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			void *					pvValueBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiValueLength) = 0;
 
-		virtual RCODE FLMAPI getAttributeValueBinary(
+		virtual RCODE XFLAPI getAttributeValueBinary(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			F_DynaBuf *				pDynaBuf) = 0;
 			
-		virtual RCODE FLMAPI setUINT(
+		virtual RCODE XFLAPI setUINT(
 			IF_Db *					pDb,
 			FLMUINT					uiValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setUINT64(
+		virtual RCODE XFLAPI setUINT64(
 			IF_Db *					pDb,
 			FLMUINT64				ui64Value,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setINT(
+		virtual RCODE XFLAPI setINT(
 			IF_Db *					pDb,
 			FLMINT					iValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setINT64(
+		virtual RCODE XFLAPI setINT64(
 			IF_Db *					pDb,
 			FLMINT64					i64Value,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setMetaValue(
+		virtual RCODE XFLAPI setMetaValue(
 			IF_Db *					pDb,
 			FLMUINT64				ui64Value) = 0;
 
-		virtual RCODE FLMAPI setUnicode(
+		virtual RCODE XFLAPI setUnicode(
 			IF_Db *					pDb,
 			const FLMUNICODE *	puzValue,
 			FLMUINT					uiValueLength = 0,
 			FLMBOOL					bLast = TRUE,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setUTF8(
+		virtual RCODE XFLAPI setUTF8(
 			IF_Db *					pDb,
 			const FLMBYTE *		pszValue,
 			FLMUINT					uiValueLength = 0,
 			FLMBOOL					bLast = TRUE,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setBinary(
+		virtual RCODE XFLAPI setBinary(
 			IF_Db *					pDb,
 			const void *			pvValue,
 			FLMUINT					uiValueLength,
 			FLMBOOL					bLast = TRUE,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setAttributeValueUINT(
+		virtual RCODE XFLAPI setAttributeValueUINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT					uiValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setAttributeValueUINT64(
+		virtual RCODE XFLAPI setAttributeValueUINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMUINT64				ui64Value,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setAttributeValueINT(
+		virtual RCODE XFLAPI setAttributeValueINT(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT					iValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setAttributeValueINT64(
+		virtual RCODE XFLAPI setAttributeValueINT64(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			FLMINT64					i64Value,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setAttributeValueUnicode(
+		virtual RCODE XFLAPI setAttributeValueUnicode(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			const FLMUNICODE *	puzValue,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setAttributeValueUTF8(
+		virtual RCODE XFLAPI setAttributeValueUTF8(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			const FLMBYTE *		pucValue,
 			FLMUINT					uiLength = 0,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI setAttributeValueBinary(
+		virtual RCODE XFLAPI setAttributeValueBinary(
 			IF_Db *					pDb,
 			FLMUINT					uiAttrNameId,
 			const void *			pvValue,
 			FLMUINT					uiLength,
 			FLMUINT					uiEncDefId = 0) = 0;
 
-		virtual RCODE FLMAPI getDocumentNode(
+		virtual RCODE XFLAPI getDocumentNode(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppDocument) = 0;
 
-		virtual RCODE FLMAPI getNextDocument(
+		virtual RCODE XFLAPI getNextDocument(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNextDocument) = 0;
 
-		virtual RCODE FLMAPI getPreviousDocument(
+		virtual RCODE XFLAPI getPreviousDocument(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppPrevDocument) = 0;
 
-		virtual RCODE FLMAPI getParentNode(
+		virtual RCODE XFLAPI getParentNode(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppParent) = 0;
 
-		virtual RCODE FLMAPI getFirstChild(
+		virtual RCODE XFLAPI getFirstChild(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppFirstChild) = 0;
 
-		virtual RCODE FLMAPI getLastChild(
+		virtual RCODE XFLAPI getLastChild(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppLastChild) = 0;
 
-		virtual RCODE FLMAPI getNextSibling(
+		virtual RCODE XFLAPI getNextSibling(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNextSibling) = 0;
 
-		virtual RCODE FLMAPI getPreviousSibling(
+		virtual RCODE XFLAPI getPreviousSibling(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppPrevSibling) = 0;
 
-		virtual RCODE FLMAPI getChild(
+		virtual RCODE XFLAPI getChild(
 			IF_Db *					pDb,
 			eDomNodeType			eNodeType,
 			IF_DOMNode **			ppChild) = 0;
 
-		virtual RCODE FLMAPI getChildElement(
+		virtual RCODE XFLAPI getChildElement(
 			IF_Db *					pDb,
 			FLMUINT					uiElementNameId,
 			IF_DOMNode **			ppChild,
 			FLMUINT					uiFlags = 0) = 0;
 
-		virtual RCODE FLMAPI getSiblingElement(
+		virtual RCODE XFLAPI getSiblingElement(
 			IF_Db *					pDb,
 			FLMUINT					uiElementNameId,
 			FLMBOOL					bNext,
 			IF_DOMNode **			ppSibling) = 0;
 
-		virtual RCODE FLMAPI getAncestorElement(
+		virtual RCODE XFLAPI getAncestorElement(
 			IF_Db *					pDb,
 			FLMUINT					uiElementNameId,
 			IF_DOMNode **			ppAncestor) = 0;
 			
-		virtual RCODE FLMAPI getDescendantElement(
+		virtual RCODE XFLAPI getDescendantElement(
 			IF_Db *					pDb,
 			FLMUINT					uiElementNameId,
 			IF_DOMNode **			ppDescendant) = 0;
 			
-		virtual RCODE FLMAPI insertBefore(
+		virtual RCODE XFLAPI insertBefore(
 			IF_Db *					pDb,
 			IF_DOMNode *			pNewChild,
 			IF_DOMNode *			pRefChild) = 0;
 
-		virtual RCODE FLMAPI getPrefix(
+		virtual RCODE XFLAPI getPrefix(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzPrefixBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE FLMAPI getPrefix(
+		virtual RCODE XFLAPI getPrefix(
 			IF_Db *					pDb,
 			char *					pszPrefixBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE FLMAPI getPrefixId(
+		virtual RCODE XFLAPI getPrefixId(
 			IF_Db *					pDb,
 			FLMUINT *				puiPrefixId) = 0;
 
-		virtual RCODE FLMAPI setPrefix(
+		virtual RCODE XFLAPI setPrefix(
 			IF_Db *					pDb,
 			const FLMUNICODE *	puzPrefix) = 0;
 
-		virtual RCODE FLMAPI setPrefix(
+		virtual RCODE XFLAPI setPrefix(
 			IF_Db *					pDb,
 			const char *			pszPrefix) = 0;
 
-		virtual RCODE FLMAPI setPrefixId(
+		virtual RCODE XFLAPI setPrefixId(
 			IF_Db *					pDb,
 			FLMUINT					uiPrefixId) = 0;
 
-		virtual RCODE FLMAPI getNamespaceURI(
+		virtual RCODE XFLAPI getNamespaceURI(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzNamespaceURIBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE FLMAPI getNamespaceURI(
+		virtual RCODE XFLAPI getNamespaceURI(
 			IF_Db *					pDb,
 			char *					pszNamespaceURIBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE FLMAPI getLocalName(
+		virtual RCODE XFLAPI getLocalName(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzLocalNameBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE FLMAPI getLocalName(
+		virtual RCODE XFLAPI getLocalName(
 			IF_Db *					pDb,
 			char *					pszLocalNameBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE FLMAPI getQualifiedName(
+		virtual RCODE XFLAPI getQualifiedName(
 			IF_Db *					pDb,
 			FLMUNICODE *			puzQualifiedNameBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE FLMAPI getQualifiedName(
+		virtual RCODE XFLAPI getQualifiedName(
 			IF_Db *					pDb,
 			char *					pszQualifiedNameBuffer,
 			FLMUINT					uiBufferSize,
 			FLMUINT *				puiCharsReturned = NULL) = 0;
 
-		virtual RCODE FLMAPI getCollection(
+		virtual RCODE XFLAPI getCollection(
 			IF_Db *					pDb,
 			FLMUINT *				puiCollection) = 0;
 
-		virtual RCODE FLMAPI createAnnotation(
+		virtual RCODE XFLAPI createAnnotation(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppAnnotation,
 			FLMUINT64 *				pui64NodeId = NULL) = 0;
 
-		virtual RCODE FLMAPI getAnnotation(
+		virtual RCODE XFLAPI getAnnotation(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppAnnotation) = 0;
 
-		virtual RCODE FLMAPI getAnnotationId(
+		virtual RCODE XFLAPI getAnnotationId(
 			IF_Db *					pDb,
 			FLMUINT64 *				pui64AnnotationId) = 0;
 			
-		virtual RCODE FLMAPI hasAnnotation(
+		virtual RCODE XFLAPI hasAnnotation(
 			IF_Db *					pDb,
 			FLMBOOL *				pbHasAnnotation) = 0;
 
-		virtual RCODE FLMAPI getIStream(
+		virtual RCODE XFLAPI getIStream(
 			IF_Db *					pDb,
 			IF_PosIStream **		ppIStream,
 			FLMUINT *				puiDataType = NULL,
 			FLMUINT *				puiDataLength = NULL) = 0;
 
-		virtual RCODE FLMAPI getTextIStream(
+		virtual RCODE XFLAPI getTextIStream(
 			IF_Db *					pDb,
 			IF_PosIStream **		ppIStream,
 			FLMUINT *				puiNumChars = NULL) = 0;
 
-		virtual FLMUINT FLMAPI compareNode(
+		virtual FLMUINT XFLAPI compareNode(
 			IF_DOMNode *			pNode,
 			IF_Db *					pDb1,
 			IF_Db *					pDb2,
 			char *					pszErrBuff,
 			FLMUINT					uiErrBuffLen) = 0;
 
-		virtual RCODE FLMAPI isDataLocalToNode(
+		virtual RCODE XFLAPI isDataLocalToNode(
 			IF_Db *					pDb,
 			FLMBOOL *				pbDataIsLocal) = 0;
 	};
@@ -3512,137 +3535,137 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DataVector : public F_Object
+	flminterface XFLEXP IF_DataVector : public F_Object
 	{
-		virtual void FLMAPI setDocumentID(
+		virtual void XFLAPI setDocumentID(
 			FLMUINT64				ui64DocumentID) = 0;
 
-		virtual RCODE FLMAPI setID(
+		virtual RCODE XFLAPI setID(
 			FLMUINT					uiElementNumber,
 			FLMUINT64				ui64ID) = 0;
 
-		virtual RCODE FLMAPI setNameId(
+		virtual RCODE XFLAPI setNameId(
 			FLMUINT					uiElementNumber,
 			FLMUINT					uiNameId,
 			FLMBOOL					bIsAttr,
 			FLMBOOL					bIsData) = 0;
 
-		virtual RCODE FLMAPI setINT(
+		virtual RCODE XFLAPI setINT(
 			FLMUINT					uiElementNumber,
 			FLMINT					iNum) = 0;
 
-		virtual RCODE FLMAPI setINT64(
+		virtual RCODE XFLAPI setINT64(
 			FLMUINT					uiElementNumber,
 			FLMINT64					i64Num) = 0;
 
-		virtual RCODE FLMAPI setUINT(
+		virtual RCODE XFLAPI setUINT(
 			FLMUINT					uiElementNumber,
 			FLMUINT					uiNum) = 0;
 
-		virtual RCODE FLMAPI setUINT64(
+		virtual RCODE XFLAPI setUINT64(
 			FLMUINT					uiElementNumber,
 			FLMUINT64				ui64Num) = 0;
 
-		virtual RCODE FLMAPI setUnicode(
+		virtual RCODE XFLAPI setUnicode(
 			FLMUINT					uiElementNumber,
 			const FLMUNICODE *	puzUnicode) = 0;
 
-		virtual RCODE FLMAPI setUTF8(
+		virtual RCODE XFLAPI setUTF8(
 			FLMUINT					uiElementNumber,
 			const FLMBYTE *		pszUtf8,
 			FLMUINT					uiBytesInBuffer = 0) = 0;			
 
-		virtual RCODE FLMAPI setBinary(
+		virtual RCODE XFLAPI setBinary(
 			FLMUINT					uiElementNumber,
 			const void *			pvBinary,
 			FLMUINT					uiBinaryLen) = 0;
 		
-		virtual void FLMAPI setRightTruncated(
+		virtual void XFLAPI setRightTruncated(
 			FLMUINT					uiElementNumber) = 0;
 		
-		virtual void FLMAPI setLeftTruncated(
+		virtual void XFLAPI setLeftTruncated(
 			FLMUINT					uiElementNumber) = 0;
 		
-		virtual void FLMAPI clearRightTruncated(
+		virtual void XFLAPI clearRightTruncated(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual void FLMAPI clearLeftTruncated(
+		virtual void XFLAPI clearLeftTruncated(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL FLMAPI isRightTruncated(
+		virtual FLMBOOL XFLAPI isRightTruncated(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL FLMAPI isLeftTruncated(
+		virtual FLMBOOL XFLAPI isLeftTruncated(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMUINT64 FLMAPI getDocumentID( void) = 0;
+		virtual FLMUINT64 XFLAPI getDocumentID( void) = 0;
 
-		virtual FLMUINT64 FLMAPI getID(
+		virtual FLMUINT64 XFLAPI getID(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMUINT FLMAPI getNameId(
+		virtual FLMUINT XFLAPI getNameId(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL FLMAPI isAttr(
+		virtual FLMBOOL XFLAPI isAttr(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL FLMAPI isDataComponent(
+		virtual FLMBOOL XFLAPI isDataComponent(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMBOOL FLMAPI isKeyComponent(
+		virtual FLMBOOL XFLAPI isKeyComponent(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMUINT FLMAPI getDataLength(
+		virtual FLMUINT XFLAPI getDataLength(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual FLMUINT FLMAPI getDataType(
+		virtual FLMUINT XFLAPI getDataType(
 			FLMUINT					uiElementNumber) = 0;
 
-		virtual RCODE FLMAPI getUTF8Ptr(
+		virtual RCODE XFLAPI getUTF8Ptr(
 			FLMUINT					uiElementNumber,
 			const FLMBYTE **		ppszUTF8,
 			FLMUINT *				puiBufLen) = 0;
 
-		virtual RCODE FLMAPI getINT(
+		virtual RCODE XFLAPI getINT(
 			FLMUINT					uiElementNumber,
 			FLMINT *					piNum) = 0;
 
-		virtual RCODE FLMAPI getINT64(
+		virtual RCODE XFLAPI getINT64(
 			FLMUINT					uiElementNumber,
 			FLMINT64 *				pi64Num) = 0;
 
-		virtual RCODE FLMAPI getUINT(
+		virtual RCODE XFLAPI getUINT(
 			FLMUINT					uiElementNumber,
 			FLMUINT *				puiNum) = 0;
 
-		virtual RCODE FLMAPI getUINT64(
+		virtual RCODE XFLAPI getUINT64(
 			FLMUINT					uiElementNumber,
 			FLMUINT64 *				pui64Num) = 0;
 
-		virtual RCODE FLMAPI getUnicode(
+		virtual RCODE XFLAPI getUnicode(
 			FLMUINT					uiElementNumber,
 			FLMUNICODE **			ppuzUnicode) = 0;
 
-		virtual RCODE FLMAPI getUnicode(
+		virtual RCODE XFLAPI getUnicode(
 			FLMUINT					uiElementNumber,
 			FLMUNICODE *			puzUnicode,
 			FLMUINT *				puiBufLen) = 0;
 
-		virtual RCODE FLMAPI getUnicode(
+		virtual RCODE XFLAPI getUnicode(
 			FLMUINT					uiElementNumber,
 			F_DynaBuf *				pBuffer) = 0;
 			
-		virtual RCODE FLMAPI getUTF8(
+		virtual RCODE XFLAPI getUTF8(
 			FLMUINT					uiElementNumber,
 			FLMBYTE *				pszUTF8,
 			FLMUINT *				puiBufLen) = 0;
 
-		virtual RCODE FLMAPI getBinary(
+		virtual RCODE XFLAPI getBinary(
 			FLMUINT					uiElementNumber,
 			void *					pvBuffer,
 			FLMUINT *				puiBufferLen) = 0;
 
-		virtual RCODE FLMAPI outputKey(
+		virtual RCODE XFLAPI outputKey(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			FLMUINT					uiMatchFlags,
@@ -3650,20 +3673,20 @@
 			FLMUINT					uiKeyBufSize,
 			FLMUINT *				puiKeyLen) = 0;
 
-		virtual RCODE FLMAPI outputData(
+		virtual RCODE XFLAPI outputData(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			FLMBYTE *				pucDataBuf,
 			FLMUINT					uiDataBufSize,
 			FLMUINT *				puiDataLen) = 0;
 
-		virtual RCODE FLMAPI inputKey(
+		virtual RCODE XFLAPI inputKey(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			const FLMBYTE *		pucKey,
 			FLMUINT					uiKeyLen) = 0;
 
-		virtual RCODE FLMAPI inputData(
+		virtual RCODE XFLAPI inputData(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			const FLMBYTE *		pucData,
@@ -3671,29 +3694,29 @@
 
 		// Miscellaneous methods
 
-		virtual void FLMAPI reset( void) = 0;
+		virtual void XFLAPI reset( void) = 0;
 
-		virtual const void * FLMAPI getDataPtr(
+		virtual const void * XFLAPI getDataPtr(
 			FLMUINT					uiElementNumber) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_Backup : public F_Object
+	flminterface XFLEXP IF_Backup : public F_Object
 	{
-		virtual FLMUINT64 FLMAPI getBackupTransId( void) = 0;
+		virtual FLMUINT64 XFLAPI getBackupTransId( void) = 0;
 
-		virtual FLMUINT64 FLMAPI getLastBackupTransId( void) = 0;
+		virtual FLMUINT64 XFLAPI getLastBackupTransId( void) = 0;
 
-		virtual RCODE FLMAPI backup(
+		virtual RCODE XFLAPI backup(
 			const char *			pszBackupPath,
 			const char *			pszPassword,
 			IF_BackupClient *		ifpClient,
 			IF_BackupStatus *		ifpStatus,
 			FLMUINT *				puiIncSeqNum) = 0;
 
-		virtual RCODE FLMAPI endBackup( void) = 0;
+		virtual RCODE XFLAPI endBackup( void) = 0;
 	};
 
 	// Note:  Any interfaces ending in Client or Status are interfaces
@@ -3706,9 +3729,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_BackupClient : public F_Object
+	flminterface XFLEXP IF_BackupClient : public F_Object
 	{
-		virtual RCODE FLMAPI WriteData(
+		virtual RCODE XFLAPI WriteData(
 			const void *			pvBuffer,
 			FLMUINT					uiBytesToWrite) = 0;
 	};
@@ -3716,9 +3739,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_BackupStatus : public F_Object
+	flminterface XFLEXP IF_BackupStatus : public F_Object
 	{
-		virtual RCODE FLMAPI backupStatus(
+		virtual RCODE XFLAPI backupStatus(
 			FLMUINT64				ui64BytesToDo,
 			FLMUINT64				ui64BytesDone) = 0;
 	};
@@ -3726,18 +3749,18 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_CommitClient : public F_Object
+	flminterface XFLEXP IF_CommitClient : public F_Object
 	{
-		virtual void FLMAPI commit( 
+		virtual void XFLAPI commit( 
 			IF_Db *					pDb) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_EventClient : public F_Object
+	flminterface XFLEXP IF_EventClient : public F_Object
 	{
-		virtual void FLMAPI catchEvent(
+		virtual void XFLAPI catchEvent(
 			eEventType				eEvent,
 			IF_Db *					pDb,
 			FLMUINT					uiThreadId,
@@ -3750,9 +3773,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IxClient : public F_Object
+	flminterface XFLEXP IF_IxClient : public F_Object
 	{
-		virtual RCODE FLMAPI doIndexing(
+		virtual RCODE XFLAPI doIndexing(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			FLMUINT					uiCollectionNum,
@@ -3762,39 +3785,39 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_RestoreStatus : public F_Object
+	flminterface XFLEXP IF_RestoreStatus : public F_Object
 	{
-		virtual RCODE FLMAPI reportProgress(
+		virtual RCODE XFLAPI reportProgress(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64BytesToDo,
 			FLMUINT64				ui64BytesDone) = 0;
 
-		virtual RCODE FLMAPI reportError(
+		virtual RCODE XFLAPI reportError(
 			eRestoreAction *		peAction,
 			RCODE						rcErr) = 0;
 
-		virtual RCODE FLMAPI reportOpenRflFile(
+		virtual RCODE XFLAPI reportOpenRflFile(
 			eRestoreAction *		peAction,
 			FLMUINT					uiFileNum) = 0;
 
-		virtual RCODE FLMAPI reportRflRead(
+		virtual RCODE XFLAPI reportRflRead(
 			eRestoreAction *		peAction,
 			FLMUINT					uiFileNum,
 			FLMUINT					uiBytesRead) = 0;
 
-		virtual RCODE FLMAPI reportBeginTrans(
+		virtual RCODE XFLAPI reportBeginTrans(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 
-		virtual RCODE FLMAPI reportCommitTrans(
+		virtual RCODE XFLAPI reportCommitTrans(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 
-		virtual RCODE FLMAPI reportAbortTrans(
+		virtual RCODE XFLAPI reportAbortTrans(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 
-		virtual RCODE FLMAPI reportBlockChainFree(
+		virtual RCODE XFLAPI reportBlockChainFree(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT64				ui64MaintDocNum,
@@ -3802,66 +3825,66 @@
 			FLMUINT					uiEndBlkAddr,
 			FLMUINT					uiCount) = 0;
 
-		virtual RCODE FLMAPI reportIndexSuspend(
+		virtual RCODE XFLAPI reportIndexSuspend(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiIndexNum) = 0;
 
-		virtual RCODE FLMAPI reportIndexResume(
+		virtual RCODE XFLAPI reportIndexResume(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiIndexNum) = 0;
 
-		virtual RCODE FLMAPI reportReduce(
+		virtual RCODE XFLAPI reportReduce(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCount) = 0;
 
-		virtual RCODE FLMAPI reportUpgrade(
+		virtual RCODE XFLAPI reportUpgrade(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiOldDbVersion,
 			FLMUINT					uiNewDbVersion) = 0;
 
-		virtual RCODE FLMAPI reportEnableEncryption(
+		virtual RCODE XFLAPI reportEnableEncryption(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 
-		virtual RCODE FLMAPI reportWrapKey(
+		virtual RCODE XFLAPI reportWrapKey(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 			
-		virtual RCODE FLMAPI reportRollOverDbKey(
+		virtual RCODE XFLAPI reportRollOverDbKey(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId) = 0;
 			
-		virtual RCODE FLMAPI reportDocumentDone(
+		virtual RCODE XFLAPI reportDocumentDone(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64DocumentId) = 0;
 			
-		virtual RCODE FLMAPI reportNodeDelete(
+		virtual RCODE XFLAPI reportNodeDelete(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId) = 0;
 			
-		virtual RCODE FLMAPI reportAttributeDelete(
+		virtual RCODE XFLAPI reportAttributeDelete(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64ElementId,
 			FLMUINT					uiAttrNameId) = 0;
 			
-		virtual RCODE FLMAPI reportNodeChildrenDelete(
+		virtual RCODE XFLAPI reportNodeChildrenDelete(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64ParentNodeId,
 			FLMUINT					uiNameId) = 0;
 			
-		virtual RCODE FLMAPI reportNodeCreate(
+		virtual RCODE XFLAPI reportNodeCreate(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -3870,7 +3893,7 @@
 			FLMUINT					uiNameId,
 			eNodeInsertLoc			eLocation) = 0;
 			
-		virtual RCODE FLMAPI reportInsertBefore(
+		virtual RCODE XFLAPI reportInsertBefore(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -3878,26 +3901,26 @@
 			FLMUINT64				ui64NewChildNodeId,
 			FLMUINT64				ui64RefChildNodeId) = 0;
 			
-		virtual RCODE FLMAPI reportNodeUpdate(
+		virtual RCODE XFLAPI reportNodeUpdate(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId) = 0;
 			
-		virtual RCODE FLMAPI reportNodeSetValue(
+		virtual RCODE XFLAPI reportNodeSetValue(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId) = 0;
 			
-		virtual RCODE FLMAPI reportAttributeSetValue(
+		virtual RCODE XFLAPI reportAttributeSetValue(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64ElementNodeId,
 			FLMUINT					uiAttrNameId) = 0;
 			
-		virtual RCODE FLMAPI reportNodeFlagsUpdate(
+		virtual RCODE XFLAPI reportNodeFlagsUpdate(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -3905,7 +3928,7 @@
 			FLMUINT					uiFlags,
 			FLMBOOL					bAdd) = 0;
 			
-		virtual RCODE FLMAPI reportNodeSetPrefixId(
+		virtual RCODE XFLAPI reportNodeSetPrefixId(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -3913,14 +3936,14 @@
 			FLMUINT					uiAttrNameId,
 			FLMUINT					uiPrefixId) = 0;
 			
-		virtual RCODE FLMAPI reportNodeSetMetaValue(
+		virtual RCODE XFLAPI reportNodeSetMetaValue(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
 			FLMUINT64				ui64NodeId,
 			FLMUINT64				ui64MetaValue) = 0;
 			
-		virtual RCODE FLMAPI reportSetNextNodeId(
+		virtual RCODE XFLAPI reportSetNextNodeId(
 			eRestoreAction *		peAction,
 			FLMUINT64				ui64TransId,
 			FLMUINT					uiCollection,
@@ -3930,40 +3953,40 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_RestoreClient : public F_Object
+	flminterface XFLEXP IF_RestoreClient : public F_Object
 	{
-		virtual RCODE FLMAPI openBackupSet( void) = 0;
+		virtual RCODE XFLAPI openBackupSet( void) = 0;
 
-		virtual RCODE FLMAPI openRflFile(					// Open an RFL file
+		virtual RCODE XFLAPI openRflFile(					// Open an RFL file
 			FLMUINT					uiFileNum) = 0;
 
-		virtual RCODE FLMAPI openIncFile(					// Open an incremental backup file
+		virtual RCODE XFLAPI openIncFile(					// Open an incremental backup file
 			FLMUINT					uiFileNum) = 0;
 
-		virtual RCODE FLMAPI read(
+		virtual RCODE XFLAPI read(
 			FLMUINT					uiLength,					// Number of bytes to read
 			void *					pvBuffer,					// Buffer to place read bytes into
 			FLMUINT *				puiBytesRead) = 0;		// [out] Number of bytes read
 
-		virtual RCODE FLMAPI close( void) = 0;			// Close the current file
+		virtual RCODE XFLAPI close( void) = 0;			// Close the current file
 
-		virtual RCODE FLMAPI abortFile( void) = 0;		// Abort processing the file
+		virtual RCODE XFLAPI abortFile( void) = 0;		// Abort processing the file
 																		// and close file handles, etc.
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_UpgradeClient : public F_Object
+	flminterface XFLEXP IF_UpgradeClient : public F_Object
 	{
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DbCopyStatus : public F_Object
+	flminterface XFLEXP IF_DbCopyStatus : public F_Object
 	{
-		virtual RCODE FLMAPI dbCopyStatus(
+		virtual RCODE XFLAPI dbCopyStatus(
 			FLMUINT64				ui64BytesToCopy,
 			FLMUINT64				ui64BytesCopied,
 			FLMBOOL					bNewSrcFile,
@@ -3974,24 +3997,24 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DbRebuildStatus : public F_Object
+	flminterface XFLEXP IF_DbRebuildStatus : public F_Object
 	{
-		virtual RCODE FLMAPI reportRebuild(
+		virtual RCODE XFLAPI reportRebuild(
 			XFLM_REBUILD_INFO *	pRebuild) = 0;
 		
-		virtual RCODE FLMAPI reportRebuildErr(
+		virtual RCODE XFLAPI reportRebuildErr(
 			XFLM_CORRUPT_INFO *	pCorruptInfo) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DbCheckStatus : public F_Object
+	flminterface XFLEXP IF_DbCheckStatus : public F_Object
 	{
-		virtual RCODE FLMAPI reportProgress(
+		virtual RCODE XFLAPI reportProgress(
 			XFLM_PROGRESS_CHECK_INFO *	pProgCheck) = 0;
 		
-		virtual RCODE FLMAPI reportCheckErr(
+		virtual RCODE XFLAPI reportCheckErr(
 			XFLM_CORRUPT_INFO *	pCorruptInfo,
 			FLMBOOL *				pbFix) = 0;
 			// [OUT] - If the client sets this to true, then XFlaim will
@@ -4005,9 +4028,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DbRenameStatus : public F_Object
+	flminterface XFLEXP IF_DbRenameStatus : public F_Object
 	{
-		virtual RCODE FLMAPI dbRenameStatus(
+		virtual RCODE XFLAPI dbRenameStatus(
 			const char *			pszSrcFileName,
 			const char *			pszDstFileName) = 0;
 	};
@@ -4015,47 +4038,47 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_IxStatus : public F_Object
+	flminterface XFLEXP IF_IxStatus : public F_Object
 	{
-		virtual RCODE FLMAPI reportIndex(
+		virtual RCODE XFLAPI reportIndex(
 			FLMUINT64 				ui64LastDocumentId) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_DbInfo : public F_Object
+	flminterface XFLEXP IF_DbInfo : public F_Object
 	{
-		virtual FLMUINT FLMAPI getNumCollections( void) = 0;
+		virtual FLMUINT XFLAPI getNumCollections( void) = 0;
 		
-		virtual FLMUINT FLMAPI getNumIndexes( void) = 0;
+		virtual FLMUINT XFLAPI getNumIndexes( void) = 0;
 
-		virtual FLMUINT FLMAPI getNumLogicalFiles( void) = 0;
+		virtual FLMUINT XFLAPI getNumLogicalFiles( void) = 0;
 
-		virtual FLMUINT64 FLMAPI getFileSize( void) = 0;
+		virtual FLMUINT64 XFLAPI getFileSize( void) = 0;
 
-		virtual const XFLM_DB_HDR * FLMAPI getDbHdr( void) = 0;
+		virtual const XFLM_DB_HDR * XFLAPI getDbHdr( void) = 0;
 
-		virtual void FLMAPI getAvailBlockStats(
+		virtual void XFLAPI getAvailBlockStats(
 			FLMUINT64 *				pui64BytesUsed,
 			FLMUINT *				puiBlockCount,
 			FLMINT32 *				pi32LastError,
 			FLMUINT *				puiNumErrors) = 0;
 
-		virtual void FLMAPI getLFHBlockStats(
+		virtual void XFLAPI getLFHBlockStats(
 			FLMUINT64 *				pui64BytesUsed,
 			FLMUINT *				puiBlockCount,
 			FLMINT32 *				pi32LastError,
 			FLMUINT *				puiNumErrors) = 0;
 
-		virtual void FLMAPI getBTreeInfo(
+		virtual void XFLAPI getBTreeInfo(
 			FLMUINT					uiNthLogicalFile,
 			FLMUINT *				puiLfNum,
 			eLFileType *			peLfType,
 			FLMUINT *				puiRootBlkAddress,
 			FLMUINT *				puiNumLevels) = 0;
 
-		virtual void FLMAPI getBTreeBlockStats(
+		virtual void XFLAPI getBTreeBlockStats(
 			FLMUINT					uiNthLogicalFile,
 			FLMUINT					uiLevel,
 			FLMUINT64 *				pui64KeyCount,
@@ -4071,20 +4094,20 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_QueryStatus : public F_Object
+	flminterface XFLEXP IF_QueryStatus : public F_Object
 	{
-		virtual RCODE FLMAPI queryStatus(
+		virtual RCODE XFLAPI queryStatus(
 			XFLM_OPT_INFO *		pOptInfo) = 0;
 
-		virtual RCODE FLMAPI newSource(
+		virtual RCODE XFLAPI newSource(
 			XFLM_OPT_INFO *		pOptInfo) = 0;
 			
-		virtual RCODE FLMAPI resultSetStatus(
+		virtual RCODE XFLAPI resultSetStatus(
 			FLMUINT64	ui64TotalDocsRead,
 			FLMUINT64	ui64TotalDocsPassed,
 			FLMBOOL		bCanRetrieveDocs) = 0;
 			
-		virtual RCODE FLMAPI resultSetComplete(
+		virtual RCODE XFLAPI resultSetComplete(
 			FLMUINT64	ui64TotalDocsRead,
 			FLMUINT64	ui64TotalDocsPassed) = 0;
 	};
@@ -4092,9 +4115,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_QueryValidator : public F_Object
+	flminterface XFLEXP IF_QueryValidator : public F_Object
 	{
-		virtual RCODE FLMAPI validateNode(
+		virtual RCODE XFLAPI validateNode(
 			IF_Db *					pDb,
 			IF_DOMNode *			pNode,
 			FLMBOOL *				pbPassed) = 0;
@@ -4103,14 +4126,14 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_QueryValFunc : public F_Object
+	flminterface XFLEXP IF_QueryValFunc : public F_Object
 	{
 		// NOTE: pDynaBuf should only be used when returning XFLM_UTF8_VAL or
 		// XFLM_BINARY_VAL.  pvVal should be used for all other types.
 		// If there are no more values, return NE_XFLM_EOF_HIT or
 		// NE_XFLM_BOF_HIT, depending on eValueToGet.
 		
-		virtual RCODE FLMAPI getValue(
+		virtual RCODE XFLAPI getValue(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			ValIterator				eValueToGet,
@@ -4119,7 +4142,7 @@
 			void *					pvVal,
 			F_DynaBuf *				pDynaBuf = NULL) = 0;
 			
-		virtual RCODE FLMAPI cloneSelf(
+		virtual RCODE XFLAPI cloneSelf(
 			IF_QueryValFunc **	ppNewObj) = 0;
 	};
 	
@@ -4128,14 +4151,14 @@
 			XFLAIM uses to allow an application to embed a node source
 			inside an XPATH component.
 	****************************************************************************/
-	flminterface IF_QueryNodeSource : public F_Object
+	flminterface XFLEXP IF_QueryNodeSource : public F_Object
 	{
 	public:
 
 		// Method that returns the search cost of this object in providing
 		// nodes for a query.
 
-		virtual RCODE FLMAPI searchCost(
+		virtual RCODE XFLAPI searchCost(
 			IF_Db *					pDb,
 			FLMBOOL					bNotted,
 			FLMUINT *				puiCost,
@@ -4143,7 +4166,7 @@
 
 		// Position to and return the first node that satisfies the predicate.
 
-		virtual RCODE FLMAPI getFirst(
+		virtual RCODE XFLAPI getFirst(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			IF_DOMNode **			ppNode,
@@ -4152,7 +4175,7 @@
 
 		// Position to and return the last node that satisfies the predicate.
 
-		virtual RCODE FLMAPI getLast(
+		virtual RCODE XFLAPI getLast(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			IF_DOMNode **			ppNode,
@@ -4163,7 +4186,7 @@
 		// If no prior positioning has been done,
 		// position to and return the first node.
 
-		virtual RCODE FLMAPI getNext(
+		virtual RCODE XFLAPI getNext(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			IF_DOMNode **			ppNode,
@@ -4174,7 +4197,7 @@
 		// If no prior positioning has been done,
 		// position to and return the last node.
 
-		virtual RCODE FLMAPI getPrev(
+		virtual RCODE XFLAPI getPrev(
 			IF_Db *					pDb,
 			IF_DOMNode *			pContextNode,
 			IF_DOMNode **			ppNode,
@@ -4183,16 +4206,16 @@
 
 		// Return index being used, 0 if none.
 
-		virtual RCODE FLMAPI getIndex(
+		virtual RCODE XFLAPI getIndex(
 			IF_Db *					pDb,
 			FLMUINT *				puiIndex,
 			FLMBOOL *				pbHaveMultiple) = 0;
 			
-		virtual RCODE FLMAPI getOptInfoCount(
+		virtual RCODE XFLAPI getOptInfoCount(
 			IF_Db *					pDb,
 			FLMUINT *				puiOptInfoCount) = 0;
 		
-		virtual RCODE FLMAPI getOptInfo(
+		virtual RCODE XFLAPI getOptInfo(
 			IF_Db *					pDb,
 			XFLM_OPT_INFO *		pOptInfoArray,
 			FLMUINT					uiNumOptInfoStructsToGet) = 0;
@@ -4211,9 +4234,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_OperandComparer : public F_Object
+	flminterface XFLEXP IF_OperandComparer : public F_Object
 	{
-		virtual RCODE FLMAPI compare(
+		virtual RCODE XFLAPI compare(
 			IF_PosIStream *		pLeftOperandStream,
 			IF_PosIStream *		pRightOperandStream,
 			FLMINT *					piCompare) = 0;
@@ -4224,119 +4247,119 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_Query : public F_Object
+	flminterface XFLEXP IF_Query : public F_Object
 	{
-		virtual RCODE FLMAPI setLanguage(
+		virtual RCODE XFLAPI setLanguage(
 			FLMUINT					uiLanguage) = 0;
 
-		virtual RCODE FLMAPI setCollection(
+		virtual RCODE XFLAPI setCollection(
 			FLMUINT					uiCollection) = 0;
 
-		virtual RCODE FLMAPI setupQueryExpr(
+		virtual RCODE XFLAPI setupQueryExpr(
 			IF_Db *					pDb,
 			const FLMUNICODE *	puzQuery) = 0;
 
-		virtual RCODE FLMAPI setupQueryExpr(
+		virtual RCODE XFLAPI setupQueryExpr(
 			IF_Db *					pDb,
 			const char *			pszQueryExpr) = 0;
 
-		virtual RCODE FLMAPI copyCriteria(
+		virtual RCODE XFLAPI copyCriteria(
 			IF_Query *				pSrcQuery) = 0;
 
-		virtual RCODE FLMAPI addXPathComponent(
+		virtual RCODE XFLAPI addXPathComponent(
 			eXPathAxisTypes		eXPathAxis,
 			eDomNodeType			eNodeType,
 			FLMUINT					uiNameId,
 			IF_QueryNodeSource *	pNodeSource = NULL) = 0;
 
-		virtual RCODE FLMAPI addOperator(
+		virtual RCODE XFLAPI addOperator(
 			eQueryOperators		eOperator,
 			FLMUINT					uiCompareRules = 0,
 			IF_OperandComparer *	pOpComparer = NULL) = 0;
 
-		virtual RCODE FLMAPI addUnicodeValue(
+		virtual RCODE XFLAPI addUnicodeValue(
 			const FLMUNICODE *	puzVal) = 0;
 
-		virtual RCODE FLMAPI addUTF8Value(
+		virtual RCODE XFLAPI addUTF8Value(
 			const char *			pszVal,
 			FLMUINT					uiUTF8Len = 0) = 0;
 
-		virtual RCODE FLMAPI addBinaryValue(
+		virtual RCODE XFLAPI addBinaryValue(
 			const void *			pvVal,
 			FLMUINT					uiValLen) = 0;
 
-		virtual RCODE FLMAPI addUINTValue(
+		virtual RCODE XFLAPI addUINTValue(
 			FLMUINT					uiVal) = 0;
 
-		virtual RCODE FLMAPI addINTValue(
+		virtual RCODE XFLAPI addINTValue(
 			FLMINT					iVal) = 0;
 
-		virtual RCODE FLMAPI addUINT64Value(
+		virtual RCODE XFLAPI addUINT64Value(
 			FLMUINT64				ui64Val) = 0;
 			
-		virtual RCODE FLMAPI addINT64Value(
+		virtual RCODE XFLAPI addINT64Value(
 			FLMINT64					i64Val) = 0;
 
-		virtual RCODE FLMAPI addBoolean(
+		virtual RCODE XFLAPI addBoolean(
 			FLMBOOL					bVal,
 			FLMBOOL					bUnknown = FALSE) = 0;
 
-		virtual RCODE FLMAPI addFunction(
+		virtual RCODE XFLAPI addFunction(
 			eQueryFunctions		eFunction) = 0;
 
-		virtual RCODE FLMAPI addFunction(
+		virtual RCODE XFLAPI addFunction(
 			IF_QueryValFunc *		pFuncObj,
 			FLMBOOL					bHasXPathExpr) = 0;
 
-		virtual RCODE FLMAPI getFirst(
+		virtual RCODE XFLAPI getFirst(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode,
 			FLMUINT					uiTimeLimit = 0) = 0;	// milliseconds
 
-		virtual RCODE FLMAPI getLast(
+		virtual RCODE XFLAPI getLast(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode,
 			FLMUINT					uiTimeLimit = 0) = 0;	// milliseconds
 
-		virtual RCODE FLMAPI getNext(
+		virtual RCODE XFLAPI getNext(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode,
 			FLMUINT					uiTimeLimit = 0,		// milliseconds
 			FLMUINT					uiNumToSkip = 0,
 			FLMUINT *				puiNumSkipped = NULL) = 0;
 
-		virtual RCODE FLMAPI getPrev(
+		virtual RCODE XFLAPI getPrev(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode,
 			FLMUINT					uiTimeLimit = 0,		// milliseconds
 			FLMUINT					uiNumToSkip = 0,
 			FLMUINT *				puiNumSkipped = NULL) = 0;
 
-		virtual RCODE FLMAPI getCurrent(
+		virtual RCODE XFLAPI getCurrent(
 			IF_Db *					pDb,
 			IF_DOMNode **			ppNode) = 0;
 
-		virtual void FLMAPI resetQuery( void) = 0;
+		virtual void XFLAPI resetQuery( void) = 0;
 
-		virtual RCODE FLMAPI getStatsAndOptInfo(
+		virtual RCODE XFLAPI getStatsAndOptInfo(
 			FLMUINT *				puiNumOptInfos,
 			XFLM_OPT_INFO **		ppOptInfo) = 0;
 
-		virtual void FLMAPI freeStatsAndOptInfo(
+		virtual void XFLAPI freeStatsAndOptInfo(
 			XFLM_OPT_INFO **		ppOptInfo) = 0;
 
-		virtual void FLMAPI setDupHandling(
+		virtual void XFLAPI setDupHandling(
 			FLMBOOL					bRemoveDups) = 0;
 
-		virtual RCODE FLMAPI setIndex(
+		virtual RCODE XFLAPI setIndex(
 			FLMUINT					uiIndex) = 0;
 
-		virtual RCODE FLMAPI getIndex(
+		virtual RCODE XFLAPI getIndex(
 			IF_Db *					pDb,
 			FLMUINT *				puiIndex,
 			FLMBOOL *				pbHaveMultiple) = 0;
 
-		virtual RCODE FLMAPI addSortKey(
+		virtual RCODE XFLAPI addSortKey(
 			void *			pvSortKeyContext,
 			FLMBOOL			bChildToContext,
 			FLMBOOL			bElement,
@@ -4348,32 +4371,32 @@
 			FLMBOOL			bSortMissingHigh,
 			void **			ppvContext) = 0;
 			
-		virtual RCODE FLMAPI enablePositioning( void) = 0;
+		virtual RCODE XFLAPI enablePositioning( void) = 0;
 		
-		virtual RCODE FLMAPI positionTo(
+		virtual RCODE XFLAPI positionTo(
 			IF_Db *			pDb,
 			IF_DOMNode **	ppNode,
 			FLMUINT			uiTimeLimit,
 			FLMUINT			uiPosition) = 0;
 			
-		virtual RCODE FLMAPI positionTo(
+		virtual RCODE XFLAPI positionTo(
 			IF_Db *				pDb,
 			IF_DOMNode **		ppNode,
 			FLMUINT				uiTimeLimit,
 			IF_DataVector *	pSearchKey,
 			FLMUINT				uiFlags) = 0;
 
-		virtual RCODE FLMAPI getPosition(
+		virtual RCODE XFLAPI getPosition(
 			IF_Db *				pDb,
 			FLMUINT *			puiPosition) = 0;
 			
-		virtual RCODE FLMAPI buildResultSet(
+		virtual RCODE XFLAPI buildResultSet(
 			IF_Db *	pDb,
 			FLMUINT	uiTimeLimit) = 0;
 			
-		virtual void FLMAPI stopBuildingResultSet( void) = 0;
+		virtual void XFLAPI stopBuildingResultSet( void) = 0;
 		
-		virtual RCODE FLMAPI getCounts(
+		virtual RCODE XFLAPI getCounts(
 			IF_Db *		pDb,
 			FLMUINT		uiTimeLimit,
 			FLMBOOL		bPartialCountOk,
@@ -4382,12 +4405,12 @@
 			FLMUINT *	puiPositionableToCount,
 			FLMBOOL *	pbDoneBuildingResultSet = NULL) = 0;
 			
-		virtual void FLMAPI enableResultSetEncryption( void) = 0;
+		virtual void XFLAPI enableResultSetEncryption( void) = 0;
 
-		virtual void FLMAPI setQueryStatusObject(
+		virtual void XFLAPI setQueryStatusObject(
 			IF_QueryStatus *		pQueryStatus) = 0;
 	
-		virtual void FLMAPI setQueryValidatorObject(
+		virtual void XFLAPI setQueryValidatorObject(
 			IF_QueryValidator *		pQueryValidator) = 0;
 	};
 
@@ -4449,19 +4472,19 @@
 	/****************************************************************************
 	Desc:	Node Info. Gatherer
 	****************************************************************************/
-	flminterface IF_NodeInfo : public F_Object
+	flminterface XFLEXP IF_NodeInfo : public F_Object
 	{
-		virtual void FLMAPI clearNodeInfo( void) = 0;
+		virtual void XFLAPI clearNodeInfo( void) = 0;
 		
-		virtual RCODE FLMAPI addNodeInfo(
+		virtual RCODE XFLAPI addNodeInfo(
 			IF_Db *			pDb,
 			IF_DOMNode *	pNode,
 			FLMBOOL			bDoSubTree,
 			FLMBOOL			bDoSelf = TRUE) = 0;
 			
-		virtual FLMUINT64 FLMAPI getTotalNodeCount( void) = 0;
+		virtual FLMUINT64 XFLAPI getTotalNodeCount( void) = 0;
 		
-		virtual void FLMAPI getNodeInfo(
+		virtual void XFLAPI getNodeInfo(
 			XFLM_NODE_INFO *	pNodeInfo) = 0;
 	};
 	
@@ -4502,9 +4525,9 @@
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	flminterface IF_BTreeInfoStatus : public F_Object
+	flminterface XFLEXP IF_BTreeInfoStatus : public F_Object
 	{
-		virtual RCODE FLMAPI infoStatus(
+		virtual RCODE XFLAPI infoStatus(
 			FLMUINT		uiCurrLfNum,
 			FLMBOOL		bIsCollection,
 			char *		pszCurrLfName,
@@ -4517,42 +4540,42 @@
 	/****************************************************************************
 	Desc:	BTree Info. Gatherer
 	****************************************************************************/
-	flminterface IF_BTreeInfo : public F_Object
+	flminterface XFLEXP IF_BTreeInfo : public F_Object
 	{
-		virtual void FLMAPI clearBTreeInfo( void) = 0;
+		virtual void XFLAPI clearBTreeInfo( void) = 0;
 		
-		virtual RCODE FLMAPI collectIndexInfo(
+		virtual RCODE XFLAPI collectIndexInfo(
 			IF_Db *					pDb,
 			FLMUINT					uiIndexNum,
 			IF_BTreeInfoStatus *	pInfoStatus) = 0;
 			
-		virtual RCODE FLMAPI collectCollectionInfo(
+		virtual RCODE XFLAPI collectCollectionInfo(
 			IF_Db *					pDb,
 			FLMUINT					uiCollectionNum,
 			IF_BTreeInfoStatus *	pInfoStatus) = 0;
 			
-		virtual FLMUINT FLMAPI getNumIndexes( void) = 0;
+		virtual FLMUINT XFLAPI getNumIndexes( void) = 0;
 			
-		virtual FLMUINT FLMAPI getNumCollections( void) = 0;
+		virtual FLMUINT XFLAPI getNumCollections( void) = 0;
 
-		virtual FLMBOOL FLMAPI getIndexInfo(
+		virtual FLMBOOL XFLAPI getIndexInfo(
 			FLMUINT		uiNthIndex,
 			FLMUINT *	puiIndexNum,
 			char **		ppszIndexName,
 			FLMUINT *	puiNumLevels) = 0;
 			
-		virtual FLMBOOL FLMAPI getCollectionInfo(
+		virtual FLMBOOL XFLAPI getCollectionInfo(
 			FLMUINT		uiNthCollection,
 			FLMUINT *	puiCollectionNum,
 			char **		ppszCollectionName,
 			FLMUINT *	puiNumLevels) = 0;
 			
-		virtual FLMBOOL FLMAPI getIndexLevelInfo(
+		virtual FLMBOOL XFLAPI getIndexLevelInfo(
 			FLMUINT						uiNthIndex,
 			FLMUINT						uiBTreeLevel,
 			XFLM_BTREE_LEVEL_INFO *	pLevelInfo) = 0;
 
-		virtual FLMBOOL FLMAPI getCollectionLevelInfo(
+		virtual FLMBOOL XFLAPI getCollectionLevelInfo(
 			FLMUINT						uiNthCollection,
 			FLMUINT						uiBTreeLevel,
 			XFLM_BTREE_LEVEL_INFO *	pLevelInfo) = 0;

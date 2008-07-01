@@ -31,7 +31,7 @@ Desc:	The primary purpose of this function is to provide a way to easily
 		to catch them.
 ****************************************************************************/
 #ifdef FLM_DEBUG
-RCODE FLMAPI f_makeErr(
+RCODE FTKAPI f_makeErr(
 	RCODE				rc,
 	const char *,	// pszFile,
 	int,				// iLine,
@@ -61,7 +61,7 @@ RCODE FLMAPI f_makeErr(
 Desc:   Map POSIX errno to Flaim IO errors.
 ***************************************************************************/
 #if defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
-RCODE FLMAPI f_mapPlatformError(
+RCODE FTKAPI f_mapPlatformError(
 	FLMINT	iError,
 	RCODE		defaultRc)
 {
@@ -129,7 +129,7 @@ RCODE FLMAPI f_mapPlatformError(
 Desc:
 ***************************************************************************/
 #ifdef FLM_RING_ZERO_NLM
-RCODE FLMAPI f_mapPlatformError(
+RCODE FTKAPI f_mapPlatformError(
 	FLMINT	iErrCode,
 	RCODE		defaultRc)
 {
@@ -199,7 +199,7 @@ RCODE FLMAPI f_mapPlatformError(
 Desc:
 ***************************************************************************/
 #ifdef FLM_WIN
-RCODE FLMAPI f_mapPlatformError(
+RCODE FTKAPI f_mapPlatformError(
 	FLMINT	iErrCode,
 	RCODE		defaultRc)
 {
@@ -286,7 +286,7 @@ RCODE FLMAPI f_mapPlatformError(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_enterDebugger(
+FLMINT FTKAPI f_enterDebugger(
 	const char *	pszFile,
 	int				iLine)
 {

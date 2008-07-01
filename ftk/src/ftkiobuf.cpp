@@ -41,13 +41,13 @@ public:
 		FLMUINT				uiMaxBytes,
 		FLMBOOL				bReuseBuffers);
 
-	RCODE FLMAPI getBuffer(
+	RCODE FTKAPI getBuffer(
 		FLMUINT				uiBufferSize,
 		IF_IOBuffer **		ppIOBuffer);
 
-	RCODE FLMAPI waitForAllPendingIO( void);
+	RCODE FTKAPI waitForAllPendingIO( void);
 
-	FINLINE FLMBOOL FLMAPI isIOPending( void)
+	FINLINE FLMBOOL FTKAPI isIOPending( void)
 	{
 		return( m_pFirstPending ? TRUE : FALSE);
 	}
@@ -82,7 +82,7 @@ private:
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FLMAPI FlmAllocIOBufferMgr(
+RCODE FTKAPI FlmAllocIOBufferMgr(
 	FLMUINT					uiMaxBuffers,
 	FLMUINT					uiMaxBytes,
 	FLMBOOL					bReuseBuffers,
@@ -205,7 +205,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_IOBufferMgr::getBuffer(
+RCODE FTKAPI F_IOBufferMgr::getBuffer(
 	FLMUINT				uiBufferSize,
 	IF_IOBuffer **		ppIOBuffer)
 {
@@ -316,7 +316,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_IOBufferMgr::waitForAllPendingIO( void)
+RCODE FTKAPI F_IOBufferMgr::waitForAllPendingIO( void)
 {
 	RCODE				rc = NE_FLM_OK;
 	RCODE				tmpRc;
@@ -531,7 +531,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_IOBuffer::setPending( void)
+void FTKAPI F_IOBuffer::setPending( void)
 {
 	f_assert( !m_bPending);
 	
@@ -558,7 +558,7 @@ void FLMAPI F_IOBuffer::setPending( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_IOBuffer::clearPending( void)
+void FTKAPI F_IOBuffer::clearPending( void)
 {
 	f_assert( m_bPending);
 	
@@ -618,7 +618,7 @@ void F_IOBuffer::notifyComplete(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_IOBuffer::addCallbackData(
+RCODE FTKAPI F_IOBuffer::addCallbackData(
 	void *							pvData)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -662,7 +662,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void * FLMAPI F_IOBuffer::getCallbackData(
+void * FTKAPI F_IOBuffer::getCallbackData(
 	FLMUINT							uiSlot)
 {
 	if( uiSlot < m_uiCallbackDataCount)

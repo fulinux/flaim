@@ -27,9 +27,9 @@
 
 static FLMATOMIC				gv_lockCount = 0;
 
-FLMEXTC RCODE FLMAPI DllCanUnloadNow( void);
-FLMEXTC RCODE FLMAPI DllStart( void);
-FLMEXTC RCODE FLMAPI DllStop( void);
+XFLXPC RCODE XFLAPI DllCanUnloadNow( void);
+XFLXPC RCODE XFLAPI DllStart( void);
+XFLXPC RCODE XFLAPI DllStop( void);
 
 #if defined( FLM_UNIX)
 
@@ -67,7 +67,7 @@ void UnlockModule(void)
 Desc:	Returns 0 if it's okay to unload, or a non-zero status
 		code if not.
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllCanUnloadNow( void)
+XFLXPC RCODE XFLAPI DllCanUnloadNow( void)
 {
 	if( gv_lockCount > 1)
 	{
@@ -81,7 +81,7 @@ FLMEXTC RCODE FLMAPI DllCanUnloadNow( void)
 Desc:	Called by PSA when it loads the library.  Must return 0 for
 		success, or a non-zero error code.
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllStart( void)
+XFLXPC RCODE XFLAPI DllStart( void)
 {
 	return( NE_XFLM_OK);
 }
@@ -90,7 +90,7 @@ FLMEXTC RCODE FLMAPI DllStart( void)
 Desc:	Called by PSA when it unloads the library.  The return value
 		is ignored.
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllStop( void)
+XFLXPC RCODE XFLAPI DllStop( void)
 {
 	return( NE_XFLM_OK);
 }
@@ -98,7 +98,7 @@ FLMEXTC RCODE FLMAPI DllStop( void)
 /******************************************************************************
 Desc:
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllRegisterServer(
+XFLXPC RCODE XFLAPI DllRegisterServer(
 	const char *)
 {
 	return( NE_XFLM_OK);
@@ -107,7 +107,7 @@ FLMEXTC RCODE FLMAPI DllRegisterServer(
 /******************************************************************************
 Desc:
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllUnregisterServer( void) 
+XFLXPC RCODE XFLAPI DllUnregisterServer( void) 
 {
 	return( NE_XFLM_OK);
 }

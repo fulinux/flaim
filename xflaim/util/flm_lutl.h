@@ -23,8 +23,8 @@
 // $Id$
 //------------------------------------------------------------------------------
 
-RCODE FLMAPI flstIndexManagerThread(
+RCODE FTKAPI flstIndexManagerThread(
 	IF_Thread *		pThread);
 
-RCODE FLMAPI flstMemoryManagerThread(
+RCODE FTKAPI flstMemoryManagerThread(
 	IF_Thread *		pThread);

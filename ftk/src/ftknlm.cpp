@@ -1535,7 +1535,7 @@ Exit:
 Desc:		Close a file
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::closeFile( void)
+RCODE FTKAPI F_FileHdl::closeFile( void)
 {
 	if( m_bNSS)
 	{
@@ -1612,7 +1612,7 @@ RCODE FLMAPI F_FileHdl::closeFile( void)
 Desc:		Return the size of the file
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::size(
+RCODE FTKAPI F_FileHdl::size(
 	FLMUINT64 *		pui64Size)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -1658,7 +1658,7 @@ WARNING: Direct IO methods are calling this method.  Make sure that all
 			changes to this method work in direct IO mode.
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::truncateFile(
+RCODE FTKAPI F_FileHdl::truncateFile(
 	FLMUINT64		ui64Size)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -1982,7 +1982,7 @@ RCODE F_FileHdl::flush( void)
 Desc:
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::lock( void)
+RCODE FTKAPI F_FileHdl::lock( void)
 {
 	return( RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED));
 }
@@ -1992,7 +1992,7 @@ RCODE FLMAPI F_FileHdl::lock( void)
 Desc:
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_FileHdl::unlock( void)
+RCODE FTKAPI F_FileHdl::unlock( void)
 {
 	return( RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED));
 }
@@ -2495,7 +2495,7 @@ FSTATIC void ConvertToQualifiedNWPath(
 Desc:
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-void FLMAPI f_yieldCPU( void)
+void FTKAPI f_yieldCPU( void)
 {
 	kYieldIfTimeSliceUp();
 }
@@ -2588,7 +2588,7 @@ void * f_getNLMHandle( void)
 Desc:
 **********************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI f_chdir(
+RCODE FTKAPI f_chdir(
 	const char *		pszDir)
 {
 	F_UNREFERENCED_PARM( pszDir);
@@ -2600,7 +2600,7 @@ RCODE FLMAPI f_chdir(
 Desc:
 **********************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI f_getcwd(
+RCODE FTKAPI f_getcwd(
 	char *			pszDir)
 {
 	*pszDir = NULL;

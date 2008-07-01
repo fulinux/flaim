@@ -87,10 +87,10 @@ public:
 		m_uiLastRefresh = 0;
 	}
 
-	RCODE FLMAPI reportProgress(
+	RCODE XFLAPI reportProgress(
 		XFLM_PROGRESS_CHECK_INFO *	pProgCheck);
 	
-	RCODE FLMAPI reportCheckErr(
+	RCODE XFLAPI reportCheckErr(
 		XFLM_CORRUPT_INFO *	pCorruptInfo,
 		FLMBOOL *				pbFix);
 

@@ -72,10 +72,10 @@ public:
 
 	virtual ~F_NameTable();
 
-	void FLMAPI clearTable(
+	void FTKAPI clearTable(
 		FLMUINT					uiPoolBlkSize);
 
-	RCODE FLMAPI getNextTagTypeAndNumOrder(
+	RCODE FTKAPI getNextTagTypeAndNumOrder(
 		FLMUINT					uiType,
 		FLMUINT *				puiNextPos,
 		FLMUNICODE *			puzTagName = NULL,
@@ -87,7 +87,7 @@ public:
 		FLMUINT					uiNamespaceBufSize = 0,
 		FLMBOOL					bTruncatedNamesOk = TRUE);
 
-	RCODE FLMAPI getNextTagTypeAndNameOrder(
+	RCODE FTKAPI getNextTagTypeAndNameOrder(
 		FLMUINT					uiType,
 		FLMUINT *				puiNextPos,
 		FLMUNICODE *			puzTagName = NULL,
@@ -99,7 +99,7 @@ public:
 		FLMUINT					uiNamespaceBufSize = 0,
 		FLMBOOL					bTruncatedNamesOk = TRUE);
 
-	RCODE FLMAPI getFromTagTypeAndName(
+	RCODE FTKAPI getFromTagTypeAndName(
 		FLMUINT					uiType,
 		const FLMUNICODE *	puzTagName,
 		const char *			pszTagName,
@@ -108,7 +108,7 @@ public:
 		FLMUINT *				puiTagNum = NULL,
 		FLMUINT *				puiDataType = NULL);
 
-	RCODE FLMAPI getFromTagTypeAndNum(
+	RCODE FTKAPI getFromTagTypeAndNum(
 		FLMUINT					uiType,
 		FLMUINT					uiTagNum,
 		FLMUNICODE *			puzTagName = NULL,
@@ -120,7 +120,7 @@ public:
 		FLMUINT *				puiNamespaceBufSize = NULL,
 		FLMBOOL					bTruncatedNamesOk = TRUE);
 
-	RCODE FLMAPI addTag(
+	RCODE FTKAPI addTag(
 		FLMUINT					uiType,
 		FLMUNICODE *			puzTagName,
 		const char *			pszTagName,
@@ -129,16 +129,16 @@ public:
 		FLMUNICODE *			puzNamespace = NULL,
 		FLMBOOL					bCheckDuplicates = TRUE);
 
-	void FLMAPI removeTag(
+	void FTKAPI removeTag(
 		FLMUINT	uiType,
 		FLMUINT	uiTagNum);
 
-	RCODE FLMAPI cloneNameTable(
+	RCODE FTKAPI cloneNameTable(
 		IF_NameTable **		ppNewNameTable);
 
-	FLMINT FLMAPI AddRef( void);
+	FLMINT FTKAPI AddRef( void);
 
-	FLMINT FLMAPI Release( void);
+	FLMINT FTKAPI Release( void);
 	
 private:
 
@@ -236,7 +236,7 @@ F_NameTable::~F_NameTable()
 /****************************************************************************
 Desc:	Free everything in the table
 ****************************************************************************/
-void FLMAPI F_NameTable::clearTable(
+void FTKAPI F_NameTable::clearTable(
 	FLMUINT	uiPoolBlkSize)
 {
 	m_pool.poolFree();
@@ -1259,7 +1259,7 @@ Desc:	Get a tag name, number, etc. using type + tag number ordering.
 		non-NULL UNICODE string is passed in, it will be used.
 		Otherwise, the NATIVE string will be used.
 ****************************************************************************/
-RCODE FLMAPI F_NameTable::getNextTagTypeAndNumOrder(
+RCODE FTKAPI F_NameTable::getNextTagTypeAndNumOrder(
 	FLMUINT			uiType,
 	FLMUINT *		puiNextPos,
 	FLMUNICODE *	puzTagName,			// May be NULL
@@ -1348,7 +1348,7 @@ Desc:	Get a tag name, number, etc. using type + tag name ordering.
 		non-NULL UNICODE string is passed in, it will be used.
 		Otherwise, the NATIVE string will be used.
 ****************************************************************************/
-RCODE FLMAPI F_NameTable::getNextTagTypeAndNameOrder(
+RCODE FTKAPI F_NameTable::getNextTagTypeAndNameOrder(
 	FLMUINT			uiType,
 	FLMUINT *		puiNextPos,
 	FLMUNICODE *	puzTagName,			// May be NULL
@@ -1436,7 +1436,7 @@ Desc:	Get a tag name from its tag type and number.  Tag name is returned as a
 		UNICODE string or NATIVE string. If a non-NULL UNICODE string is passed
 		in, it will be used.  Otherwise, the NATIVE string will be used.
 ****************************************************************************/
-RCODE FLMAPI F_NameTable::getFromTagTypeAndNum(
+RCODE FTKAPI F_NameTable::getFromTagTypeAndNum(
 	FLMUINT			uiType,
 	FLMUINT			uiTagNum,
 	FLMUNICODE *	puzTagName,				// May be NULL
@@ -1516,7 +1516,7 @@ Desc:	Get a tag number from its tag name and type.  Tag name is passed
 		passed in, it will be used.  Otherwise, the NATIVE string will
 		be used.
 ****************************************************************************/
-RCODE FLMAPI F_NameTable::getFromTagTypeAndName(
+RCODE FTKAPI F_NameTable::getFromTagTypeAndName(
 	FLMUINT					uiType,
 	const FLMUNICODE *	puzTagName,
 	const char *			pszTagName,
@@ -1635,7 +1635,7 @@ Desc:	Add a tag to the table.  Tag name is passed in as a UNICODE string or
 		NATIVE string. If a non-NULL UNICODE string is passed in, it will
 		be used.  Otherwise, the NATIVE string will be used.
 ****************************************************************************/
-RCODE FLMAPI F_NameTable::addTag(
+RCODE FTKAPI F_NameTable::addTag(
 	FLMUINT			uiType,
 	FLMUNICODE *	puzTagName,
 	const char *	pszTagName,
@@ -1746,7 +1746,7 @@ void F_NameTable::sortTags( void)
 /****************************************************************************
 Desc:	Remove a tag from the table
 ****************************************************************************/
-void FLMAPI F_NameTable::removeTag(
+void FTKAPI F_NameTable::removeTag(
 	FLMUINT			uiType,
 	FLMUINT			uiTagNum)
 {
@@ -1802,7 +1802,7 @@ void FLMAPI F_NameTable::removeTag(
 /****************************************************************************
 Desc:	Create a clone of this name table
 ****************************************************************************/
-RCODE FLMAPI F_NameTable::cloneNameTable(
+RCODE FTKAPI F_NameTable::cloneNameTable(
 	IF_NameTable **		ppNewNameTable)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -1870,7 +1870,7 @@ Exit:
 /****************************************************************************
 Desc:	Increment use count on this object.
 ****************************************************************************/
-FLMINT FLMAPI F_NameTable::AddRef( void)
+FLMINT FTKAPI F_NameTable::AddRef( void)
 {
 	return( f_atomicInc( &m_refCnt));
 }
@@ -1878,7 +1878,7 @@ FLMINT FLMAPI F_NameTable::AddRef( void)
 /****************************************************************************
 Desc:	Decrement the use count and delete if use count goes to zero.
 ****************************************************************************/
-FLMINT FLMAPI F_NameTable::Release( void)
+FLMINT FTKAPI F_NameTable::Release( void)
 {
 	FLMINT		iRefCnt;
 

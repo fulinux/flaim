@@ -66,7 +66,7 @@ Desc:	Clear the data vector, but don't free any buffers that have been
 		method is so that we can get efficient re-use of the vector.  So, if
 		it has allocated buffers, etc. we don't want to free them.
 ****************************************************************************/
-void FLMAPI F_DataVector::reset( void)
+void XFLAPI F_DataVector::reset( void)
 {
 	m_ui64DocumentID = 0;
 	m_uiNumElements = 0;
@@ -250,7 +250,7 @@ Exit:
 /****************************************************************************
 Desc:	Set the id for a vector element.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::setID(
+RCODE XFLAPI F_DataVector::setID(
 	FLMUINT		uiElementNumber,
 	FLMUINT64	ui64ID)
 {
@@ -276,7 +276,7 @@ Exit:
 /****************************************************************************
 Desc:	Set the name id for a vector element.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::setNameId(
+RCODE XFLAPI F_DataVector::setNameId(
 	FLMUINT	uiElementNumber,
 	FLMUINT	uiNameId,
 	FLMBOOL	bIsAttr,
@@ -320,7 +320,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMINT value for a vector element.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::setINT(
+RCODE XFLAPI F_DataVector::setINT(
 	FLMUINT	uiElementNumber,
 	FLMINT	iNum)
 {
@@ -367,7 +367,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMINT64 value for a vector element.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::setINT64(
+RCODE XFLAPI F_DataVector::setINT64(
 	FLMUINT		uiElementNumber,
 	FLMINT64		i64Num)
 {
@@ -403,7 +403,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMUINT value for a vector element.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::setUINT(
+RCODE XFLAPI F_DataVector::setUINT(
 	FLMUINT	uiElementNumber,
 	FLMUINT	uiNum)
 {
@@ -443,7 +443,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMUINT64 value for a vector element.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::setUINT64(
+RCODE XFLAPI F_DataVector::setUINT64(
 	FLMUINT		uiElementNumber,
 	FLMUINT64	ui64Num)
 {
@@ -472,7 +472,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a FLMUNICODE value for a vector element.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::setUnicode(
+RCODE XFLAPI F_DataVector::setUnicode(
 	FLMUINT					uiElementNumber,
 	const FLMUNICODE *	puzUnicode)
 {
@@ -544,7 +544,7 @@ Exit:
 /****************************************************************************
 Desc:	Set a UTF8 value for a vector element.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::setUTF8(
+RCODE XFLAPI F_DataVector::setUTF8(
 	FLMUINT				uiElementNumber,
 	const FLMBYTE *	pszUTF8,
 	FLMUINT				uiBytesInBuffer)
@@ -615,7 +615,7 @@ Exit:
 /****************************************************************************
 Desc:	Get a pointer to the UTF8 - no conversions are done.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::getUTF8Ptr(
+RCODE XFLAPI F_DataVector::getUTF8Ptr(
 	FLMUINT				uiElementNumber,
 	const FLMBYTE **	ppszUTF8,
 	FLMUINT *			puiBufLen)
@@ -674,7 +674,7 @@ Exit:
 /****************************************************************************
 Desc:	Allocate data for a unicode element and retrieve it.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::getUnicode(
+RCODE XFLAPI F_DataVector::getUnicode(
 	FLMUINT			uiElementNumber,
 	FLMUNICODE **	ppuzUnicode)
 {
@@ -719,7 +719,7 @@ Exit:
 /****************************************************************************
 Desc:	Compose a key buffer from the vector's components.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::outputKey(
+RCODE XFLAPI F_DataVector::outputKey(
 	IF_Db *			ifpDb,
 	FLMUINT			uiIndexNum,
 	FLMUINT,			// uiMatchFlags,	//VISIT: Need to remove this from the interface.
@@ -1169,7 +1169,7 @@ Exit:
 /****************************************************************************
 Desc:	Populate a vector's components from the key part of an index key.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::inputKey(
+RCODE XFLAPI F_DataVector::inputKey(
 	IF_Db *				ifpDb,
 	FLMUINT				uiIndexNum,
 	const FLMBYTE *	pucKey,
@@ -1557,7 +1557,7 @@ Exit:
 /****************************************************************************
 Desc:	Compose a data buffer from the vector's components.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::outputData(
+RCODE XFLAPI F_DataVector::outputData(
 	IF_Db *		ifpDb,
 	FLMUINT		uiIndexNum,
 	FLMBYTE *	pucDataBuf,
@@ -1663,7 +1663,7 @@ Exit:
 /****************************************************************************
 Desc:	Populate a vector's data components from the data part of a key.
 ****************************************************************************/
-RCODE FLMAPI F_DataVector::inputData(
+RCODE XFLAPI F_DataVector::inputData(
 	IF_Db *				ifpDb,
 	FLMUINT				uiIndexNum,
 	const FLMBYTE *	pucData,
@@ -1783,7 +1783,7 @@ Exit:
 /****************************************************************************
 Desc:		Create and empty data vector and return it's interface...
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::createIFDataVector(
+RCODE XFLAPI F_DbSystem::createIFDataVector(
 		IF_DataVector **		ifppDV)
 {
 	RCODE					rc = NE_XFLM_OK;

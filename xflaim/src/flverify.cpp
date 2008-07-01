@@ -4104,7 +4104,7 @@ FSTATIC FLMBYTE * getEntryEnd(
 Desc:	Compare two cache blocks during a sort to determine which 
 		one has lower address.
 *****************************************************************************/
-FINLINE FLMINT FLMAPI blkSortCompare(
+FINLINE FLMINT XFLAPI blkSortCompare(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -4129,7 +4129,7 @@ FINLINE FLMINT FLMAPI blkSortCompare(
 /***************************************************************************
 Desc:	Swap two entries in cache table during sort.
 *****************************************************************************/
-FINLINE void FLMAPI blkSortSwap(
+FINLINE void XFLAPI blkSortSwap(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)

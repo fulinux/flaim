@@ -49,19 +49,19 @@
 
 FSTATIC RCODE ftkTestAtomics( void);
 
-FSTATIC RCODE FLMAPI ftkAtomicIncThread(
+FSTATIC RCODE FTKAPI ftkAtomicIncThread(
 	IF_Thread *			pThread);
 	
-FSTATIC RCODE FLMAPI ftkAtomicIncMutexThread(
+FSTATIC RCODE FTKAPI ftkAtomicIncMutexThread(
 	IF_Thread *			pThread);
 	
-FSTATIC RCODE FLMAPI ftkAtomicDecThread(
+FSTATIC RCODE FTKAPI ftkAtomicDecThread(
 	IF_Thread *			pThread);
 	
-FSTATIC RCODE FLMAPI ftkAtomicIncDecThread(
+FSTATIC RCODE FTKAPI ftkAtomicIncDecThread(
 	IF_Thread *			pThread);
 	
-FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
+FSTATIC RCODE FTKAPI ftkAtomicExchangeThread(
 	IF_Thread *			pThread);
 	
 FSTATIC RCODE ftkFastChecksumTest( void);
@@ -4727,7 +4727,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE FLMAPI ftkAtomicIncThread(
+FSTATIC RCODE FTKAPI ftkAtomicIncThread(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiLoop;
@@ -4749,7 +4749,7 @@ FSTATIC RCODE FLMAPI ftkAtomicIncThread(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE FLMAPI ftkAtomicIncMutexThread(
+FSTATIC RCODE FTKAPI ftkAtomicIncMutexThread(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiLoop;
@@ -4773,7 +4773,7 @@ FSTATIC RCODE FLMAPI ftkAtomicIncMutexThread(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE FLMAPI ftkAtomicDecThread(
+FSTATIC RCODE FTKAPI ftkAtomicDecThread(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiLoop;
@@ -4795,7 +4795,7 @@ FSTATIC RCODE FLMAPI ftkAtomicDecThread(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE FLMAPI ftkAtomicIncDecThread(
+FSTATIC RCODE FTKAPI ftkAtomicIncDecThread(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiLoop;
@@ -4820,7 +4820,7 @@ FSTATIC RCODE FLMAPI ftkAtomicIncDecThread(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FSTATIC RCODE FLMAPI ftkAtomicExchangeThread(
+FSTATIC RCODE FTKAPI ftkAtomicExchangeThread(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiLoop;

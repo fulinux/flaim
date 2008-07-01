@@ -50,47 +50,47 @@ public:
 
 	virtual ~F_MultiFileHdl();
 
-	void FLMAPI closeFile(
+	void FTKAPI closeFile(
 		FLMBOOL			bDelete = FALSE);
 
-	RCODE FLMAPI createFile(
+	RCODE FTKAPI createFile(
 		const char *	pszPath);
 
-	RCODE FLMAPI createUniqueFile(
+	RCODE FTKAPI createUniqueFile(
 		const char *	pszPath,
 		const char *	pszFileExtension);
 
-	RCODE FLMAPI deleteMultiFile(
+	RCODE FTKAPI deleteMultiFile(
 		const char *	pszPath);
 
-	RCODE FLMAPI openFile(
+	RCODE FTKAPI openFile(
 		const char *	pszPath);
 
-	RCODE FLMAPI flush( void);
+	RCODE FTKAPI flush( void);
 
-	RCODE FLMAPI read(
+	RCODE FTKAPI read(
 		FLMUINT64	ui64Offset,
 		FLMUINT		uiLength,
 		void *		pvBuffer,
 		FLMUINT *	puiBytesRead);
 
-	RCODE FLMAPI write(
+	RCODE FTKAPI write(
 		FLMUINT64	ui64Offset,
 		FLMUINT		uiLength,
 		void *		pvBuffer,
 		FLMUINT *	puiBytesWritten);
 
-	RCODE FLMAPI getPath(
+	RCODE FTKAPI getPath(
 		char *	pszFilePath);
 
-	FINLINE RCODE FLMAPI size(
+	FINLINE RCODE FTKAPI size(
 		FLMUINT64 *	pui64FileSize)
 	{
 		*pui64FileSize = m_ui64EOF;
 		return( NE_FLM_OK);
 	}
 
-	RCODE FLMAPI truncateFile(
+	RCODE FTKAPI truncateFile(
 		FLMUINT64	ui64NewSize);
 
 private:
@@ -183,7 +183,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmAllocMultiFileHdl(
+RCODE FTKAPI FlmAllocMultiFileHdl(
 	IF_MultiFileHdl **		ppFileHdl)
 {
 	if( (*ppFileHdl = f_new F_MultiFileHdl) == NULL)
@@ -1029,7 +1029,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_MultiFileHdl::getPath(
+RCODE FTKAPI F_MultiFileHdl::getPath(
 	char *	pszPath)
 {
 	f_strcpy( pszPath, m_szPath);

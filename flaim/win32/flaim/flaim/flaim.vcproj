@@ -65,8 +65,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\..\..\..\ftk\win32\ftk\Debug\flaimtk.lib"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrtd.lib msvcprtd.lib $(FTKLIB_DEBUG) $(NOINHERIT)"
 				LinkIncremental="1"
+				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)\$(ProjectName).pdb"
 				SubSystem="2"
@@ -145,8 +146,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="..\..\..\..\ftk\win32\ftk\Release\flaimtk.lib"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrtd.lib msvcprtd.lib $(FTKLIB_RELEASE) $(NOINHERIT)"
 				LinkIncremental="1"
+				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile="$(OutDir)\$(ProjectName).pdb"
 				SubSystem="2"

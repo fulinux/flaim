@@ -249,7 +249,7 @@ Exit:
 Desc:	Returns a pointer to the string representation of a corruption
 		error code.
 ****************************************************************************/
-const char * FLMAPI F_DbSystem::checkErrorToStr(
+const char * XFLAPI F_DbSystem::checkErrorToStr(
 	FLMINT	iCheckErrorCode)
 {
 	if( (iCheckErrorCode >= 1) && (iCheckErrorCode <= FLM_NUM_CORRUPT_ERRORS))

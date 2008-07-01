@@ -814,7 +814,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
 		close time.
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::monitorThrd(
+RCODE SQFAPI F_DbSystem::monitorThrd(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiLastUnusedCleanupTime = 0;
@@ -3243,7 +3243,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_SuperFileClient::getFileNumber(
+FLMUINT SQFAPI F_SuperFileClient::getFileNumber(
 	FLMUINT					uiBlockAddr)
 {
 	return( FSGetFileNumber( uiBlockAddr));
@@ -3252,7 +3252,7 @@ FLMUINT FLMAPI F_SuperFileClient::getFileNumber(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
+FLMUINT SQFAPI F_SuperFileClient::getFileOffset(
 	FLMUINT					uiBlockAddr)
 {
 	return( FSGetFileOffset( uiBlockAddr));
@@ -3261,7 +3261,7 @@ FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_SuperFileClient::getBlockAddress(
+FLMUINT SQFAPI F_SuperFileClient::getBlockAddress(
 	FLMUINT					uiFileNumber,
 	FLMUINT					uiFileOffset)
 {
@@ -3272,7 +3272,7 @@ FLMUINT FLMAPI F_SuperFileClient::getBlockAddress(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT64 FLMAPI F_SuperFileClient::getMaxFileSize( void)
+FLMUINT64 SQFAPI F_SuperFileClient::getMaxFileSize( void)
 {
 //	JMC - FIXME: commented out due to missing functionality in flaimtk.h
 //	if( m_uiDbVersion >= FLM_FILE_FORMAT_VER_4_3)
@@ -3287,7 +3287,7 @@ FLMUINT64 FLMAPI F_SuperFileClient::getMaxFileSize( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileClient::getFilePath(
+RCODE SQFAPI F_SuperFileClient::getFilePath(
 	FLMUINT			uiFileNumber,
 	char *			pszPath)
 {

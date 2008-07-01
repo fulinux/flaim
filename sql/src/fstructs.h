@@ -941,7 +941,7 @@ private:
 		FLMBOOL				bCounts,
 		FLMBOOL				bHaveData);
 
-	static RCODE FLMAPI maintenanceThread(
+	static RCODE SQFAPI maintenanceThread(
 		IF_Thread *			pThread);
 
 	F_Database *			m_pNext;					// Next F_Database structure in in name hash

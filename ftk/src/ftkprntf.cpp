@@ -41,14 +41,14 @@ public:
 	{
 	}
 	
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar)
 	{
 		*m_pszDestBuffer++ = cChar;
 		return( 1);
 	}
 		
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar,
 		FLMUINT			uiCount)
 	{
@@ -58,7 +58,7 @@ public:
 		return( (FLMINT)uiCount);
 	}
 
-	FINLINE FLMINT FLMAPI outputStr(
+	FINLINE FLMINT FTKAPI outputStr(
 		const char *	pszStr,
 		FLMUINT			uiLen)
 	{
@@ -68,7 +68,7 @@ public:
 		return( (FLMINT)uiLen);
 	}
 		
-	FINLINE FLMINT FLMAPI colorFormatter(
+	FINLINE FLMINT FTKAPI colorFormatter(
 		char,				// cFormatChar,
 		eColorType,		// eColor,
 		FLMUINT)			// uiFlags)
@@ -96,14 +96,14 @@ public:
 	{
 	}
 	
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar)
 	{
 		m_dynaBuf.appendByte( cChar);
 		return( 1);
 	}
 		
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar,
 		FLMUINT			uiCount)
 	{
@@ -118,7 +118,7 @@ public:
 		return( iBytesOutput);
 	}
 
-	FINLINE FLMINT FLMAPI outputStr(
+	FINLINE FLMINT FTKAPI outputStr(
 		const char *	pszStr,
 		FLMUINT			uiLen)
 	{
@@ -126,7 +126,7 @@ public:
 		return( (FLMINT)uiLen);
 	}
 		
-	FINLINE FLMINT FLMAPI colorFormatter(
+	FINLINE FLMINT FTKAPI colorFormatter(
 		char,				// cFormatChar,
 		eColorType,		// eColor,
 		FLMUINT)			// uiFlags)
@@ -160,14 +160,14 @@ public:
 	{
 	}
 	
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar)
 	{
 		fprintf( stdout, "%c", cChar);
 		return( 1);
 	}
 		
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar,
 		FLMUINT			uiCount)
 	{
@@ -182,7 +182,7 @@ public:
 		return( iBytesOutput);
 	}
 
-	FINLINE FLMINT FLMAPI outputStr(
+	FINLINE FLMINT FTKAPI outputStr(
 		const char *	pszStr,
 		FLMUINT			uiLen)
 	{
@@ -190,7 +190,7 @@ public:
 		return( (FLMINT)uiLen);
 	}
 		
-	FINLINE FLMINT FLMAPI colorFormatter(
+	FINLINE FLMINT FTKAPI colorFormatter(
 		char,				// cFormatChar,
 		eColorType,		// eColor,
 		FLMUINT)			// uiFlags)
@@ -214,14 +214,14 @@ public:
 	{
 	}
 	
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar)
 	{
 		fprintf( stderr, "%c", cChar);
 		return( 1);
 	}
 		
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar,
 		FLMUINT			uiCount)
 	{
@@ -236,7 +236,7 @@ public:
 		return( iBytesOutput);
 	}
 
-	FINLINE FLMINT FLMAPI outputStr(
+	FINLINE FLMINT FTKAPI outputStr(
 		const char *	pszStr,
 		FLMUINT			uiLen)
 	{
@@ -244,7 +244,7 @@ public:
 		return( (FLMINT)uiLen);
 	}
 		
-	FINLINE FLMINT FLMAPI colorFormatter(
+	FINLINE FLMINT FTKAPI colorFormatter(
 		char,				// cFormatChar,
 		eColorType,		// eColor,
 		FLMUINT)			// uiFlags)
@@ -903,7 +903,7 @@ void F_Printf::notHandledFormatter( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_printf(
+FLMINT FTKAPI f_printf(
 	IF_PrintfClient *		pClient,
 	const char *			pszFormat,
 	...)
@@ -922,7 +922,7 @@ FLMINT FLMAPI f_printf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_vprintf(
+FLMINT FTKAPI f_vprintf(
 	IF_PrintfClient *		pClient,
 	const char *			pszFormat,
 	f_va_list *				args)
@@ -935,7 +935,7 @@ FLMINT FLMAPI f_vprintf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_vsprintf(
+FLMINT FTKAPI f_vsprintf(
 	char *			pszDestBuffer,
 	const char *	pszFormat,
 	f_va_list *		args)
@@ -952,7 +952,7 @@ FLMINT FLMAPI f_vsprintf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_sprintf(
+FLMINT FTKAPI f_sprintf(
 	char *			pszDestBuffer,
 	const char *	pszFormat,
 	...)
@@ -972,7 +972,7 @@ FLMINT FLMAPI f_sprintf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_printf(
+FLMINT FTKAPI f_printf(
 	const char *	pszFormat,
 	...)
 {
@@ -995,7 +995,7 @@ FLMINT FLMAPI f_printf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_errprintf(
+FLMINT FTKAPI f_errprintf(
 	const char *	pszFormat,
 	...)
 {
@@ -1018,7 +1018,7 @@ FLMINT FLMAPI f_errprintf(
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmAllocStdoutPrintfClient( 
+RCODE FTKAPI FlmAllocStdoutPrintfClient( 
 	IF_PrintfClient **		ppClient)
 {
 	if( (*ppClient = f_new F_StdoutPrintfClient) == NULL)
@@ -1032,7 +1032,7 @@ RCODE FLMAPI FlmAllocStdoutPrintfClient(
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmAllocStderrPrintfClient( 
+RCODE FTKAPI FlmAllocStderrPrintfClient( 
 	IF_PrintfClient **		ppClient)
 {
 	if( (*ppClient = f_new F_StderrPrintfClient) == NULL)

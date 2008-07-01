@@ -61,14 +61,14 @@ public:
 
 	virtual ~F_ThreadMgr();
 
-	RCODE FLMAPI setupThreadMgr( void);
+	RCODE FTKAPI setupThreadMgr( void);
 
-	FLMINT FLMAPI AddRef( void)
+	FLMINT FTKAPI AddRef( void)
 	{
 		return( f_atomicInc( &m_refCnt));
 	}
 
-	FLMINT FLMAPI Release( void)
+	FLMINT FTKAPI Release( void)
 	{
 		FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
 		
@@ -80,7 +80,7 @@ public:
 		return( iRefCnt);
 	}
 	
-	RCODE FLMAPI createThread(
+	RCODE FTKAPI createThread(
 		IF_Thread **		ppThread,
 		F_THREAD_FUNC		fnThread,
 		const char *		pszThreadName,
@@ -90,37 +90,37 @@ public:
 		void *				pvParm2,
 		FLMUINT				uiStackSize);
 		
-	void FLMAPI shutdownThreadGroup(
+	void FTKAPI shutdownThreadGroup(
 		FLMUINT				uiThreadGroup);
 
-	void FLMAPI setThreadShutdownFlag(
+	void FTKAPI setThreadShutdownFlag(
 		FLMUINT				uiThreadId);
 
-	RCODE FLMAPI findThread(
+	RCODE FTKAPI findThread(
 		IF_Thread **		ppThread,
 		FLMUINT				uiThreadGroup,
 		FLMUINT				uiAppId = 0,
 		FLMBOOL				bOkToFindMe = TRUE);
 
-	RCODE FLMAPI getNextGroupThread(
+	RCODE FTKAPI getNextGroupThread(
 		IF_Thread **		ppThread,
 		FLMUINT				uiThreadGroup,
 		FLMUINT *			puiThreadId);
 
-	RCODE FLMAPI getThreadInfo(
+	RCODE FTKAPI getThreadInfo(
 		F_Pool *				pPool,
 		F_THREAD_INFO **	ppThreadInfo,
 		FLMUINT *			puiNumThreads);
 
-	RCODE FLMAPI getThreadName(
+	RCODE FTKAPI getThreadName(
 		FLMUINT				uiThreadId,
 		char *				pszThreadName,
 		FLMUINT *			puiLength);
 	
-	FLMUINT FLMAPI getThreadGroupCount(
+	FLMUINT FTKAPI getThreadGroupCount(
 		FLMUINT				uiThreadGroup);
 		
-	FLMUINT FLMAPI allocGroupId( void);
+	FLMUINT FTKAPI allocGroupId( void);
 		
 	inline void lockMutex( void)
 	{
@@ -175,11 +175,11 @@ public:
 		cleanupThread();
 	}
 
-	FLMINT FLMAPI AddRef( void);
+	FLMINT FTKAPI AddRef( void);
 
-	FLMINT FLMAPI Release( void);
+	FLMINT FTKAPI Release( void);
 
-	RCODE FLMAPI startThread(
+	RCODE FTKAPI startThread(
 		F_THREAD_FUNC	fnThread,
 		const char *	pszThreadName,
 		FLMUINT			uiThreadGroup,
@@ -188,65 +188,65 @@ public:
 		void *			pvParm2,
 		FLMUINT        uiStackSize);
 
-	void FLMAPI stopThread( void);
+	void FTKAPI stopThread( void);
 
-	FINLINE FLMUINT FLMAPI getThreadId( void)
+	FINLINE FLMUINT FTKAPI getThreadId( void)
 	{
 		return( m_uiThreadId);
 	}
 
-	FINLINE FLMBOOL FLMAPI getShutdownFlag( void)
+	FINLINE FLMBOOL FTKAPI getShutdownFlag( void)
 	{
 		return( m_bShutdown);
 	}
 
-	FINLINE RCODE FLMAPI getExitCode( void)
+	FINLINE RCODE FTKAPI getExitCode( void)
 	{
 		return( m_exitRc);
 	}
 
-	FINLINE void * FLMAPI getParm1( void)
+	FINLINE void * FTKAPI getParm1( void)
 	{
 		return( m_pvParm1);
 	}
 
-	FINLINE void FLMAPI setParm1(
+	FINLINE void FTKAPI setParm1(
 		void *		pvParm)
 	{
 		m_pvParm1 = pvParm;
 	}
 
-	FINLINE void * FLMAPI getParm2( void)
+	FINLINE void * FTKAPI getParm2( void)
 	{
 		return( m_pvParm2);
 	}
 
-	FINLINE void FLMAPI setParm2(
+	FINLINE void FTKAPI setParm2(
 		void *		pvParm)
 	{
 		m_pvParm2 = pvParm;
 	}
 
-	FINLINE void FLMAPI setShutdownFlag( void)
+	FINLINE void FTKAPI setShutdownFlag( void)
 	{
 		m_bShutdown = TRUE;
 	}
 
-	FINLINE FLMBOOL FLMAPI isThreadRunning( void)
+	FINLINE FLMBOOL FTKAPI isThreadRunning( void)
 	{
 		return( m_bRunning);
 	}
 
-	void FLMAPI setThreadStatusStr(
+	void FTKAPI setThreadStatusStr(
 		const char *	pszStatus);
 
-	void FLMAPI setThreadStatus(
+	void FTKAPI setThreadStatus(
 		const char *	pszBuffer, ...);
 
-	void FLMAPI setThreadStatus(
+	void FTKAPI setThreadStatus(
 		eThreadStatus	genericStatus);
 
-	FINLINE void FLMAPI setThreadAppId(
+	FINLINE void FTKAPI setThreadAppId(
 		FLMUINT		uiAppId)
 	{
 		f_mutexLock( m_hMutex);
@@ -254,22 +254,22 @@ public:
 		f_mutexUnlock( m_hMutex);
 	}
 
-	FINLINE FLMUINT FLMAPI getThreadAppId( void)
+	FINLINE FLMUINT FTKAPI getThreadAppId( void)
 	{
 		return( m_uiAppId);
 	}
 
-	FINLINE FLMUINT FLMAPI getThreadGroup( void)
+	FINLINE FLMUINT FTKAPI getThreadGroup( void)
 	{
 		return( m_uiThreadGroup);
 	}
 
-	void FLMAPI cleanupThread( void);
+	void FTKAPI cleanupThread( void);
 
-	void FLMAPI sleep(
+	void FTKAPI sleep(
 			FLMUINT		uiMilliseconds);
 			
-	void FLMAPI waitToComplete( void);
+	void FTKAPI waitToComplete( void);
 
 	F_MUTEX				m_hMutex;
 	F_Thread *			m_pPrev;
@@ -311,12 +311,12 @@ public:
 		m_pool.poolFree();
 	}
 
-	FLMUINT FLMAPI getNumThreads( void)
+	FLMUINT FTKAPI getNumThreads( void)
 	{
 		return( m_uiNumThreads);
 	}
 
-	FINLINE void FLMAPI getThreadInfo(
+	FINLINE void FTKAPI getThreadInfo(
 		FLMUINT				uiThreadNum,
 		FLMUINT *			puiThreadId,
 		FLMUINT *			puiThreadGroup,
@@ -387,7 +387,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmGetThreadMgr(
+RCODE FTKAPI FlmGetThreadMgr(
 	IF_ThreadMgr **		ppThreadMgr)
 {
 	*ppThreadMgr = f_getThreadMgrPtr();
@@ -398,7 +398,7 @@ RCODE FLMAPI FlmGetThreadMgr(
 /****************************************************************************
 Desc:	Add a Reference to this object.
 ****************************************************************************/
-FLMINT FLMAPI F_Thread::AddRef( void)
+FLMINT FTKAPI F_Thread::AddRef( void)
 {
 	return( f_atomicInc( &m_refCnt));
 }
@@ -406,7 +406,7 @@ FLMINT FLMAPI F_Thread::AddRef( void)
 /****************************************************************************
 Desc: Removes a reference to this object.
 ****************************************************************************/
-FLMINT FLMAPI F_Thread::Release( void)
+FLMINT FTKAPI F_Thread::Release( void)
 {
 	FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
 	
@@ -421,7 +421,7 @@ FLMINT FLMAPI F_Thread::Release( void)
 /****************************************************************************
 Desc:    Performs various setup work and starts a new thread
 ****************************************************************************/
-RCODE FLMAPI F_Thread::startThread(
+RCODE FTKAPI F_Thread::startThread(
 	F_THREAD_FUNC	fnThread,
 	const char *	pszThreadName,
 	FLMUINT			uiThreadGroup,
@@ -620,7 +620,7 @@ Exit:
 /****************************************************************************
 Desc: Stop a running thread
 ****************************************************************************/
-void FLMAPI F_Thread::stopThread( void)
+void FTKAPI F_Thread::stopThread( void)
 {
 	// Set the shutdown flag and wait for the thread's
 	// status to be something other than "running"
@@ -639,7 +639,7 @@ void FLMAPI F_Thread::stopThread( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_Thread::waitToComplete( void)
+void FTKAPI F_Thread::waitToComplete( void)
 {
 	while( m_bRunning)
 	{
@@ -740,7 +740,7 @@ void * threadStub(
 Desc:    Frees any resources allocated to the thread and resets member
 			variables to their initial state
 ****************************************************************************/
-void FLMAPI F_Thread::cleanupThread( void)
+void FTKAPI F_Thread::cleanupThread( void)
 {
 	f_assert( !m_pPrev && !m_pNext);
 	
@@ -776,7 +776,7 @@ void FLMAPI F_Thread::cleanupThread( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_Thread::sleep(
+void FTKAPI F_Thread::sleep(
 	FLMUINT		uiMilliseconds)
 {
 	FLMUINT		uiTimeToSleep;
@@ -798,7 +798,7 @@ void FLMAPI F_Thread::sleep(
 /****************************************************************************
 Desc:    Set the thread's status
 ****************************************************************************/
-void FLMAPI F_Thread::setThreadStatusStr(
+void FTKAPI F_Thread::setThreadStatusStr(
 	const char *		pszStatus)
 {
 	FLMUINT		uiStatusLen = f_strlen( pszStatus) + 1;
@@ -832,7 +832,7 @@ Exit:
 /****************************************************************************
 Desc:    Set the thread's status
 ****************************************************************************/
-void FLMAPI F_Thread::setThreadStatus(
+void FTKAPI F_Thread::setThreadStatus(
 	const char *	pszFormat, ...)
 {
 	char				pucBuffer[ 128];
@@ -848,7 +848,7 @@ void FLMAPI F_Thread::setThreadStatus(
 /****************************************************************************
 Desc:    Set the thread's status to a generic string
 ****************************************************************************/
-void FLMAPI F_Thread::setThreadStatus(
+void FTKAPI F_Thread::setThreadStatus(
 	eThreadStatus	genericStatus)
 {
 	const char *	pszStatus = NULL;
@@ -914,7 +914,7 @@ F_ThreadMgr::~F_ThreadMgr()
 /****************************************************************************
 Desc:		Allocates resources needed by the thread manager
 ****************************************************************************/
-RCODE FLMAPI F_ThreadMgr::setupThreadMgr( void)
+RCODE FTKAPI F_ThreadMgr::setupThreadMgr( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -994,7 +994,7 @@ Exit:
 Desc:		Signals all threads in a thread group to shut down and waits
 			for them to terminate.
 ****************************************************************************/
-void FLMAPI F_ThreadMgr::shutdownThreadGroup(
+void FTKAPI F_ThreadMgr::shutdownThreadGroup(
 	FLMUINT		uiThreadGroup)
 {
 	F_Thread *		pThread;
@@ -1037,7 +1037,7 @@ void FLMAPI F_ThreadMgr::shutdownThreadGroup(
 /****************************************************************************
 Desc:		Signals a thread to shut down.
 ****************************************************************************/
-void FLMAPI F_ThreadMgr::setThreadShutdownFlag(
+void FTKAPI F_ThreadMgr::setThreadShutdownFlag(
 	FLMUINT			uiThreadId)
 {
 	F_Thread *		pThread;
@@ -1063,7 +1063,7 @@ void FLMAPI F_ThreadMgr::setThreadShutdownFlag(
 Desc:		Allocates an array of F_THREAD_INFO structures and populates them
 			with information about the threads being managed by this object.
 ****************************************************************************/
-RCODE FLMAPI F_ThreadMgr::getThreadInfo(
+RCODE FTKAPI F_ThreadMgr::getThreadInfo(
 	F_Pool *				pPool,
 	F_THREAD_INFO **	ppThreadInfo,
 	FLMUINT *			puiNumThreads)
@@ -1182,7 +1182,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_ThreadMgr::getThreadName(
+RCODE FTKAPI F_ThreadMgr::getThreadName(
 	FLMUINT			uiThreadId,
 	char *			pszThreadName,
 	FLMUINT *		puiLength)
@@ -1274,7 +1274,7 @@ Exit:
 /****************************************************************************
 Desc:		Finds a thread based on user-specified identifiers
 ****************************************************************************/
-RCODE FLMAPI F_ThreadMgr::findThread(
+RCODE FTKAPI F_ThreadMgr::findThread(
 	IF_Thread **	ppThread,
 	FLMUINT			uiThreadGroup,
 	FLMUINT			uiAppId,
@@ -1334,7 +1334,7 @@ Exit:
 /****************************************************************************
 Desc:		Finds a thread based on user-specified identifiers
 ****************************************************************************/
-RCODE FLMAPI F_ThreadMgr::getNextGroupThread(
+RCODE FTKAPI F_ThreadMgr::getNextGroupThread(
 	IF_Thread **		ppThread,
 	FLMUINT			uiThreadGroup,
 	FLMUINT *		puiThreadId)
@@ -1403,7 +1403,7 @@ Exit:
 /****************************************************************************
 Desc:		Returns a count of the number of threads in a specified group
 ****************************************************************************/
-FLMUINT FLMAPI F_ThreadMgr::getThreadGroupCount(
+FLMUINT FTKAPI F_ThreadMgr::getThreadGroupCount(
 	FLMUINT			uiThreadGroup)
 {
 	F_Thread *		pThread;
@@ -1429,7 +1429,7 @@ FLMUINT FLMAPI F_ThreadMgr::getThreadGroupCount(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_ThreadMgr::allocGroupId( void)
+FLMUINT FTKAPI F_ThreadMgr::allocGroupId( void)
 {
 	return( f_atomicInc( &m_groupCounter));
 }
@@ -1437,7 +1437,7 @@ FLMUINT FLMAPI F_ThreadMgr::allocGroupId( void)
 /****************************************************************************
 Desc:    Allocate a thread object and start the thread
 ****************************************************************************/
-RCODE FLMAPI F_ThreadMgr::createThread(
+RCODE FTKAPI F_ThreadMgr::createThread(
 	IF_Thread **		ppThread,
 	F_THREAD_FUNC		fnThread,
 	const char *		pszThreadName,
@@ -1493,7 +1493,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_threadCreate(
+RCODE FTKAPI f_threadCreate(
 	IF_Thread **			ppThread,
 	F_THREAD_FUNC			fnThread,
 	const char *			pszThreadName,
@@ -1510,7 +1510,7 @@ RCODE FLMAPI f_threadCreate(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_threadDestroy(
+void FTKAPI f_threadDestroy(
 	IF_Thread **		ppThread)
 {
 	if( *ppThread != NULL)
@@ -1540,7 +1540,7 @@ FLMUINT f_getpid( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI f_threadId( void)
+FLMUINT FTKAPI f_threadId( void)
 {
 #ifdef FLM_WIN
 	return( (FLMUINT)_threadid);
@@ -1556,7 +1556,7 @@ FLMUINT FLMAPI f_threadId( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmGetThreadInfo(
+RCODE FTKAPI FlmGetThreadInfo(
 	IF_ThreadInfo **	ppThreadInfo)
 {
 	RCODE					rc = NE_FLM_OK;

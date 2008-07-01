@@ -65,7 +65,7 @@ public:
 
 	virtual ~F_BlockAlloc();
 
-	RCODE FLMAPI setup(
+	RCODE FTKAPI setup(
 		FLMBOOL					bMultiThreaded,
 		IF_SlabManager *		pSlabManager,
 		IF_Relocator *			pRelocator,
@@ -73,17 +73,17 @@ public:
 		FLM_SLAB_USAGE *		pUsageStats,
 		FLMUINT *				puiTotalBytesAllocated);
 
-	RCODE FLMAPI allocBlock(
+	RCODE FTKAPI allocBlock(
 		void **					ppvBlock);
 
-	void FLMAPI freeBlock(
+	void FTKAPI freeBlock(
 		void **					ppvBlock);
 
-	void FLMAPI freeUnused( void);
+	void FTKAPI freeUnused( void);
 
-	void FLMAPI freeAll( void);
+	void FTKAPI freeAll( void);
 
-	void FLMAPI defragmentMemory( void);
+	void FTKAPI defragmentMemory( void);
 	
 private:
 
@@ -148,11 +148,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void FTKAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL FTKAPI canRelocate(
 		void *	pvOldAlloc);
 		
 private:
@@ -165,7 +165,7 @@ friend class F_BlockAlloc;
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI slabInfoAddrCompareFunc(
+FLMINT FTKAPI slabInfoAddrCompareFunc(
 	void *					pvBuffer,
 	FLMUINT					uiPos1,
 	FLMUINT					uiPos2)
@@ -186,7 +186,7 @@ FLMINT FLMAPI slabInfoAddrCompareFunc(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI slabInfoAddrSwapFunc(
+void FTKAPI slabInfoAddrSwapFunc(
 	void *					pvBuffer,
 	FLMUINT					uiPos1,
 	FLMUINT					uiPos2)
@@ -370,7 +370,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_BlockAlloc::allocBlock(
+RCODE FTKAPI F_BlockAlloc::allocBlock(
 	void **				ppvBlock)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -405,7 +405,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_BlockAlloc::freeBlock(
+void FTKAPI F_BlockAlloc::freeBlock(
 	void **				ppvBlock)
 {
 	SLABINFO *			pSlab = NULL;
@@ -971,7 +971,7 @@ void F_BlockAlloc::freeSlab(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_BlockAlloc::freeAll( void)
+void FTKAPI F_BlockAlloc::freeAll( void)
 {
 	SLABINFO *		pNextSlab;
 	SLABINFO *		pCurSlab;
@@ -1015,7 +1015,7 @@ void FLMAPI F_BlockAlloc::freeAll( void)
 /****************************************************************************
 Desc:		
 ****************************************************************************/ 
-void FLMAPI F_BlockAlloc::freeUnused( void) // VISIT
+void FTKAPI F_BlockAlloc::freeUnused( void) // VISIT
 {
 	SLABINFO *		pSlab;
 
@@ -1331,7 +1331,7 @@ void F_SlabInfoRelocator::relocate(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FLMAPI FlmAllocBlockAllocator(
+RCODE FTKAPI FlmAllocBlockAllocator(
 	IF_BlockAlloc **			ppBlockAllocator)
 {
 	if( (*ppBlockAllocator = f_new F_BlockAlloc) == NULL)

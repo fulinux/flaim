@@ -488,11 +488,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void SQFAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL SQFAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1219,7 +1219,7 @@ private:
 	}
 #endif
 	
-	static void FLMAPI objectAllocInit(
+	static void SQFAPI objectAllocInit(
 		void *		pvAlloc,
 		FLMUINT		uiSize);
 		
@@ -1453,11 +1453,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void SQFAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL SQFAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1476,11 +1476,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void SQFAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL SQFAPI canRelocate(
 		void *	pvOldAlloc);
 };
 
@@ -1499,11 +1499,11 @@ public:
 	{
 	}
 
-	void FLMAPI relocate(
+	void SQFAPI relocate(
 		void *	pvOldAlloc,
 		void *	pvNewAlloc);
 
-	FLMBOOL FLMAPI canRelocate(
+	FLMBOOL SQFAPI canRelocate(
 		void *	pvOldAlloc);
 };
 

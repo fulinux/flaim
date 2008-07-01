@@ -121,7 +121,7 @@ public:
 		}
 	}
 
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar,
 		FLMUINT			uiCount)
 	{
@@ -151,7 +151,7 @@ public:
 		return( iBytesOutput);
 	}
 
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar)
 	{
 		m_szOutBuf[ m_uiBufOffset++] = cChar;
@@ -164,7 +164,7 @@ public:
 		return( 1);
 	}
 		
-	FINLINE FLMINT FLMAPI outputStr(
+	FINLINE FLMINT FTKAPI outputStr(
 		const char *	pszStr,
 		FLMUINT			uiLen)
 	{
@@ -195,7 +195,7 @@ public:
 		return( iBytesOutput);
 	}
 		
-	FINLINE FLMINT FLMAPI colorFormatter(
+	FINLINE FLMINT FTKAPI colorFormatter(
 		char,				// cFormatChar,
 		eColorType,		// eColor,
 		FLMUINT)			// uiFlags)
@@ -225,7 +225,7 @@ private:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmAllocBufferIStream( 
+RCODE FTKAPI FlmAllocBufferIStream( 
 	IF_BufferIStream **		ppIStream)
 {
 	if( (*ppIStream = f_new F_BufferIStream) == NULL)
@@ -239,7 +239,7 @@ RCODE FLMAPI FlmAllocBufferIStream(
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmOpenBufferIStream( 
+RCODE FTKAPI FlmOpenBufferIStream( 
 	const char *				pucBuffer,
 	FLMUINT						uiLength,
 	IF_PosIStream **			ppIStream)
@@ -274,7 +274,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmOpenBase64EncoderIStream(
+RCODE FTKAPI FlmOpenBase64EncoderIStream(
 	IF_IStream *				pSourceIStream,
 	FLMBOOL						bLineBreaks,
 	IF_IStream **				ppIStream)
@@ -309,7 +309,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmOpenBase64DecoderIStream(
+RCODE FTKAPI FlmOpenBase64DecoderIStream(
 	IF_IStream *				pSourceIStream,
 	IF_IStream **				ppIStream)
 {
@@ -343,7 +343,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmOpenFileIStream(
+RCODE FTKAPI FlmOpenFileIStream(
 	const char *				pszPath,
 	IF_PosIStream **			ppIStream)
 {
@@ -377,7 +377,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmOpenMultiFileIStream(
+RCODE FTKAPI FlmOpenMultiFileIStream(
 	const char *				pszDirectory,
 	const char *				pszBaseName,
 	IF_IStream **				ppIStream)
@@ -412,7 +412,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmOpenBufferedIStream(
+RCODE FTKAPI FlmOpenBufferedIStream(
 	IF_IStream *				pSourceIStream,
 	FLMUINT						uiBufferSize,
 	IF_IStream **				ppIStream)
@@ -447,7 +447,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmOpenUncompressingIStream(
+RCODE FTKAPI FlmOpenUncompressingIStream(
 	IF_IStream *				pSourceIStream,
 	IF_IStream **				ppIStream)
 {
@@ -481,7 +481,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmOpenFileOStream(
+RCODE FTKAPI FlmOpenFileOStream(
 	const char *				pszPath,
 	FLMBOOL						bTruncateIfExists,
 	IF_OStream **				ppOStream)
@@ -516,7 +516,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmOpenMultiFileOStream(
+RCODE FTKAPI FlmOpenMultiFileOStream(
 	const char *				pszDirectory,
 	const char *				pszBaseName,
 	FLMUINT						uiMaxFileSize,
@@ -554,7 +554,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmOpenBufferedOStream(
+RCODE FTKAPI FlmOpenBufferedOStream(
 	IF_OStream *				pDestOStream,
 	FLMUINT						uiBufferSize,
 	IF_OStream **				ppOStream)
@@ -589,7 +589,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmOpenCompressingOStream(
+RCODE FTKAPI FlmOpenCompressingOStream(
 	IF_OStream *				pDestOStream,
 	IF_OStream **				ppOStream)
 {
@@ -623,7 +623,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmRemoveMultiFileStream(
+RCODE FTKAPI FlmRemoveMultiFileStream(
 	const char *				pszDirectory,
 	const char *				pszBaseName)
 {
@@ -655,7 +655,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_FileIStream::openStream(
+RCODE FTKAPI F_FileIStream::openStream(
 	const char *		pszFilePath)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -694,7 +694,7 @@ RCODE F_FileIStream::closeStream( void)
 /****************************************************************************
 Desc:	
 *****************************************************************************/
-FLMUINT64 FLMAPI F_FileIStream::totalSize( void)
+FLMUINT64 FTKAPI F_FileIStream::totalSize( void)
 {
 	FLMUINT64		ui64FileSize = 0;
 
@@ -705,7 +705,7 @@ FLMUINT64 FLMAPI F_FileIStream::totalSize( void)
 /****************************************************************************
 Desc:	
 *****************************************************************************/
-FLMUINT64 FLMAPI F_FileIStream::remainingSize( void)
+FLMUINT64 FTKAPI F_FileIStream::remainingSize( void)
 {
 	FLMUINT64		ui64TotalSize = totalSize();
 	FLMUINT64		ui64Offset = getCurrPosition();
@@ -721,7 +721,7 @@ FLMUINT64 FLMAPI F_FileIStream::remainingSize( void)
 /****************************************************************************
 Desc:	
 *****************************************************************************/
-FLMUINT64 FLMAPI F_FileIStream::getCurrPosition( void)
+FLMUINT64 FTKAPI F_FileIStream::getCurrPosition( void)
 {
 	return( m_ui64FileOffset);
 }
@@ -729,7 +729,7 @@ FLMUINT64 FLMAPI F_FileIStream::getCurrPosition( void)
 /****************************************************************************
 Desc:	
 *****************************************************************************/
-RCODE FLMAPI F_FileIStream::positionTo(
+RCODE FTKAPI F_FileIStream::positionTo(
 	FLMUINT64			ui64Offset)
 {
 	m_ui64FileOffset = ui64Offset;
@@ -779,7 +779,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedIStream::openStream(
+RCODE FTKAPI F_BufferedIStream::openStream(
 	IF_IStream *	pIStream,
 	FLMUINT			uiBufferSize)
 {
@@ -816,7 +816,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedIStream::read(
+RCODE FTKAPI F_BufferedIStream::read(
 	void *			pvBuffer,
 	FLMUINT			uiBytesToRead,
 	FLMUINT *		puiBytesRead)
@@ -880,7 +880,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedIStream::closeStream( void)
+RCODE FTKAPI F_BufferedIStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 	
@@ -910,7 +910,7 @@ RCODE FLMAPI F_BufferedIStream::closeStream( void)
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_FileOStream::openStream(
+RCODE FTKAPI F_FileOStream::openStream(
 	const char *		pszFilePath,
 	FLMBOOL				bTruncateIfExists)
 {
@@ -975,7 +975,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_FileOStream::write(
+RCODE FTKAPI F_FileOStream::write(
 	const void *	pvBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
@@ -1010,7 +1010,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_FileOStream::closeStream( void)
+RCODE FTKAPI F_FileOStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -1027,7 +1027,7 @@ RCODE FLMAPI F_FileOStream::closeStream( void)
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_MultiFileIStream::openStream(
+RCODE FTKAPI F_MultiFileIStream::openStream(
 	const char *	pszDirectory,
 	const char *	pszBaseName)
 {
@@ -1144,7 +1144,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_MultiFileIStream::read(
+RCODE FTKAPI F_MultiFileIStream::read(
 	void *			pvBuffer,
 	FLMUINT			uiBytesToRead,
 	FLMUINT *		puiBytesRead)
@@ -1217,7 +1217,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_MultiFileIStream::closeStream( void)
+RCODE FTKAPI F_MultiFileIStream::closeStream( void)
 {
 	if( m_pIStream)
 	{
@@ -1466,7 +1466,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_MultiFileOStream::write(
+RCODE FTKAPI F_MultiFileOStream::write(
 	const void *	pvBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
@@ -1536,7 +1536,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_MultiFileOStream::closeStream( void)
+RCODE FTKAPI F_MultiFileOStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -1560,7 +1560,7 @@ RCODE FLMAPI F_MultiFileOStream::closeStream( void)
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedOStream::openStream(
+RCODE FTKAPI F_BufferedOStream::openStream(
 	IF_OStream *	pOStream,
 	FLMUINT			uiBufferSize)
 {
@@ -1591,7 +1591,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedOStream::flush( void)
+RCODE FTKAPI F_BufferedOStream::flush( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -1613,7 +1613,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedOStream::write(
+RCODE FTKAPI F_BufferedOStream::write(
 	const void *	pvBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
@@ -1658,7 +1658,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_BufferedOStream::closeStream( void)
+RCODE FTKAPI F_BufferedOStream::closeStream( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -1698,7 +1698,7 @@ F_BufferIStream::~F_BufferIStream()
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_BufferIStream::openStream(
+RCODE FTKAPI F_BufferIStream::openStream(
 	const char *	pucBuffer,
 	FLMUINT			uiLength,
 	char **			ppucAllocatedBuffer)
@@ -1738,7 +1738,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_BufferIStream::closeStream( void)
+RCODE FTKAPI F_BufferIStream::closeStream( void)
 {
 	if( m_bIsOpen)
 	{
@@ -1765,7 +1765,7 @@ RCODE FLMAPI F_BufferIStream::closeStream( void)
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_BufferIStream::read(
+RCODE FTKAPI F_BufferIStream::read(
 	void *			pvBuffer,
 	FLMUINT			uiBytesToRead,
 	FLMUINT *		puiBytesRead)
@@ -1809,7 +1809,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Base64DecoderIStream::openStream(
+RCODE FTKAPI F_Base64DecoderIStream::openStream(
 	IF_IStream *	pIStream)
 {
 	RCODE		rc = NE_FLM_OK;
@@ -1833,7 +1833,7 @@ Exit:
 /*****************************************************************************
 Desc:	Reads decoded binary from the base64 ASCII source stream.
 *****************************************************************************/
-RCODE FLMAPI F_Base64DecoderIStream::read(
+RCODE FTKAPI F_Base64DecoderIStream::read(
 	void *			pvBuffer,
 	FLMUINT			uiBytesToRead,
 	FLMUINT *		puiBytesRead)
@@ -1949,7 +1949,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Base64EncoderIStream::openStream(
+RCODE FTKAPI F_Base64EncoderIStream::openStream(
 	IF_IStream *	pIStream,
 	FLMBOOL			bLineBreaks)
 {
@@ -1978,7 +1978,7 @@ Exit:
 /*****************************************************************************
 Desc:	Reads ASCII base64 encoded binary from the source stream.
 *****************************************************************************/
-RCODE FLMAPI F_Base64EncoderIStream::read(
+RCODE FTKAPI F_Base64EncoderIStream::read(
 	void *					pvBuffer,
 	FLMUINT					uiBytesToRead,
 	FLMUINT *				puiBytesRead)
@@ -2111,7 +2111,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_CompressingOStream::openStream(
+RCODE FTKAPI F_CompressingOStream::openStream(
 	IF_OStream *		pOStream)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -2193,7 +2193,7 @@ LZWODictItem * F_CompressingOStream::findDictEntry(
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_CompressingOStream::write(
+RCODE FTKAPI F_CompressingOStream::write(
 	const void *	pvBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
@@ -2363,7 +2363,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_CompressingOStream::closeStream( void)
+RCODE FTKAPI F_CompressingOStream::closeStream( void)
 {
 	RCODE			rc = NE_FLM_OK;
 	FLMBYTE		ucOut[ 2];	
@@ -2418,7 +2418,7 @@ RCODE FLMAPI F_CompressingOStream::closeStream( void)
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_UncompressingIStream::openStream(
+RCODE FTKAPI F_UncompressingIStream::openStream(
 	IF_IStream *		pIStream)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -2546,7 +2546,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_UncompressingIStream::read(
+RCODE FTKAPI F_UncompressingIStream::read(
 	void *			pvBuffer,
 	FLMUINT			uiBytesToRead,
 	FLMUINT *		puiBytesRead)
@@ -2664,7 +2664,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_UncompressingIStream::closeStream( void)
+RCODE FTKAPI F_UncompressingIStream::closeStream( void)
 {
 	if( m_pIStream)
 	{
@@ -2688,7 +2688,7 @@ RCODE FLMAPI F_UncompressingIStream::closeStream( void)
 /******************************************************************************
 Desc: Read all data from input stream and write to the output stream.
 ******************************************************************************/
-RCODE FLMAPI FlmWriteToOStream(
+RCODE FTKAPI FlmWriteToOStream(
 	IF_IStream *	pIStream,
 	IF_OStream *	pOStream)
 {
@@ -2734,7 +2734,7 @@ Exit:
 /******************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmReadFully(
+RCODE FTKAPI FlmReadFully(
 	IF_IStream *	pIStream,
 	F_DynaBuf *		pDynaBuf)
 {
@@ -2780,7 +2780,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmReadLine(
+RCODE FTKAPI FlmReadLine(
 	IF_IStream *			pIStream,
 	F_DynaBuf *				pBuffer)
 {
@@ -2833,7 +2833,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_printf(
+RCODE FTKAPI f_printf(
 	IF_OStream *		pOStream,
 	const char *		pszFormatStr, ...)
 {
@@ -2849,7 +2849,7 @@ RCODE FLMAPI f_printf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_vprintf(
+RCODE FTKAPI f_vprintf(
 	IF_OStream *		pOStream,
 	const char *		pszFormatStr,
 	f_va_list *			args)

@@ -28,7 +28,7 @@
 /*API~***********************************************************************
 Desc:	Creates a new FLAIM database.
 *END************************************************************************/
-RCODE FLMAPI F_DbSystem::dbCreate(
+RCODE XFLAPI F_DbSystem::dbCreate(
 	const char *			pszFilePath,
 		// [IN] Full path file name of the database which is to be created.
 	const char *			pszDataDir,

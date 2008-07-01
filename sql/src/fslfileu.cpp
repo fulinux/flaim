@@ -796,7 +796,7 @@ Exit:
 Desc:	Thread that will delete block chains from deleted indexes and
 		tables in the background.
 ****************************************************************************/
-RCODE FLMAPI F_Database::maintenanceThread(
+RCODE SQFAPI F_Database::maintenanceThread(
 	IF_Thread *		pThread)
 {
 	RCODE					rc = NE_SFLM_OK;

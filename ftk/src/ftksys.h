@@ -425,7 +425,7 @@
 			}
 		}
 
-		FLMINT FLMAPI AddRef( void)
+		FLMINT FTKAPI AddRef( void)
 		{
 			return( f_atomicInc( &m_refCnt));
 		}
@@ -433,7 +433,7 @@
 		FLMINT Release(
 			FLMBOOL					bMutexAlreadyLocked);
 	
-		FLMINT FLMAPI Release( void)
+		FLMINT FTKAPI Release( void)
 		{
 			return( Release( FALSE));
 		}
@@ -453,17 +453,17 @@
 			m_bCompleted = FALSE;
 		}
 	
-		FINLINE FLMBYTE * FLMAPI getBufferPtr( void)
+		FINLINE FLMBYTE * FTKAPI getBufferPtr( void)
 		{
 			return( m_pucBuffer);
 		}
 	
-		FINLINE FLMUINT FLMAPI getBufferSize( void)
+		FINLINE FLMUINT FTKAPI getBufferSize( void)
 		{
 			return( m_uiBufferSize);
 		}
 	
-		FINLINE void FLMAPI setCompletionCallback(
+		FINLINE void FTKAPI setCompletionCallback(
 			F_BUFFER_COMPLETION_FUNC	fnCompletion,
 			void *							pvData)
 		{
@@ -471,18 +471,18 @@
 			m_pvData = pvData;
 		}
 		
-		RCODE FLMAPI addCallbackData(
+		RCODE FTKAPI addCallbackData(
 			void *							pvData);
 			
-		void * FLMAPI getCallbackData(
+		void * FTKAPI getCallbackData(
 			FLMUINT							uiSlot);
 			
-		FINLINE FLMUINT FLMAPI getCallbackDataCount( void)
+		FINLINE FLMUINT FTKAPI getCallbackDataCount( void)
 		{
 			return( m_uiCallbackDataCount);
 		}
 		
-		FINLINE void FLMAPI cleanupBuffer( void)
+		FINLINE void FTKAPI cleanupBuffer( void)
 		{
 			if( m_fnCompletion)
 			{
@@ -502,7 +502,7 @@
 			m_ppCallbackData = m_callbackData;
 		}
 			
-		void FLMAPI setAsyncClient(
+		void FTKAPI setAsyncClient(
 			IF_AsyncClient *				pAsyncClient)
 		{
 			if( m_pAsyncClient)
@@ -516,7 +516,7 @@
 			}
 		}
 			
-		void FLMAPI getAsyncClient(
+		void FTKAPI getAsyncClient(
 			IF_AsyncClient **				ppAsyncClient)
 		{
 			if( (*ppAsyncClient = m_pAsyncClient) != NULL)
@@ -525,19 +525,19 @@
 			}
 		}
 		
-		void FLMAPI setPending( void);
+		void FTKAPI setPending( void);
 		
-		void FLMAPI clearPending( void);
+		void FTKAPI clearPending( void);
 		
-		void FLMAPI notifyComplete(
+		void FTKAPI notifyComplete(
 			RCODE							completionRc);
 			
-		FINLINE FLMBOOL FLMAPI isPending( void)
+		FINLINE FLMBOOL FTKAPI isPending( void)
 		{
 			return( m_bPending);
 		}
 		
-		FINLINE RCODE FLMAPI waitToComplete( void)
+		FINLINE RCODE FTKAPI waitToComplete( void)
 		{
 			RCODE		rc = NE_FLM_OK;
 			
@@ -549,18 +549,18 @@
 			return( rc);
 		}
 		
-		FINLINE FLMBOOL FLMAPI isComplete( void)
+		FINLINE FLMBOOL FTKAPI isComplete( void)
 		{
 			return( m_bCompleted);
 		}
 		
-		FINLINE RCODE FLMAPI getCompletionCode( void)
+		FINLINE RCODE FTKAPI getCompletionCode( void)
 		{
 			f_assert( m_bCompleted);
 			return( m_completionRc);
 		}
 
-		FINLINE FLMUINT FLMAPI getElapsedTime( void)
+		FINLINE FLMUINT FTKAPI getElapsedTime( void)
 		{
 			f_assert( m_bCompleted);
 			return( m_uiElapsedTime);
@@ -617,24 +617,24 @@
 		
 		~F_FileAsyncClient();
 		
-		FLMINT FLMAPI AddRef( void)
+		FLMINT FTKAPI AddRef( void)
 		{
 			return( f_atomicInc( &m_refCnt));
 		}
 
-		FLMINT FLMAPI Release( void)
+		FLMINT FTKAPI Release( void)
 		{
 			return( Release( TRUE));
 		}
 
-		FLMINT FLMAPI Release(
+		FLMINT FTKAPI Release(
 			FLMBOOL						bOkToReuse);
 
-		RCODE FLMAPI waitToComplete( void);
+		RCODE FTKAPI waitToComplete( void);
 
-		RCODE FLMAPI getCompletionCode( void);
+		RCODE FTKAPI getCompletionCode( void);
 		
-		FLMUINT FLMAPI getElapsedTime( void);
+		FLMUINT FTKAPI getElapsedTime( void);
 		
 		F_FileAsyncClient *			m_pNext;
 		
@@ -643,7 +643,7 @@
 			return( m_uiBytesToDo);
 		}
 
-		void FLMAPI notifyComplete(
+		void FTKAPI notifyComplete(
 			RCODE							completionRc,
 			FLMUINT						uiBytesDone);
 
@@ -679,12 +679,12 @@
 	
 		virtual ~F_FileHdl();
 	
-		FLMINT FLMAPI AddRef( void)
+		FLMINT FTKAPI AddRef( void)
 		{
 			return( f_atomicInc( &m_refCnt));
 		}
 
-		FLMINT FLMAPI Release( void)
+		FLMINT FTKAPI Release( void)
 		{
 			FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
 			
@@ -696,90 +696,90 @@
 			return( iRefCnt);
 		}
 
-		RCODE FLMAPI flush( void);
+		RCODE FTKAPI flush( void);
 		
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			FLMUINT64			ui64Offset,
 			FLMUINT				uiLength,
 			void *				pvBuffer,
 			FLMUINT *			puiBytesRead = NULL);
 
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			FLMUINT64			ui64ReadOffset,
 			FLMUINT				uiBytesToRead,
 			IF_IOBuffer *		pIOBuffer);
 			
-		RCODE FLMAPI write(
+		RCODE FTKAPI write(
 			FLMUINT64			ui64Offset,
 			FLMUINT				uiLength,
 			const void *		pvBuffer,
 			FLMUINT *			puiBytesWritten = NULL);
 
-		RCODE FLMAPI write(
+		RCODE FTKAPI write(
 			FLMUINT64			ui64WriteOffset,
 			FLMUINT				uiBytesToWrite,
 			IF_IOBuffer *		pIOBuffer);
 			
-		RCODE FLMAPI seek(
+		RCODE FTKAPI seek(
 			FLMUINT64			ui64Offset,
 			FLMINT				iWhence,
 			FLMUINT64 *			pui64NewOffset = NULL);
 
-		RCODE FLMAPI size(
+		RCODE FTKAPI size(
 			FLMUINT64 *			pui64Size);
 
-		RCODE FLMAPI tell(
+		RCODE FTKAPI tell(
 			FLMUINT64 *			pui64Offset);
 			
-		RCODE FLMAPI extendFile(
+		RCODE FTKAPI extendFile(
 			FLMUINT64			ui64FileSize);
 
-		RCODE FLMAPI truncateFile(
+		RCODE FTKAPI truncateFile(
 			FLMUINT64			ui64FileSize = 0);
 
-		RCODE FLMAPI closeFile( void);
+		RCODE FTKAPI closeFile( void);
 		
-		FINLINE FLMBOOL FLMAPI canDoAsync( void)
+		FINLINE FLMBOOL FTKAPI canDoAsync( void)
 		{
 			return( m_bOpenedInAsyncMode);
 		}
 		
-		FINLINE FLMBOOL FLMAPI canDoDirectIO( void)
+		FINLINE FLMBOOL FTKAPI canDoDirectIO( void)
 		{
 			return( m_bDoDirectIO);
 		}
 	
-		FINLINE void FLMAPI setExtendSize(
+		FINLINE void FTKAPI setExtendSize(
 			FLMUINT				uiExtendSize)
 		{
 			f_assert( uiExtendSize < FLM_MAX_UINT);
 			m_uiExtendSize = uiExtendSize;
 		}
 	
-		FINLINE void FLMAPI setMaxAutoExtendSize(
+		FINLINE void FTKAPI setMaxAutoExtendSize(
 			FLMUINT				uiMaxAutoExtendSize)
 		{
 			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
 		}
 	
-		FINLINE FLMBOOL FLMAPI isReadOnly( void)
+		FINLINE FLMBOOL FTKAPI isReadOnly( void)
 		{
 			return( m_bOpenedReadOnly);
 		}
 		
-		FINLINE FLMBOOL FLMAPI isOpen( void)
+		FINLINE FLMBOOL FTKAPI isOpen( void)
 		{
 			return( m_bFileOpened);
 		}
 		
-		FINLINE FLMUINT FLMAPI getSectorSize( void)
+		FINLINE FLMUINT FTKAPI getSectorSize( void)
 		{
 			return( m_uiBytesPerSector);
 		}
 		
-		RCODE FLMAPI lock( void);
+		RCODE FTKAPI lock( void);
 	
-		RCODE FLMAPI unlock( void);
+		RCODE FTKAPI unlock( void);
 		
 		static F_MUTEX 				m_hAsyncListMutex;
 		static F_FileAsyncClient *	m_pFirstAvailAsync;
@@ -994,27 +994,27 @@
 	
 		virtual ~F_DirHdl();
 	
-		RCODE FLMAPI next( void);
+		RCODE FTKAPI next( void);
 	
-		const char * FLMAPI currentItemName( void);
+		const char * FTKAPI currentItemName( void);
 	
-		void FLMAPI currentItemPath(
+		void FTKAPI currentItemPath(
 			char *	pszPath);
 	
-			FLMUINT64 FLMAPI currentItemSize( void);
+			FLMUINT64 FTKAPI currentItemSize( void);
 	
-		FLMBOOL FLMAPI currentItemIsDir( void);
+		FLMBOOL FTKAPI currentItemIsDir( void);
 	
 	private:
 	
-		RCODE FLMAPI openDir(
+		RCODE FTKAPI openDir(
 			const char *	pszDirName,
 			const char *	pszPattern);
 	
-		RCODE FLMAPI createDir(
+		RCODE FTKAPI createDir(
 			const char *	pszDirName);
 	
-		RCODE FLMAPI removeDir(
+		RCODE FTKAPI removeDir(
 			const char *	pszDirPath);
 	
 		char					m_szDirectoryPath[ F_PATH_MAX_SIZE];
@@ -1048,42 +1048,42 @@
 	
 		virtual ~F_XML();
 		
-		RCODE FLMAPI setup( void);
+		RCODE FTKAPI setup( void);
 	
-		FLMBOOL FLMAPI isPubidChar(
+		FLMBOOL FTKAPI isPubidChar(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isQuoteChar(
+		FLMBOOL FTKAPI isQuoteChar(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isWhitespace(
+		FLMBOOL FTKAPI isWhitespace(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isExtender(
+		FLMBOOL FTKAPI isExtender(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isCombiningChar(
+		FLMBOOL FTKAPI isCombiningChar(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isNameChar(
+		FLMBOOL FTKAPI isNameChar(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isNCNameChar(
+		FLMBOOL FTKAPI isNCNameChar(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isIdeographic(
+		FLMBOOL FTKAPI isIdeographic(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isBaseChar(
+		FLMBOOL FTKAPI isBaseChar(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isDigit(
+		FLMBOOL FTKAPI isDigit(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isLetter(
+		FLMBOOL FTKAPI isLetter(
 			FLMUNICODE		uChar);
 	
-		FLMBOOL FLMAPI isNameValid(
+		FLMBOOL FTKAPI isNameValid(
 			FLMUNICODE *	puzName,
 			FLMBYTE *		pszName);
 	
@@ -1114,12 +1114,12 @@
 		
 		RCODE setup( void);
 
-		FLMINT FLMAPI AddRef( void)
+		FLMINT FTKAPI AddRef( void)
 		{
 			return( f_atomicInc( &m_refCnt));
 		}
 
-		FLMINT FLMAPI Release( void)
+		FLMINT FTKAPI Release( void)
 		{
 			FLMINT		iRefCnt = f_atomicDec( &m_refCnt);
 			
@@ -1131,66 +1131,66 @@
 			return( iRefCnt);
 		}
 		
-		RCODE FLMAPI createFile(
+		RCODE FTKAPI createFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile);
 
-		RCODE FLMAPI createUniqueFile(
+		RCODE FTKAPI createUniqueFile(
 			char *					pszPath,
 			const char *			pszFileExtension,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile);
 
-		RCODE FLMAPI createLockFile(
+		RCODE FTKAPI createLockFile(
 			const char *			pszPath,
 			IF_FileHdl **			ppLockFileHdl);
 			
-		RCODE FLMAPI openFile(
+		RCODE FTKAPI openFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile);
 
-		RCODE FLMAPI openDir(
+		RCODE FTKAPI openDir(
 			const char *			pszDirName,
 			const char *			pszPattern,
 			IF_DirHdl **			ppDir);
 
-		RCODE FLMAPI createDir(
+		RCODE FTKAPI createDir(
 			const char *			pszDirName);
 
-		RCODE FLMAPI removeDir(
+		RCODE FTKAPI removeDir(
 			const char *			pszDirName,
 			FLMBOOL					bClear = FALSE);
 
-		RCODE FLMAPI doesFileExist(
+		RCODE FTKAPI doesFileExist(
 			const char *			pszFileName);
 
-		FLMBOOL FLMAPI isDir(
+		FLMBOOL FTKAPI isDir(
 			const char *			pszFileName);
 
-		RCODE FLMAPI getFileTimeStamp(
+		RCODE FTKAPI getFileTimeStamp(
 			const char *			pszFileName,
 			FLMUINT *				puiTimeStamp);
 
-		RCODE FLMAPI getFileSize(
+		RCODE FTKAPI getFileSize(
 			const char *			pszFileName,
 			FLMUINT64 *				pui64FileSize);
 			
-		RCODE FLMAPI deleteFile(
+		RCODE FTKAPI deleteFile(
 			const char *			pszFileName);
 
-		RCODE FLMAPI deleteMultiFileStream(
+		RCODE FTKAPI deleteMultiFileStream(
 			const char *			pszDirectory,
 			const char *			pszBaseName);
 			
-		RCODE FLMAPI copyFile(
+		RCODE FTKAPI copyFile(
 			const char *			pszSrcFileName,
 			const char *			pszDestFileName,
 			FLMBOOL					bOverwrite,
 			FLMUINT64 *				pui64BytesCopied);
 
-		RCODE FLMAPI copyPartialFile(
+		RCODE FTKAPI copyPartialFile(
 			IF_FileHdl *			pSrcFileHdl,
 			FLMUINT64				ui64SrcOffset,
 			FLMUINT64				ui64SrcSize,
@@ -1198,62 +1198,62 @@
 			FLMUINT64				ui64DestOffset,
 			FLMUINT64 *				pui64BytesCopiedRV);
 		
-		RCODE FLMAPI renameFile(
+		RCODE FTKAPI renameFile(
 			const char *			pszFileName,
 			const char *			pszNewFileName);
 
-		void FLMAPI pathParse(
+		void FTKAPI pathParse(
 			const char *			pszPath,
 			char *					pszServer,
 			char *					pszVolume,
 			char *					pszDirPath,
 			char *					pszFileName);
 
-		RCODE FLMAPI pathReduce(
+		RCODE FTKAPI pathReduce(
 			const char *			pszSourcePath,
 			char *					pszDestPath,
 			char *					pszString);
 
-		RCODE FLMAPI pathAppend(
+		RCODE FTKAPI pathAppend(
 			char *					pszPath,
 			const char *			pszPathComponent);
 
-		RCODE FLMAPI pathToStorageString(
+		RCODE FTKAPI pathToStorageString(
 			const char *			pszPath,
 			char *					pszString);
 
-		void FLMAPI pathCreateUniqueName(
+		void FTKAPI pathCreateUniqueName(
 			FLMUINT *				puiTime,
 			char *					pszFileName,
 			const char *			pszFileExt,
 			FLMBYTE *				pHighChars,
 			FLMBOOL					bModext);
 
-		FLMBOOL FLMAPI doesFileMatch(
+		FLMBOOL FTKAPI doesFileMatch(
 			const char *			pszFileName,
 			const char *			pszTemplate);
 
-		RCODE FLMAPI getSectorSize(
+		RCODE FTKAPI getSectorSize(
 			const char *			pszFileName,
 			FLMUINT *				puiSectorSize);
 
-		RCODE FLMAPI setReadOnly(
+		RCODE FTKAPI setReadOnly(
 			const char *			pszFileName,
 			FLMBOOL					bReadOnly);
 
-		FLMBOOL FLMAPI canDoAsync( void);
+		FLMBOOL FTKAPI canDoAsync( void);
 		
-		FLMUINT FLMAPI getPendingAsyncCount( void);
+		FLMUINT FTKAPI getPendingAsyncCount( void);
 			
-		RCODE FLMAPI getFileId(
+		RCODE FTKAPI getFileId(
 			const char *			pszFileName,
 			FLMUINT64 *				pui64FileId);
 			
-		RCODE FLMAPI allocIOBuffer(
+		RCODE FTKAPI allocIOBuffer(
 			FLMUINT					uiMinSize,
 			IF_IOBuffer **			ppIOBuffer);
 			
-		RCODE FLMAPI allocFileHandleCache(
+		RCODE FTKAPI allocFileHandleCache(
 			FLMUINT					uiMaxCachedFiles,
 			FLMUINT					uiIdleTimeoutSecs,
 			IF_FileHdlCache **	ppFileHdlCache);

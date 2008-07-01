@@ -33,7 +33,7 @@ FSTATIC void ScaNotify(
 	F_CachedBlock *	pUseSCache,
 	RCODE					NotifyRc);
 
-FSTATIC void FLMAPI scaWriteComplete(
+FSTATIC void SQFAPI scaWriteComplete(
 	IF_IOBuffer *		pIOBuffer,
 	void *				pvData);
 	
@@ -66,7 +66,7 @@ FINLINE FLMINT scaCompare(
 Desc:	Compare two cache blocks during a sort to determine which 
 		one has lower address.
 *****************************************************************************/
-FINLINE FLMINT FLMAPI scaSortCompare(
+FINLINE FLMINT SQFAPI scaSortCompare(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -78,7 +78,7 @@ FINLINE FLMINT FLMAPI scaSortCompare(
 /***************************************************************************
 Desc:	Swap two entries in cache table during sort.
 *****************************************************************************/
-FINLINE void FLMAPI scaSortSwap(
+FINLINE void SQFAPI scaSortSwap(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -1836,7 +1836,7 @@ Desc:	This routine is called whenever a write of a dirty block completes.
 /****************************************************************************
 Desc:	This routine is called whenever a write of a dirty block completes.
 ****************************************************************************/
-FSTATIC void FLMAPI scaWriteComplete(
+FSTATIC void SQFAPI scaWriteComplete(
 	IF_IOBuffer *		pIOBuffer,
 	void *				pvData)
 {
@@ -7684,7 +7684,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_CachedBlock::objectAllocInit(
+void SQFAPI F_CachedBlock::objectAllocInit(
 	void *		pvAlloc,
 	FLMUINT		uiSize)
 {

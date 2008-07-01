@@ -64,9 +64,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib imagehlp.lib user32.lib rpcrt4.lib wsock32.lib advapi32.lib msvcrtd.lib msvcprtd.lib  flaimtk_static.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrtd.lib msvcprtd.lib $(FTKLIB_STATIC_DEBUG) $(NOINHERIT)"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\..\..\ftk\win32\ftk\Debug"
+				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				TargetMachine="1"
@@ -143,9 +144,10 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib imagehlp.lib user32.lib rpcrt4.lib wsock32.lib advapi32.lib msvcrtd.lib msvcprtd.lib  flaimtk_static.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrt.lib msvcprt.lib $(FTKLIB_STATIC_RELEASE) $(NOINHERIT)"
 				LinkIncremental="1"
 				AdditionalLibraryDirectories="..\..\..\..\ftk\win32\ftk\Release"
+				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
 				OptimizeReferences="2"

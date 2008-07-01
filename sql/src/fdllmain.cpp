@@ -28,9 +28,9 @@
 static F_DbSystem *			gv_pDbSystem = NULL;
 static FLMATOMIC				gv_lockCount = 0;
 
-FLMEXTC RCODE FLMAPI DllCanUnloadNow( void);
-FLMEXTC RCODE FLMAPI DllStart( void);
-FLMEXTC RCODE FLMAPI DllStop( void);
+SQFXPC RCODE SQFAPI DllCanUnloadNow( void);
+SQFXPC RCODE SQFAPI DllStart( void);
+SQFXPC RCODE SQFAPI DllStop( void);
 
 #if defined( FLM_UNIX)
 
@@ -68,7 +68,7 @@ void UnlockModule(void)
 Desc:	Returns 0 if it's okay to unload, or a non-zero status
 		code if not.
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllCanUnloadNow( void)
+SQFXPC RCODE SQFAPI DllCanUnloadNow( void)
 {
 	RCODE		rc = NE_SFLM_OK;
 
@@ -111,7 +111,7 @@ FLMEXTC RCODE FLMAPI DllCanUnloadNow( void)
 Desc:	Called by PSA when it loads the library.  Must return 0 for
 		success, or a non-zero error code.
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllStart( void)
+SQFXPC RCODE SQFAPI DllStart( void)
 {
 	RCODE		rc = NE_SFLM_OK;
 	
@@ -144,7 +144,7 @@ Exit:
 Desc:	Called by PSA when it unloads the library.  The return value
 		is ignored.
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllStop( void)
+SQFXPC RCODE SQFAPI DllStop( void)
 {
 	if( gv_pDbSystem)
 	{
@@ -161,7 +161,7 @@ FLMEXTC RCODE FLMAPI DllStop( void)
 /******************************************************************************
 Desc:
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllRegisterServer(
+SQFXPC RCODE SQFAPI DllRegisterServer(
 	const char *)
 {
 	return( NE_SFLM_OK);
@@ -170,7 +170,7 @@ FLMEXTC RCODE FLMAPI DllRegisterServer(
 /******************************************************************************
 Desc:
 ******************************************************************************/
-FLMEXTC RCODE FLMAPI DllUnregisterServer( void) 
+SQFXPC RCODE SQFAPI DllUnregisterServer( void) 
 {
 	return( NE_SFLM_OK);
 }

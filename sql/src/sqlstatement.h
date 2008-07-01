@@ -90,12 +90,12 @@ public:
 		}
 	}
 	
-	FINLINE FLMINT FLMAPI AddRef( void)
+	FINLINE FLMINT SQFAPI AddRef( void)
 	{
 		return( f_atomicInc( &m_refCnt));
 	}
 
-	FINLINE FLMINT FLMAPI Release( void)
+	FINLINE FLMINT SQFAPI Release( void)
 	{
 		FLMINT	iRefCnt;
 		

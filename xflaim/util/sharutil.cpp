@@ -26,7 +26,7 @@
 #include "flaimsys.h"
 #include "sharutil.h"
 
-FSTATIC RCODE FLMAPI _flmWrapperFunc(
+FSTATIC RCODE FTKAPI _flmWrapperFunc(
 	IF_Thread *		pThread);
 
 /********************************************************************
@@ -968,7 +968,7 @@ RCODE FlmSharedContext::getThread(
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI _flmWrapperFunc(
+RCODE FTKAPI _flmWrapperFunc(
 	IF_Thread *		pFlmThread)
 {
 	FlmThreadContext *	pThread = (FlmThreadContext *)pFlmThread->getParm1();

@@ -62,7 +62,7 @@ FINLINE FLMINT scaCompare(
 Desc:	Compare two cache blocks during a sort to determine which 
 		one has lower address.
 *****************************************************************************/
-FINLINE FLMINT FLMAPI scaSortCompare(
+FINLINE FLMINT XFLAPI scaSortCompare(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -74,7 +74,7 @@ FINLINE FLMINT FLMAPI scaSortCompare(
 /***************************************************************************
 Desc:	Swap two entries in cache table during sort.
 *****************************************************************************/
-FINLINE void FLMAPI scaSortSwap(
+FINLINE void XFLAPI scaSortSwap(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -1830,7 +1830,7 @@ Exit:
 /****************************************************************************
 Desc:	This routine is called whenever a write of a dirty block completes.
 ****************************************************************************/
-FSTATIC void FLMAPI scaWriteComplete(
+FSTATIC void XFLAPI scaWriteComplete(
 	IF_IOBuffer *		pIOBuffer,
 	void *				pvData)
 {
@@ -7673,7 +7673,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_CachedBlock::objectAllocInit(
+void XFLAPI F_CachedBlock::objectAllocInit(
 	void *		pvAlloc,
 	FLMUINT		uiSize)
 {

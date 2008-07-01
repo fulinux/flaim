@@ -121,9 +121,9 @@ public:
 		F_DbRebuild *		pRebuild,
 		FLMBOOL				bRecovDictionary);
 
-	RCODE FLMAPI closeStream( void);
+	RCODE XFLAPI closeStream( void);
 	
-	RCODE FLMAPI read(
+	RCODE XFLAPI read(
 		void *				pvBuffer,
 		FLMUINT				uiBytesToRead,
 		FLMUINT *			puiBytesRead);
@@ -200,7 +200,7 @@ Desc:	Comparison object for node result sets
 ***************************************************************************/
 class F_NodeResultSetCompare : public IF_ResultSetCompare
 {
-	inline RCODE FLMAPI compare(
+	inline RCODE XFLAPI compare(
 		const void *			pvData1,
 		FLMUINT					uiLength1,
 		const void *			pvData2,
@@ -265,12 +265,12 @@ class F_NodeResultSetCompare : public IF_ResultSetCompare
 		return( NE_XFLM_OK);
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_ResultSetCompare::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT XFLAPI Release( void)
 	{
 		return( IF_ResultSetCompare::Release());
 	}
@@ -1832,7 +1832,7 @@ Notes: All the important stuff is handled by the F_DbRebuild::dbRebuild
 		 function (below).  All this call does is create an F_DbRebuild object,
 		 call dbRebuild on it, delete the obj and return the RCODE.
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::dbRebuild(
+RCODE XFLAPI F_DbSystem::dbRebuild(
 	const char *				pszSourceDbPath,
 	const char *				pszSourceDataDir,
 	const char *				pszDestDbPath,

@@ -1731,7 +1731,7 @@ FLMEXP RCODE FLMAPI FlmGetConfig(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXP RCODE FLMAPI FlmGetThreadInfo(
+RCODE FLMAPI FlmGetThreadInfo(
 	F_Pool *				pPool,
 	F_THREAD_INFO **	ppThreadInfo,
 	FLMUINT *			puiNumThreads,

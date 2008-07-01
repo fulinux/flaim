@@ -837,7 +837,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
 		close time.
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::monitorThrd(
+RCODE XFLAPI F_DbSystem::monitorThrd(
 	IF_Thread *		pThread)
 {
 	FLMUINT		uiCurrTime;
@@ -1949,7 +1949,7 @@ void F_GlobalCacheMgr::getCacheInfo(
 Desc:		Close all files in the file handle cache that have not been
 			used for the specified number of seconds.
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::closeUnusedFiles(
+RCODE XFLAPI F_DbSystem::closeUnusedFiles(
 	FLMUINT		uiSeconds)
 {
 	if( gv_XFlmSysData.pFileHdlCache)
@@ -1963,7 +1963,7 @@ RCODE FLMAPI F_DbSystem::closeUnusedFiles(
 /****************************************************************************
 Desc:		Enable/disable cache debugging mode
 ****************************************************************************/
-void FLMAPI F_DbSystem::enableCacheDebug(
+void XFLAPI F_DbSystem::enableCacheDebug(
 	FLMBOOL		bDebug)
 {
 #ifdef FLM_DEBUG
@@ -1977,7 +1977,7 @@ void FLMAPI F_DbSystem::enableCacheDebug(
 /****************************************************************************
 Desc:		Returns cache debugging mode
 ****************************************************************************/
-FLMBOOL FLMAPI F_DbSystem::cacheDebugEnabled( void)
+FLMBOOL XFLAPI F_DbSystem::cacheDebugEnabled( void)
 {
 #ifdef FLM_DEBUG
 		return( gv_XFlmSysData.pBlockCacheMgr->m_bDebug ||
@@ -1990,7 +1990,7 @@ FLMBOOL FLMAPI F_DbSystem::cacheDebugEnabled( void)
 /****************************************************************************
 Desc:		Start gathering statistics.
 ****************************************************************************/
-void FLMAPI F_DbSystem::startStats( void)
+void XFLAPI F_DbSystem::startStats( void)
 {
 	f_mutexLock( gv_XFlmSysData.hStatsMutex);
 	flmStatStart( &gv_XFlmSysData.Stats);
@@ -2011,7 +2011,7 @@ void FLMAPI F_DbSystem::startStats( void)
 /****************************************************************************
 Desc:		Stop gathering statistics.
 ****************************************************************************/
-void FLMAPI F_DbSystem::stopStats( void)
+void XFLAPI F_DbSystem::stopStats( void)
 {
 	f_mutexLock( gv_XFlmSysData.hStatsMutex);
 	flmStatStop( &gv_XFlmSysData.Stats);
@@ -2036,7 +2036,7 @@ void FLMAPI F_DbSystem::stopStats( void)
 /****************************************************************************
 Desc:		Reset statistics.
 ****************************************************************************/
-void FLMAPI F_DbSystem::resetStats( void)
+void XFLAPI F_DbSystem::resetStats( void)
 {
 	FLMUINT		uiSaveMax;
 
@@ -2087,7 +2087,7 @@ void FLMAPI F_DbSystem::resetStats( void)
 Desc:		Returns statistics that have been collected for a share.
 Notes:	The statistics returned will be the statistics for ALL databases
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::getStats(
+RCODE XFLAPI F_DbSystem::getStats(
 	XFLM_STATS *				pFlmStats)
 {
 	RCODE			rc = NE_XFLM_OK;
@@ -2110,7 +2110,7 @@ Exit:
 /****************************************************************************
 Desc:		Frees memory allocated to a FLM_STATS structure
 ****************************************************************************/
-void FLMAPI F_DbSystem::freeStats(
+void XFLAPI F_DbSystem::freeStats(
 	XFLM_STATS *			pFlmStats)
 {
 	flmStatFree( pFlmStats);
@@ -2121,7 +2121,7 @@ Desc:		Sets the path for all temporary files that come into use within a
 			FLAIM share structure.  The share mutex should be locked when
 			settting when called from FlmConfig().
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::setTempDir(
+RCODE XFLAPI F_DbSystem::setTempDir(
 	const char *		pszPath)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -2147,7 +2147,7 @@ Exit:
 /****************************************************************************
 Desc:		Get the temporary directory.
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::getTempDir(
+RCODE XFLAPI F_DbSystem::getTempDir(
 	char *		pszPath)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -2174,7 +2174,7 @@ Exit:
 /****************************************************************************
 Desc:		Sets the maximum seconds between checkpoints
 ****************************************************************************/
-void FLMAPI F_DbSystem::setCheckpointInterval(
+void XFLAPI F_DbSystem::setCheckpointInterval(
 	FLMUINT						uiSeconds)
 {
 	gv_XFlmSysData.uiMaxCPInterval = FLM_SECS_TO_TIMER_UNITS( uiSeconds);
@@ -2183,7 +2183,7 @@ void FLMAPI F_DbSystem::setCheckpointInterval(
 /****************************************************************************
 Desc:		Gets the maximum seconds between checkpoints
 ****************************************************************************/
-FLMUINT FLMAPI F_DbSystem::getCheckpointInterval( void)
+FLMUINT XFLAPI F_DbSystem::getCheckpointInterval( void)
 {
 	return( FLM_TIMER_UNITS_TO_SECS( gv_XFlmSysData.uiMaxCPInterval));
 }
@@ -2191,7 +2191,7 @@ FLMUINT FLMAPI F_DbSystem::getCheckpointInterval( void)
 /****************************************************************************
 Desc:		Sets the interval for dynamically adjusting the cache limit.
 ****************************************************************************/
-void FLMAPI F_DbSystem::setCacheAdjustInterval(
+void XFLAPI F_DbSystem::setCacheAdjustInterval(
 	FLMUINT						uiSeconds)
 {
 	gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheAdjustInterval = 
@@ -2201,7 +2201,7 @@ void FLMAPI F_DbSystem::setCacheAdjustInterval(
 /****************************************************************************
 Desc:		Sets the interval for dynamically adjusting the cache limit.
 ****************************************************************************/
-FLMUINT FLMAPI F_DbSystem::getCacheAdjustInterval( void)
+FLMUINT XFLAPI F_DbSystem::getCacheAdjustInterval( void)
 {
 	return( FLM_TIMER_UNITS_TO_SECS(
 		gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheAdjustInterval));
@@ -2211,7 +2211,7 @@ FLMUINT FLMAPI F_DbSystem::getCacheAdjustInterval( void)
 Desc:		Sets the interval for dynamically cleaning out old
 			cache blocks and records
 ****************************************************************************/
-void FLMAPI F_DbSystem::setCacheCleanupInterval(
+void XFLAPI F_DbSystem::setCacheCleanupInterval(
 	FLMUINT						uiSeconds)
 {
 	gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheCleanupInterval = 
@@ -2222,7 +2222,7 @@ void FLMAPI F_DbSystem::setCacheCleanupInterval(
 Desc:		Gets the interval for dynamically cleaning out old
 			cache blocks and records
 ****************************************************************************/
-FLMUINT FLMAPI F_DbSystem::getCacheCleanupInterval( void)
+FLMUINT XFLAPI F_DbSystem::getCacheCleanupInterval( void)
 {
 	return( FLM_TIMER_UNITS_TO_SECS(
 		gv_XFlmSysData.pGlobalCacheMgr->m_uiCacheCleanupInterval));
@@ -2231,7 +2231,7 @@ FLMUINT FLMAPI F_DbSystem::getCacheCleanupInterval( void)
 /****************************************************************************
 Desc:		Set interval for cleaning up unused structures
 ****************************************************************************/
-void FLMAPI F_DbSystem::setUnusedCleanupInterval(
+void XFLAPI F_DbSystem::setUnusedCleanupInterval(
 	FLMUINT						uiSeconds)
 {
 	gv_XFlmSysData.pGlobalCacheMgr->m_uiUnusedCleanupInterval = 
@@ -2241,7 +2241,7 @@ void FLMAPI F_DbSystem::setUnusedCleanupInterval(
 /****************************************************************************
 Desc:		Gets the interval for cleaning up unused structures
 ****************************************************************************/
-FLMUINT FLMAPI F_DbSystem::getUnusedCleanupInterval( void)
+FLMUINT XFLAPI F_DbSystem::getUnusedCleanupInterval( void)
 {
 	return( FLM_TIMER_UNITS_TO_SECS(
 		gv_XFlmSysData.pGlobalCacheMgr->m_uiUnusedCleanupInterval));
@@ -2251,7 +2251,7 @@ FLMUINT FLMAPI F_DbSystem::getUnusedCleanupInterval( void)
 Desc:		Set the maximum time for an item to be unused before it is
 			cleaned up
 ****************************************************************************/
-void FLMAPI F_DbSystem::setMaxUnusedTime(
+void XFLAPI F_DbSystem::setMaxUnusedTime(
 	FLMUINT						uiSeconds)
 {
 	gv_XFlmSysData.uiMaxUnusedTime = FLM_SECS_TO_TIMER_UNITS( uiSeconds);
@@ -2260,7 +2260,7 @@ void FLMAPI F_DbSystem::setMaxUnusedTime(
 /****************************************************************************
 Desc:		Gets the maximum time for an item to be unused
 ****************************************************************************/
-FLMUINT FLMAPI F_DbSystem::getMaxUnusedTime( void)
+FLMUINT XFLAPI F_DbSystem::getMaxUnusedTime( void)
 {
 	return( FLM_TIMER_UNITS_TO_SECS( gv_XFlmSysData.uiMaxUnusedTime));
 }
@@ -2268,7 +2268,7 @@ FLMUINT FLMAPI F_DbSystem::getMaxUnusedTime( void)
 /****************************************************************************
 Desc:		Sets the logging object to be used for internal status messages
 ****************************************************************************/
-void FLMAPI F_DbSystem::setLogger(
+void XFLAPI F_DbSystem::setLogger(
 	IF_LoggerClient *		pLogger)
 {
 	IF_LoggerClient *		pOldLogger = NULL;
@@ -2322,7 +2322,7 @@ Desc:		Deactivates open database handles, forcing the database to be
 Notes:	Passing NULL for the path values will cause all active database
 			handles to be deactivated
 ****************************************************************************/
-void FLMAPI F_DbSystem::deactivateOpenDb(
+void XFLAPI F_DbSystem::deactivateOpenDb(
 	const char *	pszDbFileName,
 	const char *	pszDataDir)
 {
@@ -2366,7 +2366,7 @@ void FLMAPI F_DbSystem::deactivateOpenDb(
 /****************************************************************************
 Desc:		Sets the maximum number of queries to save
 ****************************************************************************/
-void FLMAPI F_DbSystem::setQuerySaveMax(
+void XFLAPI F_DbSystem::setQuerySaveMax(
 	FLMUINT						uiMaxToSave)
 {
 	f_mutexLock( gv_XFlmSysData.hQueryMutex);
@@ -2378,7 +2378,7 @@ void FLMAPI F_DbSystem::setQuerySaveMax(
 /****************************************************************************
 Desc:		Gets the maximum number of queries to save
 ****************************************************************************/
-FLMUINT FLMAPI F_DbSystem::getQuerySaveMax( void)
+FLMUINT XFLAPI F_DbSystem::getQuerySaveMax( void)
 {
 	return( gv_XFlmSysData.uiMaxQueries);
 }
@@ -2386,7 +2386,7 @@ FLMUINT FLMAPI F_DbSystem::getQuerySaveMax( void)
 /****************************************************************************
 Desc:		Sets the maximum amount of dirty cache allowed
 ****************************************************************************/
-void FLMAPI F_DbSystem::setDirtyCacheLimits(
+void XFLAPI F_DbSystem::setDirtyCacheLimits(
 	FLMUINT	uiMaxDirty,
 	FLMUINT	uiLowDirty)
 {
@@ -2417,7 +2417,7 @@ void FLMAPI F_DbSystem::setDirtyCacheLimits(
 /****************************************************************************
 Desc:		Gets the maximum amount of dirty cache allowed
 ****************************************************************************/
-void FLMAPI F_DbSystem::getDirtyCacheLimits(
+void XFLAPI F_DbSystem::getDirtyCacheLimits(
 	FLMUINT *	puiMaxDirty,
 	FLMUINT *	puiLowDirty)
 {
@@ -2438,7 +2438,7 @@ void FLMAPI F_DbSystem::getDirtyCacheLimits(
 /****************************************************************************
 Desc:		Returns information about threads owned by the database engine
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::getThreadInfo(
+RCODE XFLAPI F_DbSystem::getThreadInfo(
 	IF_ThreadInfo **	ppThreadInfo)
 {
 	return( FlmGetThreadInfo( ppThreadInfo));
@@ -2447,7 +2447,7 @@ RCODE FLMAPI F_DbSystem::getThreadInfo(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_DbSystem::getFileSystem(
+void XFLAPI F_DbSystem::getFileSystem(
 	IF_FileSystem **		ppFileSystem)
 {
 	FlmGetFileSystem( ppFileSystem);
@@ -2456,7 +2456,7 @@ void FLMAPI F_DbSystem::getFileSystem(
 /****************************************************************************
 Desc:		Registers for an event
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::registerForEvent(
+RCODE XFLAPI F_DbSystem::registerForEvent(
 	eEventCategory			eCategory,
 	IF_EventClient *		pEventClient)
 {
@@ -2505,7 +2505,7 @@ Exit:
 /****************************************************************************
 Desc:		De-registers for an event
 ****************************************************************************/
-void FLMAPI F_DbSystem::deregisterForEvent(
+void XFLAPI F_DbSystem::deregisterForEvent(
 	eEventCategory		eCategory,
 	IF_EventClient *		pEventClient)
 {
@@ -2531,7 +2531,7 @@ void FLMAPI F_DbSystem::deregisterForEvent(
 Desc:		Returns TRUE if the specified error indicates that the database
 			is corrupt
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::getNextMetaphone(
+RCODE XFLAPI F_DbSystem::getNextMetaphone(
 	IF_IStream *	pIStream,
 	FLMUINT *		puiMetaphone,
 	FLMUINT *		puiAltMetaphone)
@@ -2544,7 +2544,7 @@ RCODE FLMAPI F_DbSystem::getNextMetaphone(
 Desc:		Returns TRUE if the specified error indicates that the database
 			is corrupt
 ****************************************************************************/
-FLMBOOL FLMAPI F_DbSystem::errorIsFileCorrupt(
+FLMBOOL XFLAPI F_DbSystem::errorIsFileCorrupt(
 	RCODE						rc)
 {
 	FLMBOOL		bIsCorrupt = FALSE;
@@ -2569,7 +2569,7 @@ FLMBOOL FLMAPI F_DbSystem::errorIsFileCorrupt(
 /****************************************************************************
 Desc:		Increment the database system use count
 ****************************************************************************/
-FLMINT FLMAPI F_DbSystem::AddRef(
+FLMINT XFLAPI F_DbSystem::AddRef(
 	FLMBOOL		bSysDataLocked)
 {
 	FLMINT		iRefCnt;
@@ -2593,7 +2593,7 @@ FLMINT FLMAPI F_DbSystem::AddRef(
 /****************************************************************************
 Desc:		Decrement the database system use count
 ****************************************************************************/
-FLMINT FLMAPI F_DbSystem::Release(void)
+FLMINT XFLAPI F_DbSystem::Release(void)
 {
 	FLMINT	iRefCnt;
 	
@@ -2630,7 +2630,7 @@ FLMINT FLMAPI F_DbSystem::Release(void)
 /****************************************************************************
 Desc:	Allocates an F_DbSystem object for non-COM applications
 ****************************************************************************/
-FLMEXP RCODE FLMAPI FlmAllocDbSystem(
+RCODE XFLAPI FlmAllocDbSystem(
 	IF_DbSystem **			ppDbSystem)
 {
 	RCODE						rc = NE_XFLM_OK;
@@ -2793,7 +2793,7 @@ Desc: 	Given a tag and a value this function will open/create the
 			NOTE: This function expects gv_XFlmSysData.hIniMutex to already be
 			locked!
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::updateIniFile(
+RCODE XFLAPI F_DbSystem::updateIniFile(
 	const char *	pszParamName,
 	const char *	pszValue)
 {
@@ -3203,7 +3203,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openBufferIStream(
+RCODE XFLAPI F_DbSystem::openBufferIStream(
 	const char *			pucBuffer,
 	FLMUINT					uiLength,
 	IF_PosIStream **		ppIStream)
@@ -3214,7 +3214,7 @@ RCODE FLMAPI F_DbSystem::openBufferIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openFileIStream(
+RCODE XFLAPI F_DbSystem::openFileIStream(
 	const char *			pszPath,
 	IF_PosIStream **		ppIStream)
 {
@@ -3224,7 +3224,7 @@ RCODE FLMAPI F_DbSystem::openFileIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openMultiFileIStream(
+RCODE XFLAPI F_DbSystem::openMultiFileIStream(
 	const char *			pszDirectory,
 	const char *			pszBaseName,
 	IF_IStream **			ppIStream)
@@ -3235,7 +3235,7 @@ RCODE FLMAPI F_DbSystem::openMultiFileIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openBufferedIStream(
+RCODE XFLAPI F_DbSystem::openBufferedIStream(
 	IF_IStream *			pSourceIStream,
 	FLMUINT					uiBufferSize,
 	IF_IStream **			ppIStream)
@@ -3246,7 +3246,7 @@ RCODE FLMAPI F_DbSystem::openBufferedIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openUncompressingIStream(
+RCODE XFLAPI F_DbSystem::openUncompressingIStream(
 	IF_IStream *			pIStream,
 	IF_IStream **			ppIStream)
 {
@@ -3256,7 +3256,7 @@ RCODE FLMAPI F_DbSystem::openUncompressingIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openFileOStream(
+RCODE XFLAPI F_DbSystem::openFileOStream(
 	const char *		pszFileName,
 	FLMBOOL				bTruncateIfExists,
 	IF_OStream **		ppOStream)
@@ -3267,7 +3267,7 @@ RCODE FLMAPI F_DbSystem::openFileOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openMultiFileOStream(
+RCODE XFLAPI F_DbSystem::openMultiFileOStream(
 	const char *		pszDirectory,
 	const char *		pszBaseName,
 	FLMUINT				uiMaxFileSize,
@@ -3281,7 +3281,7 @@ RCODE FLMAPI F_DbSystem::openMultiFileOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::removeMultiFileStream(
+RCODE XFLAPI F_DbSystem::removeMultiFileStream(
 	const char *		pszDirectory,
 	const char *		pszBaseName)
 {
@@ -3291,7 +3291,7 @@ RCODE FLMAPI F_DbSystem::removeMultiFileStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openBufferedOStream(
+RCODE XFLAPI F_DbSystem::openBufferedOStream(
 	IF_OStream *		pOStream,
 	FLMUINT				uiBufferSize,
 	IF_OStream **		ppOStream)
@@ -3302,7 +3302,7 @@ RCODE FLMAPI F_DbSystem::openBufferedOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openCompressingOStream(
+RCODE XFLAPI F_DbSystem::openCompressingOStream(
 	IF_OStream *		pOStream,
 	IF_OStream **		ppOStream)
 {
@@ -3312,7 +3312,7 @@ RCODE FLMAPI F_DbSystem::openCompressingOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::writeToOStream(
+RCODE XFLAPI F_DbSystem::writeToOStream(
 	IF_IStream *		pIStream,
 	IF_OStream *		pOStream)
 {
@@ -3322,7 +3322,7 @@ RCODE FLMAPI F_DbSystem::writeToOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openBase64Encoder(
+RCODE XFLAPI F_DbSystem::openBase64Encoder(
 	IF_IStream *			pInputStream,
 	FLMBOOL					bInsertLineBreaks,
 	IF_IStream **			ppEncodedStream)
@@ -3334,7 +3334,7 @@ RCODE FLMAPI F_DbSystem::openBase64Encoder(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::openBase64Decoder(
+RCODE XFLAPI F_DbSystem::openBase64Decoder(
 	IF_IStream *			pInputStream,
 	IF_IStream **			ppDecodedStream)
 {
@@ -3344,7 +3344,7 @@ RCODE FLMAPI F_DbSystem::openBase64Decoder(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::createIFResultSet(
+RCODE XFLAPI F_DbSystem::createIFResultSet(
 	IF_ResultSet **		ifppResultSet)
 {
 	return( FlmAllocResultSet( ifppResultSet));
@@ -3353,7 +3353,7 @@ RCODE FLMAPI F_DbSystem::createIFResultSet(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_DbSystem::uniIsUpper(
+FLMBOOL XFLAPI F_DbSystem::uniIsUpper(
 	FLMUNICODE			uChar)
 {
 	return( f_uniIsUpper( uChar));
@@ -3362,7 +3362,7 @@ FLMBOOL FLMAPI F_DbSystem::uniIsUpper(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_DbSystem::uniIsLower(
+FLMBOOL XFLAPI F_DbSystem::uniIsLower(
 	FLMUNICODE			uChar)
 {
 	return( f_uniIsLower( uChar));
@@ -3371,7 +3371,7 @@ FLMBOOL FLMAPI F_DbSystem::uniIsLower(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_DbSystem::uniIsAlpha(
+FLMBOOL XFLAPI F_DbSystem::uniIsAlpha(
 	FLMUNICODE			uChar)
 {
 	return( f_uniIsAlpha( uChar));
@@ -3380,7 +3380,7 @@ FLMBOOL FLMAPI F_DbSystem::uniIsAlpha(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_DbSystem::uniIsDecimalDigit(
+FLMBOOL XFLAPI F_DbSystem::uniIsDecimalDigit(
 	FLMUNICODE			uChar)
 {
 	return( f_uniIsDecimalDigit( uChar));
@@ -3389,7 +3389,7 @@ FLMBOOL FLMAPI F_DbSystem::uniIsDecimalDigit(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUNICODE FLMAPI F_DbSystem::uniToLower(
+FLMUNICODE XFLAPI F_DbSystem::uniToLower(
 	FLMUNICODE			uChar)
 {
 	return( f_uniToLower( uChar));
@@ -3398,7 +3398,7 @@ FLMUNICODE FLMAPI F_DbSystem::uniToLower(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::nextUCS2Char(
+RCODE XFLAPI F_DbSystem::nextUCS2Char(
 	const FLMBYTE **	ppszUTF8,
 	const FLMBYTE *	pszEndOfUTF8String,
 	FLMUNICODE *		puzChar)
@@ -3409,7 +3409,7 @@ RCODE FLMAPI F_DbSystem::nextUCS2Char(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::numUCS2Chars(
+RCODE XFLAPI F_DbSystem::numUCS2Chars(
 	const FLMBYTE *	pszUTF8,
 	FLMUINT *			puiNumChars)
 {
@@ -3510,7 +3510,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_SuperFileClient::getFileNumber(
+FLMUINT XFLAPI F_SuperFileClient::getFileNumber(
 	FLMUINT					uiBlockAddr)
 {
 	return( FSGetFileNumber( uiBlockAddr));
@@ -3519,7 +3519,7 @@ FLMUINT FLMAPI F_SuperFileClient::getFileNumber(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
+FLMUINT XFLAPI F_SuperFileClient::getFileOffset(
 	FLMUINT					uiBlockAddr)
 {
 	return( FSGetFileOffset( uiBlockAddr));
@@ -3528,7 +3528,7 @@ FLMUINT FLMAPI F_SuperFileClient::getFileOffset(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_SuperFileClient::getBlockAddress(
+FLMUINT XFLAPI F_SuperFileClient::getBlockAddress(
 	FLMUINT					uiFileNumber,
 	FLMUINT					uiFileOffset)
 {
@@ -3538,7 +3538,7 @@ FLMUINT FLMAPI F_SuperFileClient::getBlockAddress(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT64 FLMAPI F_SuperFileClient::getMaxFileSize( void)
+FLMUINT64 XFLAPI F_SuperFileClient::getMaxFileSize( void)
 {
 	f_assert( m_uiMaxFileSize);
 	return( m_uiMaxFileSize);
@@ -3547,7 +3547,7 @@ FLMUINT64 FLMAPI F_SuperFileClient::getMaxFileSize( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileClient::getFilePath(
+RCODE XFLAPI F_SuperFileClient::getFilePath(
 	FLMUINT			uiFileNumber,
 	char *			pszPath)
 {

@@ -80,12 +80,12 @@ public:
 	{
 	}
 		
-	RCODE FLMAPI read(
+	RCODE XFLAPI read(
 		void *					pvBuffer,
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE FLMAPI closeStream( void)
+	FINLINE RCODE XFLAPI closeStream( void)
 	{
 		return( NE_XFLM_OK);
 	}
@@ -102,7 +102,7 @@ private:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-FLMINT FLMAPI F_BTreeIStream::Release( void)
+FLMINT XFLAPI F_BTreeIStream::Release( void)
 {
 	FLMATOMIC	refCnt = --m_refCnt;
 	
@@ -199,7 +199,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_DOMNode::Release( void)
+FLMINT XFLAPI F_DOMNode::Release( void)
 {
 	FLMINT	iRefCnt = --m_refCnt;
 	
@@ -941,7 +941,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getDataLength(
+RCODE XFLAPI F_DOMNode::getDataLength(
 	IF_Db *			ifpDb,
 	FLMUINT *		puiLength)
 {
@@ -1015,7 +1015,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::insertBefore(
+RCODE XFLAPI F_DOMNode::insertBefore(
 	IF_Db *				ifpDb,
 	IF_DOMNode *		ifpNewChild,
 	IF_DOMNode *		ifpRefChild)
@@ -2548,7 +2548,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::setMetaValue(
+RCODE XFLAPI F_DOMNode::setMetaValue(
 	IF_Db *					ifpDb,
 	FLMUINT64				ui64Value)
 {
@@ -2651,7 +2651,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getMetaValue(
+RCODE XFLAPI F_DOMNode::getMetaValue(
 	IF_Db *					ifpDb,
 	FLMUINT64 *				pui64Value)
 {
@@ -2685,7 +2685,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::isDataLocalToNode(
+RCODE XFLAPI F_DOMNode::isDataLocalToNode(
 	IF_Db *					ifpDb,
 	FLMBOOL *				pbDataIsLocal)
 {
@@ -2812,12 +2812,12 @@ public:
 		closeStream();
 	}
 		
-	RCODE FLMAPI read(
+	RCODE XFLAPI read(
 		void *					pvBuffer,
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE FLMAPI closeStream( void)
+	FINLINE RCODE XFLAPI closeStream( void)
 	{
 		if( m_pIStream)
 		{
@@ -2965,12 +2965,12 @@ public:
 		closeStream();
 	}
 		
-	RCODE FLMAPI read(
+	RCODE XFLAPI read(
 		void *					pvBuffer,
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead);
 
-	FINLINE RCODE FLMAPI closeStream( void)
+	FINLINE RCODE XFLAPI closeStream( void)
 	{
 		if( m_pEncoderStream)
 		{
@@ -5413,7 +5413,7 @@ Exit:
 /*****************************************************************************
 Desc:		Allocate data for a unicode element and retrieve it.
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getUnicode(
+RCODE XFLAPI F_DOMNode::getUnicode(
 	IF_Db *			ifpDb,
 	FLMUNICODE **	ppuzUnicode)
 {
@@ -5475,7 +5475,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getUnicode(
+RCODE XFLAPI F_DOMNode::getUnicode(
 	IF_Db *					ifpDb,
 	FLMUNICODE *			puzBuffer,
 	FLMUINT					uiBufSize,
@@ -5538,7 +5538,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getUnicode(
+RCODE XFLAPI F_DOMNode::getUnicode(
 	IF_Db *			ifpDb,
 	F_DynaBuf *		pBuffer)
 {
@@ -5587,7 +5587,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getUTF8(
+RCODE XFLAPI F_DOMNode::getUTF8(
 	IF_Db *			ifpDb,
 	FLMBYTE *		pszValue,
 	FLMUINT 			uiBufferSize,
@@ -5756,7 +5756,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getUTF8(
+RCODE XFLAPI F_DOMNode::getUTF8(
 	IF_Db *			ifpDb,
 	FLMBYTE **		ppszUTF8)
 {
@@ -5808,7 +5808,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getUTF8(
+RCODE XFLAPI F_DOMNode::getUTF8(
 	IF_Db *			ifpDb,
 	F_DynaBuf *		pBuffer)
 {
@@ -5856,7 +5856,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getBinary(
+RCODE XFLAPI F_DOMNode::getBinary(
 	IF_Db *					ifpDb,
 	void *					pvValue,
 	FLMUINT					uiByteOffset,
@@ -5970,7 +5970,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getBinary(
+RCODE XFLAPI F_DOMNode::getBinary(
 	IF_Db *			ifpDb,
 	F_DynaBuf *		pBuffer)
 {
@@ -6181,7 +6181,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getAttributeValueUnicode(
+RCODE XFLAPI F_DOMNode::getAttributeValueUnicode(
 	IF_Db *			ifpDb,
 	FLMUINT			uiAttrName,
 	F_DynaBuf *		pBuffer)
@@ -6217,7 +6217,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getAttributeValueUnicode(
+RCODE XFLAPI F_DOMNode::getAttributeValueUnicode(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	FLMUNICODE **			ppuzUnicode)
@@ -6257,7 +6257,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getAttributeValueUTF8(
+RCODE XFLAPI F_DOMNode::getAttributeValueUTF8(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	FLMBYTE **				ppszValue)
@@ -6297,7 +6297,7 @@ Exit:
 /*****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getAttributeValueUTF8(
+RCODE XFLAPI F_DOMNode::getAttributeValueUTF8(
 	IF_Db *			ifpDb,
 	FLMUINT			uiAttrName,
 	F_DynaBuf *		pBuffer)
@@ -6333,7 +6333,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getAttributeValueBinary(
+RCODE XFLAPI F_DOMNode::getAttributeValueBinary(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	void *					pvValue,
@@ -6379,7 +6379,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getAttributeValueBinary(
+RCODE XFLAPI F_DOMNode::getAttributeValueBinary(
 	IF_Db *				ifpDb,
 	FLMUINT				uiAttrName,
 	F_DynaBuf *			pBuffer)
@@ -6553,7 +6553,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::setAttributeValueUnicode(
+RCODE XFLAPI F_DOMNode::setAttributeValueUnicode(
 	IF_Db *					ifpDb,
 	FLMUINT					uiAttrName,
 	const FLMUNICODE *	puzValue,
@@ -6617,7 +6617,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::setAttributeValueBinary(
+RCODE XFLAPI F_DOMNode::setAttributeValueBinary(
 	IF_Db *				ifpDb,
 	FLMUINT				uiAttrName,
 	const void *		pvValue,
@@ -6734,7 +6734,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::setAttributeValueUTF8(
+RCODE XFLAPI F_DOMNode::setAttributeValueUTF8(
 	IF_Db *				ifpDb,
 	FLMUINT				uiAttrName,
 	const FLMBYTE *	pucValue,
@@ -7468,7 +7468,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::deleteAttribute(
+RCODE XFLAPI F_DOMNode::deleteAttribute(
 	IF_Db *			ifpDb,
 	FLMUINT			uiAttrName)
 {
@@ -7665,7 +7665,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::hasAttribute(
+RCODE XFLAPI F_DOMNode::hasAttribute(
 	IF_Db *				ifpDb,
 	FLMUINT				uiNameId,
 	IF_DOMNode **		ifppAttr)
@@ -8269,7 +8269,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::createChildElement(
+RCODE XFLAPI F_DOMNode::createChildElement(
 	IF_Db *				ifpDb,
 	FLMUINT				uiNameId,
 	eNodeInsertLoc		eLocation,
@@ -8778,7 +8778,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::hasAnnotation(
+RCODE XFLAPI F_DOMNode::hasAnnotation(
 	IF_Db *				ifpDb,
 	FLMBOOL *			pbHasAnnotation)
 {
@@ -8861,7 +8861,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getDocumentId(
+RCODE XFLAPI F_DOMNode::getDocumentId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64DocId)
 {
@@ -8895,7 +8895,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getNodeId(
+RCODE XFLAPI F_DOMNode::getNodeId(
 	IF_Db *			ifpDb,
 	FLMUINT64 *		pui64NodeId)
 {
@@ -8978,7 +8978,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getParentId(
+RCODE XFLAPI F_DOMNode::getParentId(
 	IF_Db *			ifpDb,
 	FLMUINT64 *		pui64ParentId)
 {
@@ -9013,7 +9013,7 @@ Exit:
 Desc:	COM version of the getPrevSibId method.  This method ensures that
 		the DOM node is up-to-date.
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getPrevSibId(
+RCODE XFLAPI F_DOMNode::getPrevSibId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64PrevSibId)
 {
@@ -9055,7 +9055,7 @@ Exit:
 Desc:	COM version of the getNextSibId method.  This method ensures that
 		the DOM node is up-to-date.
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getNextSibId(
+RCODE XFLAPI F_DOMNode::getNextSibId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64NextSibId)
 {
@@ -9096,7 +9096,7 @@ Exit:
 Desc:	COM version of the getFirstChildId method.  This method ensures that
 		the DOM node is up-to-date.
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getFirstChildId(
+RCODE XFLAPI F_DOMNode::getFirstChildId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64FirstChildId)
 {
@@ -9138,7 +9138,7 @@ Exit:
 Desc:	COM version of the getLastChildId method.  This method ensures that
 		the DOM node is up-to-date.
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getLastChildId(
+RCODE XFLAPI F_DOMNode::getLastChildId(
 	IF_Db *				ifpDb,
 	FLMUINT64 *			pui64LastChildId)
 {
@@ -9178,7 +9178,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::isNamespaceDecl(
+RCODE XFLAPI F_DOMNode::isNamespaceDecl(
 	IF_Db *				ifpDb,
 	FLMBOOL *			pbIsNamespaceDecl)
 {
@@ -9442,7 +9442,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getPrefixId(
+RCODE XFLAPI F_DOMNode::getPrefixId(
 	IF_Db *			ifpDb,
 	FLMUINT *		puiPrefixId)
 {
@@ -9628,7 +9628,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getAncestorElement(
+RCODE XFLAPI F_DOMNode::getAncestorElement(
 	IF_Db *					ifpDb,
 	FLMUINT					uiNameId,
 	IF_DOMNode **			ifppAncestor)
@@ -9712,7 +9712,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getDescendantElement(
+RCODE XFLAPI F_DOMNode::getDescendantElement(
 	IF_Db *			ifpDb,
 	FLMUINT			uiNameId,
 	IF_DOMNode **	ifppDescendant)
@@ -9824,7 +9824,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getDocumentNode(
+RCODE XFLAPI F_DOMNode::getDocumentNode(
 	IF_Db *					ifpDb,
 	IF_DOMNode **			ifppDoc)
 {
@@ -9877,7 +9877,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getParentNode(
+RCODE XFLAPI F_DOMNode::getParentNode(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppParent)
 {
@@ -9921,7 +9921,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getFirstChild(
+RCODE XFLAPI F_DOMNode::getFirstChild(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppChild)
 {
@@ -9965,7 +9965,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getLastChild(
+RCODE XFLAPI F_DOMNode::getLastChild(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppChild)
 {
@@ -10009,7 +10009,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getChild(
+RCODE XFLAPI F_DOMNode::getChild(
 	IF_Db *			ifpDb,
 	eDomNodeType	eNodeType,
 	IF_DOMNode **	ppChild)
@@ -10105,7 +10105,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getChildElement(
+RCODE XFLAPI F_DOMNode::getChildElement(
 	IF_Db *				ifpDb,
 	FLMUINT				uiNameId,
 	IF_DOMNode **		ppChild,
@@ -10250,7 +10250,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getSiblingElement(
+RCODE XFLAPI F_DOMNode::getSiblingElement(
 	IF_Db *				ifpDb,
 	FLMUINT				uiNameId,
 	FLMBOOL				bNext,
@@ -10339,7 +10339,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getPreviousSibling(
+RCODE XFLAPI F_DOMNode::getPreviousSibling(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppSib)
 {
@@ -10400,7 +10400,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getNextSibling(
+RCODE XFLAPI F_DOMNode::getNextSibling(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppSib)
 {
@@ -10461,7 +10461,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getPreviousDocument(
+RCODE XFLAPI F_DOMNode::getPreviousDocument(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppDoc)
 {
@@ -10631,7 +10631,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_DOMNode::getNextDocument(
+RCODE XFLAPI F_DOMNode::getNextDocument(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ifppDoc)
 {
@@ -11840,7 +11840,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_BTreeIStream::positionTo(
+RCODE XFLAPI F_BTreeIStream::positionTo(
 	FLMUINT64		ui64Position)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -12544,7 +12544,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getQualifiedName(
+RCODE XFLAPI F_DOMNode::getQualifiedName(
 	IF_Db *			ifpDb,
 	FLMUNICODE *	puzQualifiedName,
 	FLMUINT			uiBufSize,
@@ -12621,7 +12621,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::getQualifiedName(
+RCODE XFLAPI F_DOMNode::getQualifiedName(
 	IF_Db *			ifpDb,
 	char *			pszQualifiedName,
 	FLMUINT			uiBufSize,
@@ -12802,7 +12802,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_DOMNode::setPrefixId(
+RCODE XFLAPI F_DOMNode::setPrefixId(
 	IF_Db *			ifpDb,
 	FLMUINT			uiPrefixId)
 {
@@ -12951,7 +12951,7 @@ Exit:
 /****************************************************************************
 Desc:	Method to compare two dom nodes.
 *****************************************************************************/
-FLMUINT FLMAPI F_DOMNode::compareNode(
+FLMUINT XFLAPI F_DOMNode::compareNode(
 	IF_DOMNode *	pNode,
 	IF_Db *			pDb1,
 	IF_Db *			pDb2,
@@ -13376,7 +13376,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Db::getDictionaryDef(
+RCODE XFLAPI F_Db::getDictionaryDef(
 	FLMUINT			uiDictType,
 	FLMUINT			uiDictNumber,
 	IF_DOMNode **	ppDocumentNode)
@@ -13430,7 +13430,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_Db::getElementNameId(
+RCODE XFLAPI F_Db::getElementNameId(
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzElementName,
 	FLMUINT *				puiElementNameId)
@@ -13474,7 +13474,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_Db::getElementNameId(
+RCODE XFLAPI F_Db::getElementNameId(
 	const char *			pszNamespaceURI,
 	const char *			pszElementName,
 	FLMUINT *				puiElementNameId)
@@ -13547,7 +13547,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_Db::getAttributeNameId(
+RCODE XFLAPI F_Db::getAttributeNameId(
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzAttributeName,
 	FLMUINT *				puiAttributeNameId)
@@ -13591,7 +13591,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_Db::getAttributeNameId(
+RCODE XFLAPI F_Db::getAttributeNameId(
 	const char *			pszNamespaceURI,
 	const char *			pszAttributeName,
 	FLMUINT *				puiAttributeNameId)
@@ -13664,7 +13664,7 @@ Exit:
 /*****************************************************************************
 Desc: Get a collection number from collection name.
 ******************************************************************************/
-RCODE FLMAPI F_Db::getCollectionNumber(
+RCODE XFLAPI F_Db::getCollectionNumber(
 	const char *			pszCollectionName,
 	FLMUINT *				puiCollectionNumber)
 {
@@ -13707,7 +13707,7 @@ Exit:
 /*****************************************************************************
 Desc: Get a collection number from collection name.
 ******************************************************************************/
-RCODE FLMAPI F_Db::getCollectionNumber(
+RCODE XFLAPI F_Db::getCollectionNumber(
 	const FLMUNICODE *	puzCollectionName,
 	FLMUINT *				puiCollectionNumber)
 {
@@ -13750,7 +13750,7 @@ Exit:
 /*****************************************************************************
 Desc: Get an index number from index name.
 ******************************************************************************/
-RCODE FLMAPI F_Db::getIndexNumber(
+RCODE XFLAPI F_Db::getIndexNumber(
 	const char *			pszIndexName,
 	FLMUINT *				puiIndexNumber)
 {
@@ -13793,7 +13793,7 @@ Exit:
 /*****************************************************************************
 Desc: Get an index number from index name.
 ******************************************************************************/
-RCODE FLMAPI F_Db::getIndexNumber(
+RCODE XFLAPI F_Db::getIndexNumber(
 	const FLMUNICODE *	puzIndexName,
 	FLMUINT *				puiIndexNumber)
 {
@@ -14919,7 +14919,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_Db::getAttribute(
+RCODE XFLAPI F_Db::getAttribute(
 	FLMUINT					uiCollection,
 	FLMUINT64				ui64ElementId,
 	FLMUINT					uiAttrName,
@@ -15001,7 +15001,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_Db::getFirstDocument(
+RCODE XFLAPI F_Db::getFirstDocument(
 	FLMUINT					uiCollection,
 	IF_DOMNode **			ppDocumentNode)
 {
@@ -15044,7 +15044,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_Db::getLastDocument(
+RCODE XFLAPI F_Db::getLastDocument(
 	FLMUINT					uiCollection,
 	IF_DOMNode **			ppDocumentNode)
 {
@@ -15087,7 +15087,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_Db::getDocument(
+RCODE XFLAPI F_Db::getDocument(
 	FLMUINT					uiCollection,
 	FLMUINT					uiFlags,
 	FLMUINT64				ui64DocumentId,
@@ -16157,7 +16157,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Db::getPrefixId(
+RCODE XFLAPI F_Db::getPrefixId(
 	const FLMUNICODE *	puzPrefixName,
 	FLMUINT *				puiPrefixNumber)
 {
@@ -16188,7 +16188,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Db::getPrefixId(
+RCODE XFLAPI F_Db::getPrefixId(
 	const char *			pszPrefixName,
 	FLMUINT *				puiPrefixNumber)
 {
@@ -16219,7 +16219,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Db::getEncDefId(
+RCODE XFLAPI F_Db::getEncDefId(
 	const char *	pszEncDefName,
 	FLMUINT *		puiEncDefNumber)
 {
@@ -16250,7 +16250,7 @@ Exit:
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_Db::getEncDefId(
+RCODE XFLAPI F_Db::getEncDefId(
 	const FLMUNICODE *	puzEncDefName,
 	FLMUINT *				puiEncDefNumber)
 {
@@ -17964,7 +17964,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_NodeBufferIStream::openStream(
+RCODE XFLAPI F_NodeBufferIStream::openStream(
 	const char *		pucBuffer,
 	FLMUINT				uiLength,
 	char **				ppucAllocatedBuffer)

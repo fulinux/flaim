@@ -102,7 +102,7 @@ static FLMBYTE ucSENPrefixArray[] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI ftkStartup( void)
+RCODE FTKAPI ftkStartup( void)
 {
 	RCODE		rc = NE_FLM_OK;
 	
@@ -254,7 +254,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI ftkShutdown( void)
+void FTKAPI ftkShutdown( void)
 {
 	if( !gv_startupCount || f_atomicDec( &gv_startupCount) > 0)
 	{
@@ -300,7 +300,7 @@ Desc: This routine causes the calling process to delay the given number
 		time is almost guaranteed to be different from requested sleep time.
 ****************************************************************************/
 #ifdef FLM_UNIX
-void FLMAPI f_sleep(
+void FTKAPI f_sleep(
 	FLMUINT		uiMilliseconds)
 {
 #ifdef FLM_AIX
@@ -325,7 +325,7 @@ void FLMAPI f_sleep(
 Desc:
 ****************************************************************************/
 #ifdef FLM_WIN
-void FLMAPI f_sleep(
+void FTKAPI f_sleep(
 	FLMUINT		uiMilliseconds)
 {
 	SleepEx( (DWORD)uiMilliseconds, true);
@@ -336,7 +336,7 @@ void FLMAPI f_sleep(
 Desc:
 ****************************************************************************/
 #ifdef FLM_LIBC_NLM
-void FLMAPI f_sleep( 
+void FTKAPI f_sleep( 
 	FLMUINT		uiMilliseconds)
 {
 	if( !uiMilliseconds )
@@ -354,7 +354,7 @@ void FLMAPI f_sleep(
 Desc:
 ****************************************************************************/
 #ifdef FLM_RING_ZERO_NLM
-void FLMAPI f_sleep( 
+void FTKAPI f_sleep( 
 	FLMUINT	uiMilliseconds)
 {
 	if( !uiMilliseconds)
@@ -430,7 +430,7 @@ Desc:		This routine will use the operating system calls to generate a
 			support generating GUIDs, this routine will generate a pseudo-GUID
 			using a random number generator.  A serial number is 16-bytes.
 ****************************************************************************/
-RCODE FLMAPI f_createSerialNumber(
+RCODE FTKAPI f_createSerialNumber(
 	FLMBYTE *		pszSerialNum)
 {
 	RCODE						rc = NE_FLM_OK;
@@ -470,7 +470,7 @@ Exit:
 /****************************************************************************
 Desc: 	
 ****************************************************************************/
-void FLMAPI f_getenv(
+void FTKAPI f_getenv(
 	const char *	pszKey,
 	FLMBYTE *		pszBuffer,
 	FLMUINT			uiBufferSize,
@@ -510,7 +510,7 @@ Exit:
 /***************************************************************************
 Desc:		Sort an array of items
 ****************************************************************************/
-void FLMAPI f_qsort(
+void FTKAPI f_qsort(
 	void *					pvBuffer,
 	FLMUINT					uiLowerBounds,
 	FLMUINT					uiUpperBounds,
@@ -627,7 +627,7 @@ Iterate_Larger_Half:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_qsortUINTCompare(
+FLMINT FTKAPI f_qsortUINTCompare(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -650,7 +650,7 @@ FLMINT FLMAPI f_qsortUINTCompare(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_qsortUINTSwap(
+void FTKAPI f_qsortUINTSwap(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -665,7 +665,7 @@ void FLMAPI f_qsortUINTSwap(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void * FLMAPI f_memcpy(
+void * FTKAPI f_memcpy(
 	void *			pvDest,
 	const void *	pvSrc,
 	FLMSIZET			iSize)
@@ -687,7 +687,7 @@ void * FLMAPI f_memcpy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void * FLMAPI f_memmove(
+void * FTKAPI f_memmove(
 	void *			pvDest,
 	const void *	pvSrc,
 	FLMSIZET			uiLength)
@@ -782,7 +782,7 @@ void * FLMAPI f_memmove(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void * FLMAPI f_memset(
+void * FTKAPI f_memset(
 	void *				pvMem,
 	unsigned char		ucByte,
 	FLMSIZET				uiLength)
@@ -826,7 +826,7 @@ void * FLMAPI f_memset(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_memcmp(
+FLMINT FTKAPI f_memcmp(
 	const void *		pvMem1,
 	const void *		pvMem2,
 	FLMSIZET				uiLength)
@@ -861,7 +861,7 @@ FLMINT FLMAPI f_memcmp(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FLMAPI f_strcpy(
+char * FTKAPI f_strcpy(
 	char *			pszDest,
 	const char *	pszSrc)
 {
@@ -876,7 +876,7 @@ char * FLMAPI f_strcpy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FLMAPI f_strncpy(
+char * FTKAPI f_strncpy(
 	char *			pszDest,
 	const char *	pszSrc,
 	FLMSIZET			uiLength)
@@ -903,7 +903,7 @@ char * FLMAPI f_strncpy(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI f_strlen(
+FLMUINT FTKAPI f_strlen(
 	const char *	pszStr)
 {
 #ifndef FLM_NLM
@@ -923,7 +923,7 @@ FLMUINT FLMAPI f_strlen(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_strcmp(
+FLMINT FTKAPI f_strcmp(
 	const char *		pszStr1,
 	const char *		pszStr2)
 {
@@ -943,7 +943,7 @@ FLMINT FLMAPI f_strcmp(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_stricmp(
+FLMINT FTKAPI f_stricmp(
 	const char *		pszStr1,
 	const char *		pszStr2)
 {
@@ -962,7 +962,7 @@ FLMINT FLMAPI f_stricmp(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_strncmp(
+FLMINT FTKAPI f_strncmp(
 	const char *		pszStr1,
 	const char *		pszStr2,
 	FLMSIZET				uiLength)
@@ -989,7 +989,7 @@ FLMINT FLMAPI f_strncmp(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI f_strnicmp(
+FLMINT FTKAPI f_strnicmp(
 	const char *		pszStr1,
 	const char *		pszStr2,
 	FLMSIZET				uiLength)
@@ -1023,7 +1023,7 @@ FLMINT FLMAPI f_strnicmp(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FLMAPI f_strcat(
+char * FTKAPI f_strcat(
 	char *				pszDest,
 	const char *		pszSrc)
 {
@@ -1044,7 +1044,7 @@ char * FLMAPI f_strcat(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FLMAPI f_strncat(
+char * FTKAPI f_strncat(
 	char *				pszDest,
 	const char *		pszSrc,
 	FLMSIZET				uiLength)
@@ -1077,7 +1077,7 @@ char * FLMAPI f_strncat(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FLMAPI f_strchr(
+char * FTKAPI f_strchr(
 	const char *		pszStr,
 	unsigned char		ucByte)
 {
@@ -1103,7 +1103,7 @@ char * FLMAPI f_strchr(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FLMAPI f_strrchr(
+char * FTKAPI f_strrchr(
 	const char *		pszStr,
 	unsigned char		ucByte)
 {
@@ -1139,7 +1139,7 @@ char * FLMAPI f_strrchr(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FLMAPI f_strstr(
+char * FTKAPI f_strstr(
 	const char *		pszStr1,
 	const char *		pszStr2)
 {
@@ -1179,7 +1179,7 @@ Desc:		Turn a base 24 digit's ordinal value into a native
 Notes:	This is a base 24 alphanumeric value where 
 			{a, b, c, d, e, f, i, l, o, r, u, v } values are removed.
 ****************************************************************************/
-FLMBYTE FLMAPI f_getBase24DigitChar( 
+FLMBYTE FTKAPI f_getBase24DigitChar( 
 	FLMBYTE		ucValue)
 {
 	f_assert( ucValue <= 23);
@@ -1223,7 +1223,7 @@ FLMBYTE FLMAPI f_getBase24DigitChar(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-char * FLMAPI f_strupr(
+char * FTKAPI f_strupr(
 	char *				pszStr)
 {
 #ifdef FLM_WIN
@@ -1242,7 +1242,7 @@ char * FLMAPI f_strupr(
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMINT32 FLMAPI f_atomicInc(
+FLMINT32 FTKAPI f_atomicInc(
 	FLMATOMIC *			piTarget)
 {
 	#if defined( FLM_LIBC_NLM)
@@ -1295,7 +1295,7 @@ FLMINT32 FLMAPI f_atomicInc(
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMINT32 FLMAPI f_atomicDec(
+FLMINT32 FTKAPI f_atomicDec(
 	FLMATOMIC *			piTarget)
 {
 	#if defined( FLM_LIBC_NLM)
@@ -1348,7 +1348,7 @@ FLMINT32 FLMAPI f_atomicDec(
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMINT32 FLMAPI f_atomicExchange(
+FLMINT32 FTKAPI f_atomicExchange(
 	FLMATOMIC *			piTarget,
 	FLMINT32				i32NewVal)
 {
@@ -1425,7 +1425,7 @@ FLMINT32 FLMAPI f_atomicExchange(
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMINT FLMAPI F_Object::getRefCount( void)
+FLMINT FTKAPI F_Object::getRefCount( void)
 {
 	return( m_refCnt);
 }
@@ -1433,7 +1433,7 @@ FLMINT FLMAPI F_Object::getRefCount( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMINT FLMAPI F_Object::AddRef( void)
+FLMINT FTKAPI F_Object::AddRef( void)
 {
 	return( ++m_refCnt);
 }
@@ -1441,7 +1441,7 @@ FLMINT FLMAPI F_Object::AddRef( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMINT FLMAPI F_Object::Release( void)
+FLMINT FTKAPI F_Object::Release( void)
 {
 	FLMINT		iRefCnt = --m_refCnt;
 
@@ -1456,7 +1456,7 @@ FLMINT FLMAPI F_Object::Release( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
-IF_FileSystem * FLMAPI f_getFileSysPtr( void)
+IF_FileSystem * FTKAPI f_getFileSysPtr( void)
 {
 	return( gv_pFileSystem);
 }
@@ -1464,7 +1464,7 @@ IF_FileSystem * FLMAPI f_getFileSysPtr( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMUINT FLMAPI f_getOpenFileCount( void)
+FLMUINT FTKAPI f_getOpenFileCount( void)
 {
 	return( gv_openFiles);
 }
@@ -1480,7 +1480,7 @@ IF_ThreadMgr * f_getThreadMgrPtr( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
-FLMUINT FLMAPI f_getMaxFileSize( void)
+FLMUINT FTKAPI f_getMaxFileSize( void)
 {
 	return( gv_uiMaxFileSize);
 }
@@ -1488,7 +1488,7 @@ FLMUINT FLMAPI f_getMaxFileSize( void)
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI f_readSEN(
+RCODE FTKAPI f_readSEN(
 	IF_IStream *	pIStream,
 	FLMUINT *		puiValue,
 	FLMUINT *		puiLength)
@@ -1520,7 +1520,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI f_readSEN64(
+RCODE FTKAPI f_readSEN64(
 	IF_IStream *		pIStream,
 	FLMUINT64 *			pui64Value,
 	FLMUINT *			puiLength)
@@ -1582,7 +1582,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-FLMUINT FLMAPI f_getSENLength(
+FLMUINT FTKAPI f_getSENLength(
 	FLMBYTE 					ucByte)
 {
 	return( gv_ucSENLengthArray[ ucByte]);
@@ -1591,7 +1591,7 @@ FLMUINT FLMAPI f_getSENLength(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_decodeSEN64(
+RCODE FTKAPI f_decodeSEN64(
 	const FLMBYTE **		ppucBuffer,
 	const FLMBYTE *		pucEnd,
 	FLMUINT64 *				pui64Value)
@@ -1694,7 +1694,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_decodeSEN(
+RCODE FTKAPI f_decodeSEN(
 	const FLMBYTE **		ppucBuffer,
 	const FLMBYTE *		pucEnd,
 	FLMUINT *				puiValue)
@@ -1733,7 +1733,7 @@ FINLINE FLMBYTE f_shiftRightRetByte(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI f_getSENByteCount(
+FLMUINT FTKAPI f_getSENByteCount(
 	FLMUINT64	ui64Num)
 {
 	FLMUINT		uiCount = 0;
@@ -1759,7 +1759,7 @@ FLMUINT FLMAPI f_getSENByteCount(
 /****************************************************************************
 Desc:		Encodes a number as a SEN
 ****************************************************************************/
-FLMUINT FLMAPI f_encodeSEN(
+FLMUINT FTKAPI f_encodeSEN(
 	FLMUINT64		ui64Value,
 	FLMBYTE **		ppucBuffer,
 	FLMUINT			uiSizeWanted)
@@ -1796,7 +1796,7 @@ FLMUINT FLMAPI f_encodeSEN(
 /****************************************************************************
 Desc:		Encodes a number as a SEN
 ****************************************************************************/
-RCODE FLMAPI f_encodeSEN(
+RCODE FTKAPI f_encodeSEN(
 	FLMUINT64		ui64Value,
 	FLMBYTE **		ppucBuffer,
 	FLMBYTE *		pucEnd)
@@ -1838,7 +1838,7 @@ Exit:
 /****************************************************************************
 Desc:		Encodes a number as a SEN
 ****************************************************************************/
-FLMUINT FLMAPI f_encodeSENKnownLength(
+FLMUINT FTKAPI f_encodeSENKnownLength(
 	FLMUINT64		ui64Value,
 	FLMUINT			uiSenLen,
 	FLMBYTE **		ppucBuffer)
@@ -1869,7 +1869,7 @@ FLMUINT FLMAPI f_encodeSENKnownLength(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmGetXMLObject(
+RCODE FTKAPI FlmGetXMLObject(
 	IF_XML **				ppXmlObject)
 {
 	*ppXmlObject = gv_pXml;
@@ -1889,7 +1889,7 @@ IF_XML * f_getXmlObjPtr( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT32 FLMAPI f_getRandomUINT32(
+FLMUINT32 FTKAPI f_getRandomUINT32(
 	FLMUINT32		ui32Low,
 	FLMUINT32		ui32High)
 {
@@ -1905,7 +1905,7 @@ FLMUINT32 FLMAPI f_getRandomUINT32(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBYTE FLMAPI f_getRandomByte( void)
+FLMBYTE FTKAPI f_getRandomByte( void)
 {
 	FLMBYTE		ucValue;
 
@@ -2224,7 +2224,7 @@ void F_ListItem::removeFromList(
 /****************************************************************************
 Desc: This routine allocates and initializes a hash table.
 ****************************************************************************/
-RCODE FLMAPI f_allocHashTable(
+RCODE FTKAPI f_allocHashTable(
 	FLMUINT					uiHashTblSize,
 	F_BUCKET **				ppHashTblRV)
 {
@@ -2287,7 +2287,7 @@ Exit:
 /****************************************************************************
 Desc: This routine determines the hash bucket for a string.
 ****************************************************************************/
-FLMUINT FLMAPI f_strHashBucket(
+FLMUINT FTKAPI f_strHashBucket(
 	char *		pszStr,
 	F_BUCKET *	pHashTbl,
 	FLMUINT		uiNumBuckets)
@@ -2316,7 +2316,7 @@ FLMUINT FLMAPI f_strHashBucket(
 Desc: This routine determines the hash bucket for a binary array of
 		characters.
 ****************************************************************************/
-FLMUINT FLMAPI f_binHashBucket(
+FLMUINT FTKAPI f_binHashBucket(
 	void *		pBuf,
 	FLMUINT		uiBufLen,
 	F_BUCKET *	pHashTbl,
@@ -2388,7 +2388,7 @@ F_HashTable::~F_HashTable()
 /****************************************************************************
 Desc:	Configures the hash table prior to first use
 ****************************************************************************/
-RCODE FLMAPI F_HashTable::setupHashTable(
+RCODE FTKAPI F_HashTable::setupHashTable(
 	FLMBOOL			bMultithreaded,
 	FLMUINT			uiNumBuckets,
 	FLMUINT			uiMaxObjects)
@@ -2483,7 +2483,7 @@ Exit:
 /****************************************************************************
 Desc:	Adds an object to the hash table
 ****************************************************************************/
-RCODE FLMAPI F_HashTable::addObject(
+RCODE FTKAPI F_HashTable::addObject(
 	F_HashObject *		pObject,
 	FLMBOOL				bAllowDuplicates)
 {
@@ -2570,7 +2570,7 @@ Exit:
 Desc:	Returns the next object in the linked list of objects in the hash
 		table.  If *ppObject == NULL, the first object will be returned.
 ****************************************************************************/
-RCODE FLMAPI F_HashTable::getNextObjectInGlobal(
+RCODE FTKAPI F_HashTable::getNextObjectInGlobal(
 	F_HashObject **	ppObject)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -2617,7 +2617,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HashTable::getNextObjectInBucket(
+RCODE FTKAPI F_HashTable::getNextObjectInBucket(
 	F_HashObject **	ppObject)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -2661,7 +2661,7 @@ Exit:
 /****************************************************************************
 Desc:	Retrieves an object from the hash table with the specified key
 ****************************************************************************/
-RCODE FLMAPI F_HashTable::getObject(
+RCODE FTKAPI F_HashTable::getObject(
 	const void *		pvKey,
 	FLMUINT				uiKeyLen,
 	F_HashObject **	ppObject,
@@ -2720,7 +2720,7 @@ Exit:
 /****************************************************************************
 Desc:	Removes an object from the hash table by key
 ****************************************************************************/
-RCODE FLMAPI F_HashTable::removeObject(
+RCODE FTKAPI F_HashTable::removeObject(
 	void *			pvKey,
 	FLMUINT			uiKeyLen)
 {
@@ -2730,7 +2730,7 @@ RCODE FLMAPI F_HashTable::removeObject(
 /****************************************************************************
 Desc:	Removes an object from the hash table by object pointer
 ****************************************************************************/
-RCODE FLMAPI F_HashTable::removeObject(
+RCODE FTKAPI F_HashTable::removeObject(
 	F_HashObject *		pObject)
 {
 	const void *	pvKey = pObject->getKey();
@@ -2742,7 +2742,7 @@ RCODE FLMAPI F_HashTable::removeObject(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_HashTable::removeAllObjects( void)
+void FTKAPI F_HashTable::removeAllObjects( void)
 {
 	F_HashObject *		pCur;
 	FLMBOOL				bMutexLocked = FALSE;
@@ -2783,7 +2783,7 @@ void FLMAPI F_HashTable::removeAllObjects( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_HashTable::removeAgedObjects(
+void FTKAPI F_HashTable::removeAgedObjects(
 	FLMUINT				uiMaxAge)
 {
 	F_HashObject *		pCur;
@@ -2829,7 +2829,7 @@ void FLMAPI F_HashTable::removeAgedObjects(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_HashTable::getMaxObjects( void)
+FLMUINT FTKAPI F_HashTable::getMaxObjects( void)
 {
 	FLMUINT		uiMaxObjects;
 	
@@ -2851,7 +2851,7 @@ FLMUINT FLMAPI F_HashTable::getMaxObjects( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HashTable::setMaxObjects(
+RCODE FTKAPI F_HashTable::setMaxObjects(
 	FLMUINT				uiMaxObjects)
 {
 	F_HashObject *		pCur;
@@ -3067,7 +3067,7 @@ void f_freeFileAsyncClientList( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_stripCRLF( 
+RCODE FTKAPI f_stripCRLF( 
 	const FLMBYTE *	pucSourceBuf,
 	FLMUINT				uiSourceLength,
 	F_DynaBuf *			pDestBuf)
@@ -3102,7 +3102,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_base64Encode(
+RCODE FTKAPI f_base64Encode(
 	const char *		pData,
 	FLMUINT				uiDataLength,
 	F_DynaBuf *			pBuffer)
@@ -3146,7 +3146,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_isNumber(
+FLMBOOL FTKAPI f_isNumber(
 	const char *	pszStr,
 	FLMBOOL *		pbNegative,
 	FLMBOOL *		pbHex)
@@ -3234,7 +3234,7 @@ Exit:
 /****************************************************************************
 Desc:  
 ****************************************************************************/
-RCODE FLMAPI F_Vector::setElementAt( 
+RCODE FTKAPI F_Vector::setElementAt( 
 	void * 			pData,
 	FLMUINT 			uiIndex)
 {
@@ -3273,7 +3273,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void * FLMAPI F_Vector::getElementAt( 
+void * FTKAPI F_Vector::getElementAt( 
 	FLMUINT		uiIndex)
 {
 	f_assert( uiIndex < m_uiArraySize);
@@ -3284,7 +3284,7 @@ void * FLMAPI F_Vector::getElementAt(
 /****************************************************************************
 Desc:	Append a char (or the same char many times) to the string
 ****************************************************************************/
-RCODE FLMAPI F_StringAcc::appendCHAR( 
+RCODE FTKAPI F_StringAcc::appendCHAR( 
 	char				ucChar,
 	FLMUINT			uiHowMany)
 {
@@ -3325,7 +3325,7 @@ Desc:	appending text to the accumulator safely.  all other methods in
 		the class funnel through this one, as this one contains the logic
 		for making sure storage requirements are met.
 ****************************************************************************/
-RCODE FLMAPI F_StringAcc::appendTEXT( 
+RCODE FTKAPI F_StringAcc::appendTEXT( 
 	const FLMBYTE * 	pszVal)
 {	
 	RCODE 				rc = NE_FLM_OK;
@@ -3417,7 +3417,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_StringAcc::printf(
+RCODE FTKAPI F_StringAcc::printf(
 	const char * pszFormatString,
 	...)
 {
@@ -3455,7 +3455,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_StringAcc::appendf(
+RCODE FTKAPI F_StringAcc::appendf(
 	const char * pszFormatString,
 	...)
 {

@@ -31,6 +31,29 @@
 
 	#include <flaimtk.h>
 
+   // platform-specific API definitions for FLM* macros
+   #if defined( FLM_WIN)
+      #if defined( FLM_STATIC_LINK)
+         #define FLMEXP
+      #else
+         #if defined( FLM_SOURCE)
+            #define FLMEXP                __declspec(dllexport)
+         #else
+            #define FLMEXP                __declspec(dllimport)
+         #endif
+      #endif
+		#define FLMAPI     						__stdcall
+	#elif defined( FLM_NLM)
+      #define FLMEXP
+		#define FLMAPI     						__stdcall
+	#elif defined( FLM_UNIX)
+      #define FLMEXP
+		#define FLMAPI
+	#else
+		#error Platform not supported
+   #endif
+	#define FLMXPC							      extern "C" FLMEXP
+
 	#ifdef FLM_PACK_STRUCTS
 		#pragma pack(push, 1)
 	#endif
@@ -1264,7 +1287,7 @@
 
 	/// Initialize a query object.
 	/// \ingroup queryobj
-	FLMEXP RCODE FLMAPI FlmCursorInit(
+	FLMXPC RCODE FLMAPI FlmCursorInit(
 		HFDB			hDb,					///< Database handle.
 		FLMUINT		uiContainerNum,	///< Container to be searched.
 		HFCURSOR *	phCursor				///< Query handle is returned here.
@@ -1272,7 +1295,7 @@
 
 	/// Free a query object.
 	/// \ingroup queryobj
-	FLMEXP RCODE FLMAPI FlmCursorFree(
+	FLMXPC RCODE FLMAPI FlmCursorFree(
 		HFCURSOR *	phCursor				///< Pointer to query handle to be freed.\   Should be the handle returned from FlmCursorInit().
 		);
 
@@ -1281,14 +1304,14 @@
 	/// method is called, the query object is no longer in a state where it can be used to retrieve records from the query
 	/// result set.
 	/// \ingroup queryobj
-	FLMEXP void FLMAPI FlmCursorReleaseResources(
+	FLMXPC void FLMAPI FlmCursorReleaseResources(
 		HFCURSOR	hCursor					///< Handle to query object whose resources are to be released.
 		);
 
 	/// Clone a query object.  The new cloned query object should be set up with the same query criteria as the query
 	/// object being cloned, but it should not be optimized yet.
 	/// \ingroup queryobj
-	FLMEXP RCODE FLMAPI FlmCursorClone(
+	FLMXPC RCODE FLMAPI FlmCursorClone(
 		HFCURSOR		hSource,				///< Handle to query object that is to be cloned.
 		HFCURSOR *	phCursor				///< Newly cloned query object handle is returned here.
 		);
@@ -1417,7 +1440,7 @@
 
 	/// Configure a query object.
 	/// \ingroup queryconfig
-	FLMEXP RCODE FLMAPI FlmCursorConfig(
+	FLMXPC RCODE FLMAPI FlmCursorConfig(
 		HFCURSOR					hCursor,				///< Handle to query object that is to be configured.
 		eCursorConfigType		eConfigType,		///< Specifies what is to be configured in the query object.
 		void *					pvValue1,			///< Configuration parameter - depends on eConfigType - see documentation on ::eCursorConfigType.
@@ -1426,7 +1449,7 @@
 
 	/// Get query configuration.
 	/// \ingroup queryconfig
-	FLMEXP RCODE FLMAPI FlmCursorGetConfig(
+	FLMXPC RCODE FLMAPI FlmCursorGetConfig(
 		HFCURSOR						hCursor,				///< Handle to query object whose configuration information is to be retrieved.
 		eCursorGetConfigType		eGetConfigType,	///< Specifies what configuration information is to be retrieved.
 		void *						pvValue1,			///< Configuration parameter - depends on eGetConfigType - see documentation on ::eCursorGetConfigType.
@@ -1435,7 +1458,7 @@
 
 	/// Set order index for a query.
 	/// \ingroup queryconfig
-	FLMEXP RCODE FLMAPI FlmCursorSetOrderIndex(
+	FLMXPC RCODE FLMAPI FlmCursorSetOrderIndex(
 		HFCURSOR		hCursor,							///< Handle to query object whose order index is to be set.
 		FLMUINT *	puiFieldPaths,					///< List of field paths that specify the desired ordering.\ Each field path is
 															///< terminated with a single zero, and the entire list is terminated
@@ -1446,7 +1469,7 @@
 
 	/// Set mode for string comparison operations in query criteria.
 	/// \ingroup queryconfig
-	FLMEXP RCODE FLMAPI FlmCursorSetMode(
+	FLMXPC RCODE FLMAPI FlmCursorSetMode(
 		HFCURSOR		hCursor,							///< Handle to query object whose order index is to be set.
 		FLMUINT		uiFlags							///< Mode flags to be set for the query.\  Multiple flags may be ORed together.\  Valid
 															///< flags are as follows:
@@ -1465,7 +1488,7 @@
 
 	/// Parse a query string to set query criteria.
 	/// \ingroup querydef
-	FLMEXP RCODE FLMAPI FlmParseQuery(
+	FLMXPC RCODE FLMAPI FlmParseQuery(
 		HFCURSOR				hCursor,					///< Handle to query object whose criteria is to be set.
 		F_NameTable *		pNameTable,				///< Name table to use when looking up field names.
 		const char *		pszQueryCriteria		///< Query criteria.
@@ -1473,7 +1496,7 @@
 
 	/// Add a field to the query criteria.
 	/// \ingroup querydef
-	FLMEXP RCODE FLMAPI FlmCursorAddField(
+	FLMXPC RCODE FLMAPI FlmCursorAddField(
 		HFCURSOR		hCursor,							///< Handle to query object.
 		FLMUINT		uiFieldNum,						///< Field number that is to be added to query criteria.
 		FLMUINT		uiFlags							///< Flags for field.\  Flags may be any of the following ORed
@@ -1501,7 +1524,7 @@
 
 	/// Add a field path to the query criteria.
 	/// \ingroup querydef
-	FLMEXP RCODE FLMAPI FlmCursorAddFieldPath(
+	FLMXPC RCODE FLMAPI FlmCursorAddFieldPath(
 		HFCURSOR			hCursor,						///< Handle to query object.
 		FLMUINT *		puiFldPath,					///< Field path that is to be added to query criteria.\  Field path is an array of
 															///< zero-terminated field numbers.
@@ -1510,7 +1533,7 @@
 			
 	/// Add an application defined predicate to the query criteria.
 	/// \ingroup querydef
-	FLMEXP RCODE FLMAPI FlmCursorAddUserPredicate(
+	FLMXPC RCODE FLMAPI FlmCursorAddUserPredicate(
 		HFCURSOR					hCursor,				///< Handle to query object.
 		FlmUserPredicate *	pPredicate			///< User defined predicate object.
 		);
@@ -1557,7 +1580,7 @@
 	/// a field is valid.  In addition, the callback function may be used to determine the field to be returned - even fetching
 	/// it from other records or external sources.
 	/// \ingroup querydef
-	FLMEXP RCODE FLMAPI FlmCursorAddFieldCB(
+	FLMXPC RCODE FLMAPI FlmCursorAddFieldCB(
 		HFCURSOR					hCursor,					///< Handle to query object.
 		FLMUINT *				puiFldPath,				///< Field path.\  This field path is passed into the field callback when it is called.
 		FLMUINT					uiFlags,					///< Flags for field.\  See documentation on uiFlags parameter of FlmCursorAddField().
@@ -1574,7 +1597,7 @@
 
 	/// Add a query operator to the query criteria.
 	/// \ingroup querydef
-	FLMEXP RCODE FLMAPI FlmCursorAddOp(
+	FLMXPC RCODE FLMAPI FlmCursorAddOp(
 		HFCURSOR			hCursor,							///< Handle to query object.
 		QTYPES			eOperator,						///< Operator to be added to the query criteria.
 		FLMBOOL			bResolveUnknown = FALSE		///< Resolve comparison operators to TRUE or FALSE even if one of the operands is
@@ -1583,7 +1606,7 @@
 		
 	/// Add a value to the query criteria.  A value is generally added where an operand would appear - such as in a comparison expression.
 	/// \ingroup querydef
-	FLMEXP RCODE FLMAPI FlmCursorAddValue(
+	FLMXPC RCODE FLMAPI FlmCursorAddValue(
 		HFCURSOR			hCursor,							///< Handle to query object.
 		QTYPES			eValType,						///< Type of value being added to the query criteria.
 		void *			pVal,								///< Pointer to the value being added.\  This should point to a value that corresponds to the type
@@ -1594,17 +1617,17 @@
 
 	/// Finalize and validate query syntax.  After this function has been called, no more query criteria may be added.
 	/// \ingroup querydef
-	FLMEXP RCODE FLMAPI FlmCursorValidate(
+	FLMXPC RCODE FLMAPI FlmCursorValidate(
 		HFCURSOR			hCursor							///< Handle to query object.
 		);
 
 	/// Startup FLAIM database system.
 	/// \ingroup startupshutdown
-	FLMEXP RCODE FLMAPI FlmStartup( void);
+	FLMXPC RCODE FLMAPI FlmStartup( void);
 
 	/// Shutdown FLAIM database system.
 	/// \ingroup startupshutdown
-	FLMEXP void FLMAPI FlmShutdown( void);
+	FLMXPC void FLMAPI FlmShutdown( void);
 
 	/// Database system configuration options that are passed into FlmConfig() and FlmGetConfig().
 	typedef enum
@@ -1805,7 +1828,7 @@
 
 	/// Configure the FLAIM database system.
 	/// \ingroup systemconfiguration
-	FLMEXP RCODE FLMAPI FlmConfig(
+	FLMXPC RCODE FLMAPI FlmConfig(
 		eFlmConfigTypes	eConfigType,	///< Specified what is to be configured.
 		void *				pvValue1,		///< Parameter for configuration - see documentation for ::eFlmConfigTypes for specifics.
 		void *				pvValue2			///< Parameter for configuration - see documentation for ::eFlmConfigTypes for specifics.
@@ -1813,7 +1836,7 @@
 
 	/// Get configuration information about the FLAIM database system.
 	/// \ingroup systemconfiguration
-	FLMEXP RCODE FLMAPI FlmGetConfig(
+	FLMXPC RCODE FLMAPI FlmGetConfig(
 		eFlmConfigTypes	eConfigType,	///< Configuration information to be retrieved.
 		void *				pvValue			///< Configuration information is returned here - see documentation for ::eFlmConfigTypes for
 													///< what will be returned for each configuration type.
@@ -1821,7 +1844,7 @@
 
 	/// Set dynamic cache limit.
 	/// \ingroup cacheconfiguration
-	FLMEXP RCODE FLMAPI FlmSetDynamicMemoryLimit(
+	FLMXPC RCODE FLMAPI FlmSetDynamicMemoryLimit(
 		FLMUINT			uiCacheAdjustPercent,	///< Percent of available memory to set cache limit to.
 		FLMUINT			uiCacheAdjustMin,			///< Minimum cache limit (bytes) to allow.
 		FLMUINT			uiCacheAdjustMax,			///< Maximum cache limit (bytes) to allow.
@@ -1832,7 +1855,7 @@
 
 	/// Set hard cache limit.
 	/// \ingroup cacheconfiguration
-	FLMEXP RCODE FLMAPI FlmSetHardMemoryLimit(
+	FLMXPC RCODE FLMAPI FlmSetHardMemoryLimit(
 		FLMUINT			uiPercent,					///< If non-zero, the hard limit is calculated as a percentage of either available memory
 															///< or total physical memory.\  If zero, the uiMax parameter is the hard limit.
 		FLMBOOL			bPercentOfAvail,			///< Only used if uiPercent is non-zero.\  If TRUE, the limit is calculated as a percentage
@@ -1855,12 +1878,14 @@
 
 	/// Get cache information.
 	/// \ingroup cacheconfiguration
-	FLMEXP void FLMAPI FlmGetMemoryInfo(
+	FLMXPC void FLMAPI FlmGetMemoryInfo(
 		FLM_MEM_INFO *	pMemInfo						///< Memory information is returned here.
 		);
 
 	/// Get information on background threads in the FLAIM database system.
 	/// \ingroup systemconfiguration
+   // JMC - FIXME: FTK provides a function of the same name - modify one of them
+   //    so that we can export this one "C" rather than "C++"
 	FLMEXP RCODE FLMAPI FlmGetThreadInfo(
 		F_Pool *				pPool,					///< Memory pool for allocating memory.\  This pool is used to allocate the structures
 															///< and other buffers that will contain the thread information.\  To free all of the
@@ -1875,7 +1900,7 @@
 
 	/// Free memory that was allocated by various functions.
 	/// \ingroup memoryalloc
-	FLMEXP void FLMAPI FlmFreeMem(
+	FLMXPC void FLMAPI FlmFreeMem(
 		void *		pMem				///< Pointer to memory to be freed.
 		);
 
@@ -2019,14 +2044,14 @@
 	/// Get statistics.  This function will allocate memory to return statistics.  FlmFreeStats() should
 	/// be called to free that memory once the application has processed the statistics.
 	/// \ingroup stats
-	FLMEXP RCODE FLMAPI FlmGetStats(
+	FLMXPC RCODE FLMAPI FlmGetStats(
 		FLM_STATS *	pFlmStats	///< Statistics are returned here.
 		);
 
 	/// Free statistics.  This function should be called to free whatever memory was allocated
 	/// to retrieve statistics when FlmGetStats() was called.
 	/// \ingroup stats
-	FLMEXP void FLMAPI FlmFreeStats(
+	FLMXPC void FLMAPI FlmFreeStats(
 		FLM_STATS *	pFlmStats	///< Statistics to be freed.
 		);
 
@@ -2074,7 +2099,7 @@
 
 	/// Register to catch events from the database system.
 	/// \ingroup event
-	FLMEXP RCODE FLMAPI FlmRegisterForEvent(
+	FLMXPC RCODE FLMAPI FlmRegisterForEvent(
 		FEventCategory	eCategory,		///< Category of events to be caught.
 		FEVENT_CB		fnEventCB,		///< Function to be called when events of the specified category happen.
 		void *			pvAppData,		///< Application supplied data that is to be passed to the registered function whenever it is called.
@@ -2083,7 +2108,7 @@
 
 	/// Deregister event handling function.
 	/// \ingroup event
-	FLMEXP void FLMAPI FlmDeregisterForEvent(
+	FLMXPC void FLMAPI FlmDeregisterForEvent(
 		HFEVENT *	phEventRV			///< Event handle that was returned by FlmRegisterForEvent().
 		);
 
@@ -2334,7 +2359,7 @@
 
 	/// Create a new database.
 	/// \ingroup dbcreateopen
-	FLMEXP RCODE FLMAPI FlmDbCreate(
+	FLMXPC RCODE FLMAPI FlmDbCreate(
 		const char *		pszDbFileName,			///< Name of database to be created.\  May be full path name or partial path name.
 		const char *		pszDataDir,				///< Name of directory where data files are to be created.\  If NULL, data files will be
 															///< in the same directory as the main database file - pszDbFileName.
@@ -2355,7 +2380,7 @@
 
 	/// Open a database.
 	/// \ingroup dbcreateopen
-	FLMEXP RCODE FLMAPI FlmDbOpen(
+	FLMXPC RCODE FLMAPI FlmDbOpen(
 		const char *		pszDbFileName,			///< Name of database to be opened.\  May be full path name or partial path name.
 		const char *		pszDataDir,				///< Name of directory where data files for the database are located.\  If NULL, data files are
 															///< assumed to be in the same directory as the main database file - pszDbFileName.
@@ -2388,14 +2413,14 @@
 
 	/// Close a database.
 	/// \ingroup dbcreateopen
-	FLMEXP RCODE FLMAPI FlmDbClose(
+	FLMXPC RCODE FLMAPI FlmDbClose(
 		HFDB *			phDb							///< Pointer to database handle that is to be closed.\   The database handle will be
 															///< set back to HFDB_NULL.
 		);
 
 	/// Configure an open database.
 	/// \ingroup dbconfig
-	FLMEXP RCODE FLMAPI FlmDbConfig(
+	FLMXPC RCODE FLMAPI FlmDbConfig(
 		HFDB				hDb,							///< Database handle of database that is to be configured.
 		eDbConfigType	eConfigType,				///< Configuration option.
 		void *			pvValue1,					///< Configuration parameter.\  Type of value here depends on the eConfigType parameter.\  See
@@ -2406,7 +2431,7 @@
 
 	/// Get configuration information on an open database.
 	/// \ingroup dbconfig
-	FLMEXP RCODE FLMAPI FlmDbGetConfig(
+	FLMXPC RCODE FLMAPI FlmDbGetConfig(
 		HFDB					hDb,						///< Database handle of database whose configuration information is to be retrieved.
 		eDbGetConfigType	eGetDbConfigType,		///< Specifies what information is to be retrieved.
 		void *				pvValue1,				///< Information is returned via this parameter.\  Type of value required depends on the
@@ -2419,7 +2444,7 @@
 
 	/// Set indexing callback function.
 	/// \ingroup dbconfig
-	FLMEXP void FLMAPI FlmSetIndexingCallback(
+	FLMXPC void FLMAPI FlmSetIndexingCallback(
 		HFDB			hDb,								///< Database handle whose indexing callback function is to be set.
 		IX_CALLBACK	fnIxCallback,					///< Indexing callback function.
 		void *		pvAppData						///< Pointer to application data that will be passed into the callback function when
@@ -2428,7 +2453,7 @@
 
 	/// Get indexing callback function.
 	/// \ingroup dbconfig
-	FLMEXP void FLMAPI FlmGetIndexingCallback(
+	FLMXPC void FLMAPI FlmGetIndexingCallback(
 		HFDB				hDb,							///< Database handle whose indexing callback function is to be retrieved.
 		IX_CALLBACK *	pfnIxCallback,				///< Callback function is returned here.\  This is the function that was
 															///< set using the FlmSetIndexingCallback() function.
@@ -2438,7 +2463,7 @@
 
 	/// Set record validator callback function.
 	/// \ingroup dbconfig
-	FLMEXP void FLMAPI FlmSetRecValidatorHook(
+	FLMXPC void FLMAPI FlmSetRecValidatorHook(
 		HFDB						hDb,						///< Database handle whose record validator function is to be set.
 		REC_VALIDATOR_HOOK	fnRecValidatorHook,	///< Record validator callback function.\  If this is NULL, record
 																///< validation is disabled.
@@ -2448,7 +2473,7 @@
 
 	/// Get the record validator callback function.
 	/// \ingroup dbconfig
-	FLMEXP void FLMAPI FlmGetRecValidatorHook(
+	FLMXPC void FLMAPI FlmGetRecValidatorHook(
 		HFDB						hDb,						///< Database handle whose record validator function is to be returned.
 		REC_VALIDATOR_HOOK * pfnRecValidatorHook, ///< Record validator function is returned here.\   This is the function that was
 																///< set using the FlmSetRecValidatorHook() function.
@@ -2458,7 +2483,7 @@
 
 	/// Set the general purpose status callback function.
 	/// \ingroup dbconfig
-	FLMEXP void FLMAPI FlmSetStatusHook(
+	FLMXPC void FLMAPI FlmSetStatusHook(
 		HFDB				hDb,								///< Database handle whose general purpose status callback function is to be set.
 		STATUS_HOOK		fnStatusHook,					///< General purpose status callback function.\  If this is NULL, the general
 																///< purpose status callback is disabled.
@@ -2468,7 +2493,7 @@
 
 	/// Get the general purpose status callback function.
 	/// \ingroup dbconfig
-	FLMEXP void FLMAPI FlmGetStatusHook(
+	FLMXPC void FLMAPI FlmGetStatusHook(
 		HFDB				hDb,								///< Database handle whose general purpose status callback function is to be returned.
 		STATUS_HOOK *	pfnStatusHook,					///< Status callback function is returned here.\  This is the function that was
 																///< set using the FlmSetStatusHook() function.
@@ -2478,7 +2503,7 @@
 
 	/// Retrieve status of an index.
 	/// \ingroup indexing
-	FLMEXP RCODE FLMAPI FlmIndexStatus(
+	FLMXPC RCODE FLMAPI FlmIndexStatus(
 		HFDB					hDb,					///< Database handle - see FlmDbOpen() or FlmDbCreate().
 		FLMUINT				uiIndexNum,			///< Index number to return status on.
 		FINDEX_STATUS *	pIndexStatus		///< Index status is returned in structure pointed to.
@@ -2486,34 +2511,34 @@
 
 	/// Retrieve next index.
 	/// \ingroup indexing
-	FLMEXP RCODE FLMAPI FlmIndexGetNext(
+	FLMXPC RCODE FLMAPI FlmIndexGetNext(
 		HFDB			hDb,							///< Database handle - see FlmDbOpen() or FlmDbCreate().
 		FLMUINT *	puiIndexNum					///< Index number is returned here.
 		);
 
 	/// Suspend an index.
 	/// \ingroup indexing
-	FLMEXP RCODE FLMAPI FlmIndexSuspend(
+	FLMXPC RCODE FLMAPI FlmIndexSuspend(
 		HFDB			hDb,							///< Database handle - see FlmDbOpen() or FlmDbCreate().
 		FLMUINT		uiIndexNum					///< Number of index to suspend.
 		);
 
 	/// Resume an index.
 	/// \ingroup indexing
-	FLMEXP RCODE FLMAPI FlmIndexResume(
+	FLMXPC RCODE FLMAPI FlmIndexResume(
 		HFDB			hDb,							///< Database handle - see FlmDbOpen() or FlmDbCreate().
 		FLMUINT		uiIndexNum					///< Number of index to resume.
 		);
 		
 	/// Determine if a return code (RCODE) indicates a corruption.
 	/// \ingroup errhandling
-	FLMEXP FLMBOOL FLMAPI FlmErrorIsFileCorrupt(
+	FLMXPC FLMBOOL FLMAPI FlmErrorIsFileCorrupt(
 		RCODE			rc								///< Error code to be tested.
 		);
 
 	/// Convert a return code (RCODE) into a string.
 	/// \ingroup errhandling
-	FLMEXP const char * FLMAPI FlmErrorString(
+	FLMXPC const char * FLMAPI FlmErrorString(
 		RCODE	rc			///< Error code that is to be converted to a string.
 		);
 
@@ -2547,7 +2572,7 @@
 
 	/// Get diagnostic information.
 	/// \ingroup errhandling
-	FLMEXP RCODE FLMAPI FlmGetDiagInfo(
+	FLMXPC RCODE FLMAPI FlmGetDiagInfo(
 		HFDB					hDb,				///< Database handle.
 		eDiagInfoType		eDiagCode,		///< Diagnostic desired.
 		void *				pvDiagInfo		///< Diagnostic information returned here.\  See documentation on ::eDiagInfoType for more
@@ -2569,7 +2594,7 @@
 
 	/// Begin a transaction on the database.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbTransBegin(
+	FLMXPC RCODE FLMAPI FlmDbTransBegin(
 		HFDB			hDb,							///< Database handle.
 		FLMUINT		uiTransType,				///< Type of transaction to start.\  May be FLM_UPDATE_TRANS or FLM_READ_TRANS.\  The
 														///< following flags may also be ORed into the transaction type to get special
@@ -2595,7 +2620,7 @@
 
 	/// Commit current transaction (if any) on a database.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbTransCommit(
+	FLMXPC RCODE FLMAPI FlmDbTransCommit(
 		HFDB			hDb,							///< Database handle.
 		FLMBOOL *	pbEmpty = NULL				///< If non-NULL, this returns a flag indicating whether or not the transaction was
 														///< empty.\  This is only returned for update transactions.\   If TRUE, it means
@@ -2607,13 +2632,13 @@
 
 	/// Abort current transaction (if any) on a database.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbTransAbort(
+	FLMXPC RCODE FLMAPI FlmDbTransAbort(
 		HFDB			hDb							///< Database handle.
 		);
 
 	/// Get type of current transaction (if any) on a database.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbGetTransType(
+	FLMXPC RCODE FLMAPI FlmDbGetTransType(
 		HFDB			hDb,							///< Database handle.
 		FLMUINT *	puiTransType				///< Transaction type is returned here.\  It will be
 														///< one of the following:\n
@@ -2624,7 +2649,7 @@
 
 	/// Get current transaction ID.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbGetTransId(
+	FLMXPC RCODE FLMAPI FlmDbGetTransId(
 		HFDB			hDb,							///< Database handle.
 		FLMUINT *	puiTransID					///< Current transaction ID is returned here.\  If no transaction is currently active,
 														///< the function will return RCODE::FERR_NO_TRANS_ACTIVE.
@@ -2632,14 +2657,14 @@
 
 	/// Get number of committed transactions for a database.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbGetCommitCnt(
+	FLMXPC RCODE FLMAPI FlmDbGetCommitCnt(
 		HFDB			hDb,							///< Database handle.
 		FLMUINT *	puiCommitCount				///< Number of transactions that have been committed is returned here.
 		);
 
 	/// Lock a database.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbLock(
+	FLMXPC RCODE FLMAPI FlmDbLock(
 		HFDB				hDb,						///< Database handle.
 		eLockType		lockType,				///< Type of lock being requested.
 		FLMINT			iPriority,				///< Priority of lock being requested.
@@ -2650,13 +2675,13 @@
 
 	/// Unlock a database.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbUnlock(
+	FLMXPC RCODE FLMAPI FlmDbUnlock(
 		HFDB				hDb						///< Database handle.
 		);
 
 	/// Get the type of lock currently in effect on a database (if any).
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbGetLockType(
+	FLMXPC RCODE FLMAPI FlmDbGetLockType(
 		HFDB				hDb,						///< Database handle.
 		eLockType *		pLockType,				///< Type of lock currently held returned here.
 		FLMBOOL *		pbImplicit				///< Flag indicating if the lock is an implicit lock.\  An implicit lock is one that
@@ -2668,7 +2693,7 @@
 
 	/// Perform a checkpoint on the database.
 	/// \ingroup trans
-	FLMEXP RCODE FLMAPI FlmDbCheckpoint(
+	FLMXPC RCODE FLMAPI FlmDbCheckpoint(
 		HFDB				hDb,						///< Database handle.
 		FLMUINT			uiTimeout				///< Specifies the maximum number of seconds to wait to obtain the database lock.\  An
 														///< exclusive lock must be obtained to do a checkpoint.\  NOTE: A value of
@@ -2683,7 +2708,7 @@
 
 	/// Add a record to the database.
 	/// \ingroup update
-	FLMEXP RCODE FLMAPI FlmRecordAdd(
+	FLMXPC RCODE FLMAPI FlmRecordAdd(
 		HFDB			hDb,					///< Database handle.
 		FLMUINT		uiContainerNum,	///< Container record is to be added to.
 		FLMUINT *	puiDrn,				///< On input, *puiDrn contains the DRN to be assigned to the record.\  If *puiDrn == 0
@@ -2718,7 +2743,7 @@
 
 	/// Modify a record in the database.
 	/// \ingroup update
-	FLMEXP RCODE FLMAPI FlmRecordModify(
+	FLMXPC RCODE FLMAPI FlmRecordModify(
 		HFDB			hDb,					///< Database handle.
 		FLMUINT		uiContainerNum,	///< Container number record is to be modified in.
 		FLMUINT		uiDrn,				///< DRN of record to be modified.
@@ -2735,7 +2760,7 @@
 
 	/// Delete a record from the database.
 	/// \ingroup update
-	FLMEXP RCODE FLMAPI FlmRecordDelete(
+	FLMXPC RCODE FLMAPI FlmRecordDelete(
 		HFDB			hDb,					///< Database handle.
 		FLMUINT		uiContainerNum,	///< Container number the record is to be deleted from.
 		FLMUINT		uiDrn,				///< DRN of record to be deleted.
@@ -2748,7 +2773,7 @@
 	/// to the database.  The DRN returned from this function may then be passed into FlmRecordAdd() to assign the DRN
 	/// to the record being added.
 	/// \ingroup update
-	FLMEXP RCODE FLMAPI FlmReserveNextDrn(
+	FLMXPC RCODE FLMAPI FlmReserveNextDrn(
 		HFDB			hDb,					///< Database handle.
 		FLMUINT		uiContainerNum,	///< Container number the DRN is to be reserved from.
 		FLMUINT *	puiDrn				///< The reserved DRN is returned here.
@@ -2756,7 +2781,7 @@
 
 	/// Find an unused DRN in the dictionary.
 	/// \ingroup update
-	FLMEXP RCODE FLMAPI FlmFindUnusedDictDrn(
+	FLMXPC RCODE FLMAPI FlmFindUnusedDictDrn(
 		HFDB			hDb,					///< Database handle.
 		FLMUINT		uiStartDrn,			///< Beginning of range of DRNs to look for an non-used DRN.
 		FLMUINT		uiEndDrn,			///< Ending of range of DRNs to look for a non-used DRN.
@@ -2766,7 +2791,7 @@
 
 	/// Get the name of a dictionary item.
 	/// \ingroup dbdict
-	FLMEXP RCODE FLMAPI FlmGetItemName(
+	FLMXPC RCODE FLMAPI FlmGetItemName(
 		HFDB				hDb,					///< Database handle.
 		FLMUINT			uiItemId,			///< Dictionary ID whose name is to be returned.
 		FLMUINT			uiNameBufSize,		///< Size of pszNameBuf in bytes.\  Buffer should be large enough to hold the
@@ -2785,7 +2810,7 @@
 
 	/// Find and retrieve a record in a container.
 	/// \ingroup retrieval
-	FLMEXP RCODE FLMAPI FlmRecordRetrieve(
+	FLMXPC RCODE FLMAPI FlmRecordRetrieve(
 		HFDB				hDb,					///< Database handle.
 		FLMUINT			uiContainerNum,	///< Container the record is to be retrieved from.
 		FLMUINT			uiDrn,				///< DRN of record to be retrieved.\  NOTE: The actual record retrieved depends on
@@ -2808,7 +2833,7 @@
 
 	/// Find and retrieve a key in an index.
 	/// \ingroup retrieval
-	FLMEXP RCODE FLMAPI FlmKeyRetrieve(
+	FLMXPC RCODE FLMAPI FlmKeyRetrieve(
 		HFDB				hDb,					///< Database handle.
 		FLMUINT			uiIndex,				///< Index the key is to be retrieved from.
 		FLMUINT			uiContainerNum,	///< If the index is a cross-container index, this may be used to specify a particular
@@ -2853,7 +2878,7 @@
 
 	/// Begin a database backup.
 	/// \ingroup dbbackup
-	FLMEXP RCODE FLMAPI FlmDbBackupBegin(
+	FLMXPC RCODE FLMAPI FlmDbBackupBegin(
 		HFDB			hDb,					///< Database handle.
 		FBackupType	eBackupType,		///< Type of backup being requested.
 		FLMBOOL		bHotBackup,			///< Specifies whether backup should be "hot" or "warm".\  A hot backup is one where the database is
@@ -2874,7 +2899,7 @@
 
 	/// Get backup configuration on a backup that was started by FlmDbBackupBegin.
 	/// \ingroup dbbackup
-	FLMEXP RCODE FLMAPI FlmBackupGetConfig(
+	FLMXPC RCODE FLMAPI FlmBackupGetConfig(
 		HFBACKUP					hBackup,				///< Backup handle that was returned from FlmDbBackupBegin().
 		eBackupGetConfigType	eConfigType,		///< Type of configuration information being requested.
 		void *					pvValue1,			///< Configuration information is returned here.\  See documentation on ::eBackupGetConfigType for
@@ -2894,7 +2919,7 @@
 
 	/// Perform a backup that was started by FlmDbBackupBegin.
 	/// \ingroup dbbackup
-	FLMEXP RCODE FLMAPI FlmDbBackup(
+	FLMXPC RCODE FLMAPI FlmDbBackup(
 		HFBACKUP					hBackup,				///< Backup handle that was returned from FlmDbBackupBegin().
 		const char *			pszBackupPath,		///< This specifieds the directory where FlmDbBackup() is to create a backup file set
 															///< for the backed up data.\  The files in the backup set will be named 00000001.64,
@@ -2922,13 +2947,13 @@
 	/// been allocated during the backup.  This should always be called if FlmDbBackupBegin() is successful, even if FlmDbBackup() is
 	/// never called, or if it fails with an error code.
 	/// \ingroup dbbackup
-	FLMEXP RCODE FLMAPI FlmDbBackupEnd(
+	FLMXPC RCODE FLMAPI FlmDbBackupEnd(
 		HFBACKUP *				phBackup				/// Pointer to backup handle that is to be freed.
 		);
 
 	/// Restore a database from a backup.
 	/// \ingroup dbbackup
-	FLMEXP RCODE FLMAPI FlmDbRestore(
+	FLMXPC RCODE FLMAPI FlmDbRestore(
 		const char *			pszDbPath,			///< Name of database FlmDbRestore() is to create from the backup.
 		const char *			pszDataDir,			///< Directory where the restored database's data files are to be created.
 		const char *			pszBackupPath,		///< Directory where backup file set is located.\   If NULL, the backup data is
@@ -2982,11 +3007,11 @@
 		virtual RCODE close( void) = 0;
 	};
 
-	FLMEXP RCODE FLMAPI FlmDbGetUnknownStreamObj(
+	FLMXPC RCODE FLMAPI FlmDbGetUnknownStreamObj(
 		HFDB						hDb,
 		F_UnknownStream **	ppUnknownStream);
 
-	FLMEXP RCODE FLMAPI FlmDbGetRflFileName(
+	FLMXPC RCODE FLMAPI FlmDbGetRflFileName(
 		HFDB 					hDb,
 		FLMUINT				uiFileNum,
 		char *				pszFileName);
@@ -3199,7 +3224,7 @@
 
 	/// Allocate a BLOB object that can then be used to create a new BLOB to store in a ::FlmRecord object.
 	/// \ingroup update
-	FLMEXP RCODE FLMAPI FlmAllocBlob(
+	FLMXPC RCODE FLMAPI FlmAllocBlob(
 		FlmBlob **		ppBlob				///< Pointer to newly allocated BLOB object is returned here.
 		);
 
@@ -3218,7 +3243,7 @@
 
 	/// Convert a FLMUINT value to FLAIM's internal storage format for numbers.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmUINT2Storage(
+	FLMXPC RCODE FLMAPI FlmUINT2Storage(
 		FLMUINT			uiNum,			///< Number to convert.
 		FLMUINT *		puiStorageLen,	///< On input, *puiStorageLen is the size of pucStorageBuf.\  It must be atleast F_MAX_NUM_BUF
 												///< bytes.\  On output *puiStorageLen is set to the number of bytes used in pucStorageBuf.
@@ -3227,7 +3252,7 @@
 
 	/// Convert a FLMUINT64 value to FLAIM's internal storage format for numbers.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmUINT64ToStorage(
+	FLMXPC RCODE FLMAPI FlmUINT64ToStorage(
 		FLMUINT64		ui64Num,			///< Number to convert.
 		FLMUINT *		puiStorageLen,	///< On input, *puiStorageLen is the size of pucStorageBuf.\  It must be atleast F_MAX_NUM64_BUF
 												///< bytes.\  On output *puiStorageLen is set to the number of bytes used in pucStorageBuf.
@@ -3236,7 +3261,7 @@
 
 	/// Convert a FLMINT value to FLAIM's internal storage format for numbers.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmINT2Storage(
+	FLMXPC RCODE FLMAPI FlmINT2Storage(
 		FLMINT			iNum,				///< Number to convert.
 		FLMUINT *		puiStorageLen,	///< On input, *puiStorageLen is the size of pucStorageBuf.\  It must be atleast F_MAX_NUM_BUF
 												///< bytes.\  On output *puiStorageLen is set to the number of bytes used in pucStorageBuf.
@@ -3245,7 +3270,7 @@
 
 	/// Convert a FLMINT64 value to FLAIM's internal storage format for numbers.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmINT64ToStorage(
+	FLMXPC RCODE FLMAPI FlmINT64ToStorage(
 		FLMINT64			i64Num,			///< Number to convert.
 		FLMUINT *		puiStorageLen,	///< On input, *puiStorageLen is the size of pucStorageBuf.\  It must be atleast F_MAX_NUM64_BUF
 												///< bytes.\  On output *puiStorageLen is set to the number of bytes used in pucStorageBuf.
@@ -3255,7 +3280,7 @@
 	/// Convert a value from FLAIM's internal format to a FLMUINT.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmStorage2UINT(
+	FLMXPC RCODE FLMAPI FlmStorage2UINT(
 		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
 													///< FLM_CONTEXT_TYPE.
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
@@ -3266,7 +3291,7 @@
 	/// Convert a value from FLAIM's internal format to a FLMUINT32.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmStorage2UINT32(
+	FLMXPC RCODE FLMAPI FlmStorage2UINT32(
 		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
 													///< FLM_CONTEXT_TYPE.
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
@@ -3277,7 +3302,7 @@
 	/// Convert a value from FLAIM's internal format to a FLMUINT64.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmStorage2UINT64(
+	FLMXPC RCODE FLMAPI FlmStorage2UINT64(
 		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
 													///< FLM_CONTEXT_TYPE.
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
@@ -3288,7 +3313,7 @@
 	/// Convert a value from FLAIM's internal format to a FLMINT.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmStorage2INT(
+	FLMXPC RCODE FLMAPI FlmStorage2INT(
 		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
 													///< FLM_CONTEXT_TYPE.
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
@@ -3299,7 +3324,7 @@
 	/// Convert a value from FLAIM's internal format to a FLMINT32.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmStorage2INT32(
+	FLMXPC RCODE FLMAPI FlmStorage2INT32(
 		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
 													///< FLM_CONTEXT_TYPE.
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
@@ -3310,7 +3335,7 @@
 	/// Convert a value from FLAIM's internal format to a FLMINT64.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// FLM_TEXT_TYPE, or FLM_CONTEXT_TYPE.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmStorage2INT64(
+	FLMXPC RCODE FLMAPI FlmStorage2INT64(
 		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE, FLM_TEXT_TYPE, or
 													///< FLM_CONTEXT_TYPE.
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
@@ -3320,7 +3345,7 @@
 
 	/// Convert a unicode string to FLAIM's internal storage format.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmUnicode2Storage(
+	FLMXPC RCODE FLMAPI FlmUnicode2Storage(
 		const FLMUNICODE *	puzStr,			///< Unicode string that is to be converted.\  FLAIM expects the string
 														///< to be null-terminated.
 		FLMUINT *				puiStorageLen,	///< On input, *puiStorageLen is length (in bytes) of pucStorageBuf.\  On output, *puiStorageLen
@@ -3330,7 +3355,7 @@
 
 	/// Determine the number of bytes needed to store a unicode string in FLAIM's internal storage format.
 	/// \ingroup storageconversion
-	FLMEXP FLMUINT FLMAPI FlmGetUnicodeStorageLength(
+	FLMXPC FLMUINT FLMAPI FlmGetUnicodeStorageLength(
 		const FLMUNICODE *	puzStr		///< Unicode string whose internal storage length is to be determined.\  It is
 													///< expected that the string will be null-terminated.
 		);
@@ -3338,7 +3363,7 @@
 	/// Convert a value from FLAIM's internal format to a unicode string.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// or FLM_TEXT_TYPE.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmStorage2Unicode(
+	FLMXPC RCODE FLMAPI FlmStorage2Unicode(
 		FLMUINT				uiValueType,	///< Data type of data being converted.\  May be FLM_NUMBER_TYPE or FLM_TEXT_TYPE.
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
 		const FLMBYTE *	pucValue,		///< Value to be converted.\  Data is expected to be in FLAIM's internal format.
@@ -3370,7 +3395,7 @@
 
 	/// Convert a native string to FLAIM's internal storage format.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmNative2Storage(
+	FLMXPC RCODE FLMAPI FlmNative2Storage(
 		const char *		pszStr,			///< Native string that is to be converted.
 		FLMUINT 				uiStrLen,		///< Length (in bytes) of the native string.\  If zero, the string is
 													///< expected to be NULL-terminated.
@@ -3383,7 +3408,7 @@
 	/// Convert a value from FLAIM's internal format to a native string.  Note that the value may be a FLM_NUMBER_TYPE,
 	/// or FLM_TEXT_TYPE.
 	/// \ingroup storageconversion
-	FLMEXP RCODE FLMAPI FlmStorage2Native(
+	FLMXPC RCODE FLMAPI FlmStorage2Native(
 		FLMUINT				uiValueType,	///< Data type of value being converted.\  May be FLM_NUMBER_TYPE or FLM_TEXT_TYPE.
 		FLMUINT 				uiValueLength,	///< Length of value to be converted (in bytes).
 		const FLMBYTE *	pucValue,		///< Value to be converted.\  Data is expected to be in FLAIM's internal format.
@@ -3400,7 +3425,7 @@
 
 	/// Determine the number of bytes needed to store a native string in FLAIM's internal storage format.
 	/// \ingroup storageconversion
-	FLMEXP FLMUINT FLMAPI FlmGetNativeStorageLength(
+	FLMXPC FLMUINT FLMAPI FlmGetNativeStorageLength(
 		const char *		pszStr		///< Native string whose internal storage length is to be determined.\  It is
 												///< expected that the string will be null-terminated.
 		);
@@ -3677,7 +3702,7 @@
 	[ 1 dseq <#>]                    # FLM_DICT_SEQ_TAG - dictionary sequence ID for the record
 	*/
 
-	FLMEXP RCODE FLMAPI FlmKeyBuild(
+	FLMXPC RCODE FLMAPI FlmKeyBuild(
 		HFDB			hDb,
 		FLMUINT		uiIxNum,
 		FLMUINT		uiContainer,
@@ -4944,7 +4969,7 @@
 		friend class F_Rfl;
 	};
 
-	FLMEXP RCODE FLMAPI flmCurPerformRead(
+	FLMXPC RCODE FLMAPI flmCurPerformRead(
 		eFlmFuncs		eFlmFuncId,
 		HFCURSOR 		hCursor,
 		FLMBOOL			bReadForward,
@@ -5043,14 +5068,14 @@
 
 	/// Retrieve current record from query result set.
 	/// \ingroup queryret
-	FLMEXP RCODE FLMAPI FlmCursorCurrent(
+	FLMXPC RCODE FLMAPI FlmCursorCurrent(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FlmRecord **		ppRecord			///< Pointer to found record, if any, is returned here.\  NULL is returned if no record was found.
 		);
 
 	/// Retrieve the DRN of the current recrord in query result set.
 	/// \ingroup queryret
-	FLMEXP RCODE FLMAPI FlmCursorCurrentDRN(
+	FLMXPC RCODE FLMAPI FlmCursorCurrentDRN(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT *			puiDrn			///< DRN is returned here.
 		);
@@ -5058,7 +5083,7 @@
 	/// Position relative to the current record (forward or backward) in the query result set
 	/// and retrieve the record positioned to.
 	/// \ingroup queryret
-	FLMEXP RCODE FLMAPI FlmCursorMoveRelative(
+	FLMXPC RCODE FLMAPI FlmCursorMoveRelative(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMINT *				piPosition,		///< On input *piPosition indicates the relative position to move within the
 													///< query result set.\  A negative value will move the position back
@@ -5073,7 +5098,7 @@
 	/// records as it goes.  Therefore, it may take a long time to compute, depending on the size of the result
 	/// set and whether or not indexes can be used to optimize the query.
 	/// \ingroup queryret
-	FLMEXP RCODE FLMAPI FlmCursorRecCount(
+	FLMXPC RCODE FLMAPI FlmCursorRecCount(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT *			puiCount			///< Count of records in the query result set is returned here.
 		);
@@ -5085,7 +5110,7 @@
 	/// -# Compares the keys to determine which is greater
 	/// -# Optionally gets an count of the keys between the two keys (count is inclusive).
 	/// \ingroup querycomp
-	FLMEXP RCODE FLMAPI FlmCursorCompareDRNs(
+	FLMXPC RCODE FLMAPI FlmCursorCompareDRNs(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT				uiDRN1,			///< DRN of first record to be compared.
 		FLMUINT				uiDRN2,			///< DRN of second record to be compated.
@@ -5097,7 +5122,7 @@
 			
 	/// Test a record to see if it passes the query criteria.
 	/// \ingroup querycomp
-	FLMEXP RCODE FLMAPI FlmCursorTestRec(
+	FLMXPC RCODE FLMAPI FlmCursorTestRec(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FlmRecord *			pRecord,			///< Record to be tested against the query criteria.
 		FLMBOOL *			pbIsMatch		///< Flag is returned here indicating whether or not the record matches the criteria.
@@ -5105,7 +5130,7 @@
 
 	/// Retrieve and test a record (using a DRN) to see if it passes the query criteria.
 	/// \ingroup querycomp
-	FLMEXP RCODE FLMAPI FlmCursorTestDRN(
+	FLMXPC RCODE FLMAPI FlmCursorTestDRN(
 		HFCURSOR 			hCursor,			///< Handle to query object.
 		FLMUINT				uiDRN,			///< DRN of record to be tested against the query criteria.\  FLAIM will retrieve the
 													///< record and test it.\  The container is the container that was passed into
@@ -5391,13 +5416,13 @@
 	} REBUILD_INFO;
 
 	/// Return an error string for a corruption code.
-	FLMEXP const char * FLMAPI FlmVerifyErrToStr(
+	FLMXPC const char * FLMAPI FlmVerifyErrToStr(
 		eCorruptionType	eCorruption		///< Corruption code.
 		);
 
 	/// Check a database for corruptions.
 	/// \ingroup dbmaint
-	FLMEXP RCODE FLMAPI FlmDbCheck(
+	FLMXPC RCODE FLMAPI FlmDbCheck(
 		HFDB						hDb,					///< Database handle of database to be checked.\  If HFDB_NULL, FlmDbCheck will call
 															///< FlmDbOpen() using the pszDbFileName, pszDataDir, pszRflDir, and uiFlags parameters.
 		const char *			pszDbFileName,		///< Name of database to be checked.\  This is only used if hDb is HFDB_NULL.
@@ -5431,7 +5456,7 @@
 	/// database may be built from it that has no corruptions.  In addition, indexes in the new database
 	/// will be rebuilt.
 	/// \ingroup dbmaint
-	FLMEXP RCODE FLMAPI FlmDbRebuild(
+	FLMXPC RCODE FLMAPI FlmDbRebuild(
 		const char *		pszSourceDbPath,	///< Name of database to be rebuilt.
 		const char *		pszSourceDataDir,	///< Directory where database's data files are located.\  If NULL, it is assumed that the
 														///< database's data files are located in the same directory as pszSourceDbPath.
@@ -5451,7 +5476,7 @@
 
 	/// Reduce the database size - returning unused blocks back to the file system.
 	/// \ingroup dbmaint
-	FLMEXP RCODE FLMAPI FlmDbReduceSize(
+	FLMXPC RCODE FLMAPI FlmDbReduceSize(
 		HFDB				hDb,				///< Database handle.
 		FLMUINT			uiCount,			///< Maximum number of unused blocks to be returned to file system.
 		FLMUINT *		puiCount			///< Number of blocks actually returned.\  This should be the same as the number
@@ -5460,7 +5485,7 @@
 
 	/// Traverse records in the database looking for unused fields.
 	/// \ingroup dbmaint
-	FLMEXP RCODE FLMAPI FlmDbSweep(
+	FLMXPC RCODE FLMAPI FlmDbSweep(
 		HFDB				hDb,					///< Database handle.
 		FLMUINT			uiSweepMode,		///< Flags indicating what actions FlmDbSweep() should do while it is traversing the database.\  It
 													///< may be any of the following flags ORed together:\n
@@ -5500,7 +5525,7 @@
 
 	/// Upgrade a database.
 	/// \ingroup dbmaint
-	FLMEXP RCODE FLMAPI FlmDbUpgrade(
+	FLMXPC RCODE FLMAPI FlmDbUpgrade(
 		HFDB			hDb,						///< Database handle.
 		FLMUINT		uiNewVersion,			///< Version database is to be upgraded to.\  This must be greater than the current version of the database.
 		STATUS_HOOK	fnStatusCallback,		///< Callback function that is called while the database is being upgraded.\  See
@@ -5531,14 +5556,14 @@
 
 	/// Get the current status of the background maintenance thread for a database.
 	/// \ingroup dbmaint
-	FLMEXP RCODE FLMAPI FlmMaintenanceStatus(
+	FLMXPC RCODE FLMAPI FlmMaintenanceStatus(
 		HFDB					hDb,				///< Database handle.
 		FMAINT_STATUS *	pMaintStatus	///< Status is returned in this structure.
 		);
 
 	/// Copy a database.
 	/// \ingroup dbcopy
-	FLMEXP RCODE FLMAPI FlmDbCopy(
+	FLMXPC RCODE FLMAPI FlmDbCopy(
 		const char *		pszSrcDbName,				///< Name of database to be copied.\  May be full path name or partial path name.
 		const char *		pszSrcDataDir,				///< Name of directory where data files for the database are located.\  If NULL, data files are
 																///< assumed to be in the same directory as the main database file - pszSrcDbName.
@@ -5559,7 +5584,7 @@
 
 	/// Rename a database.
 	/// \ingroup dbcopy
-	FLMEXP RCODE FLMAPI FlmDbRename(
+	FLMXPC RCODE FLMAPI FlmDbRename(
 		const char *		pszDbName,					///< Name of database to be renamed.\  May be full path name or partial path name.
 		const char *		pszDataDir,					///< Name of directory where data files for the database are located.\  If NULL, data files are
 																///< assumed to be in the same directory as the main database file - pszDbName.
@@ -5577,7 +5602,7 @@
 
 	/// Delete a database.
 	/// \ingroup dbcopy
-	FLMEXP RCODE FLMAPI FlmDbRemove(
+	FLMXPC RCODE FLMAPI FlmDbRemove(
 		const char *		pszDbName,					///< Name of database to be deleted.\  May be full path name or partial path name.
 		const char *		pszDataDir,					///< Name of directory where data files for the database are located.\  If NULL, data files are
 																///< assumed to be in the same directory as the main database file - pszDbName.
@@ -5588,7 +5613,7 @@
 
 	/// Enable encryption for a database.
 	/// \ingroup encryption
-	FLMEXP RCODE FLMAPI FlmEnableEncryption(
+	FLMXPC RCODE FLMAPI FlmEnableEncryption(
 		HFDB				hDb,						///< Database handle.
 		FLMBYTE **		ppucWrappingKey,		///< This returns a pointer to a buffer containing the database key wrapped in the
 														///< NICI local storage key.\  FlmEnableEncryption() allocates memory for this buffer.\  The
@@ -5598,7 +5623,7 @@
 
 	/// Wrap a database's encryption key in a password.
 	/// \ingroup encryption
-	FLMEXP RCODE FLMAPI FlmDbWrapKey(
+	FLMXPC RCODE FLMAPI FlmDbWrapKey(
 		HFDB					hDb,						///< Database handle.
 		const char *		pszPassword				///< Password to wrap the database key in.\  May be NULL to wrap the key in the NICI
 															///< local storage key.\  NOTE: Once the database key has been wrapped in a password,

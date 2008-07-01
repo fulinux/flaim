@@ -1638,7 +1638,7 @@ public:
 	{
 	}
 	
-	RCODE FLMAPI getValue(
+	RCODE XFLAPI getValue(
 		IF_Db *					pDb,
 		IF_DOMNode *			pContextNode,
 		ValIterator				eValueToGet,
@@ -1647,7 +1647,7 @@ public:
 		void *					pvVal,
 		F_DynaBuf *				pDynaBuf = NULL);
 			
-	RCODE FLMAPI cloneSelf(
+	RCODE XFLAPI cloneSelf(
 		IF_QueryValFunc **	ppNewObj);
 };
 
@@ -1656,7 +1656,7 @@ Desc:	Get the next value for a query function.  Since this is really just
 		code to test the callback, it always returns a value whose type
 		is boolean and whose value is true.
 ****************************************************************************/
-RCODE FLMAPI XFLAIM_QueryValFunc::getValue(
+RCODE XFLAPI XFLAIM_QueryValFunc::getValue(
 	IF_Db *,			// pDb,
 	IF_DOMNode *,	// pContextNode,
 	ValIterator		eValueToGet,
@@ -1692,7 +1692,7 @@ Exit:
 /****************************************************************************
 Desc:	Copy self to create a new object.
 ****************************************************************************/
-RCODE FLMAPI XFLAIM_QueryValFunc::cloneSelf(
+RCODE XFLAPI XFLAIM_QueryValFunc::cloneSelf(
 	IF_QueryValFunc **	ppNewObj)
 {
 	

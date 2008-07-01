@@ -34,7 +34,7 @@ Notes: The size of the database file is reduced by freeing a specified
 		 available block list is empty, FLAIM will attemp to add blocks to
 		 the list by freeing log extent blocks.
 ****************************************************************************/
-RCODE FLMAPI F_Db::reduceSize(
+RCODE XFLAPI F_Db::reduceSize(
 	FLMUINT			uiCount,
 	FLMUINT *		puiCount)
 {

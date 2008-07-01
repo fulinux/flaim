@@ -596,7 +596,7 @@ Desc:	Calculate the checksum for a block.  NOTE: This is ALWAYS done
 		that if the block needs to be converted before writing it out,
 		it should be done before calculating the checksum.
 *********************************************************************/
-FLMUINT32 FLMAPI f_calcFastChecksum(
+FLMUINT32 FTKAPI f_calcFastChecksum(
 	const void *	pvData,
 	FLMUINT			uiLength,
 	FLMUINT *		puiSum,
@@ -728,7 +728,7 @@ Desc: Computes the CRC of the passed-in data buffer.  Multiple calls can
 		*pui32CRC should be initialized to 0xFFFFFFFF and the ones complement
 		of the resulting CRC should be computed.
 *****************************************************************************/
-void FLMAPI f_updateCRC(
+void FTKAPI f_updateCRC(
 	const void *		pvBuffer,
 	FLMUINT				uiCount,
 	FLMUINT32 *			pui32CRC)
@@ -749,7 +749,7 @@ void FLMAPI f_updateCRC(
 /********************************************************************
 Desc:
 *********************************************************************/
-FLMBYTE FLMAPI f_calcPacketChecksum(
+FLMBYTE FTKAPI f_calcPacketChecksum(
 	const void *	pvPacket,
 	FLMUINT			uiBytesToChecksum)
 {

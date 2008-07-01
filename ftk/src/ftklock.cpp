@@ -56,33 +56,33 @@ public:
 
 	virtual ~F_LockObject();
 	
-	FLMINT FLMAPI AddRef( void);
+	FLMINT FTKAPI AddRef( void);
 	
-	FLMINT FLMAPI Release( void);
+	FLMINT FTKAPI Release( void);
 
 	RCODE setupLockObject( void);
 
-	RCODE FLMAPI lock(
+	RCODE FTKAPI lock(
 		F_SEM						hWaitSem,
 		FLMBOOL					bExclLock,
 		FLMUINT					uiMaxWaitSecs,
 		FLMINT					iPriority,
 		F_LOCK_STATS *			pLockStats = NULL);
 
-	RCODE FLMAPI unlock(
+	RCODE FTKAPI unlock(
 		F_LOCK_STATS *			pLockStats = NULL);
 		
-	FLMUINT FLMAPI getLockCount( void)
+	FLMUINT FTKAPI getLockCount( void)
 	{
 		return( m_uiLockCount);
 	}
 
-	FLMUINT FLMAPI getWaiterCount( void)
+	FLMUINT FTKAPI getWaiterCount( void)
 	{
 		return( m_uiNumWaiters);
 	}
 	
-	RCODE FLMAPI getLockInfo(
+	RCODE FTKAPI getLockInfo(
 		FLMINT					iPriority,
 		eLockType *				peCurrLockType,
 		FLMUINT *				puiThreadId,
@@ -91,25 +91,25 @@ public:
 		FLMUINT *				puiNumSharedQueued,
 		FLMUINT *				puiPriorityCount);
 		
-	RCODE FLMAPI getLockInfo(
+	RCODE FTKAPI getLockInfo(
 		IF_LockInfoClient *	pLockInfo);
 
-	RCODE FLMAPI getLockQueue(
+	RCODE FTKAPI getLockQueue(
 		F_LOCK_USER **			ppLockUsers);
 	
-	FLMBOOL FLMAPI haveHigherPriorityWaiter(
+	FLMBOOL FTKAPI haveHigherPriorityWaiter(
 		FLMINT					iPriority);
 
-	void FLMAPI timeoutLockWaiter(
+	void FTKAPI timeoutLockWaiter(
 		FLMUINT					uiThreadId);
 
-	void FLMAPI timeoutAllWaiters( void);
+	void FTKAPI timeoutAllWaiters( void);
 
 private:
 
 	void cleanupLockObject( void);
 
-	static RCODE FLMAPI timeoutThread(
+	static RCODE FTKAPI timeoutThread(
 		IF_Thread *				pThread);
 
 	void insertWaiter(
@@ -137,7 +137,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmAllocLockObject(
+RCODE FTKAPI FlmAllocLockObject(
 	IF_LockObject **	ppLockObject)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -215,7 +215,7 @@ void F_LockObject::cleanupLockObject( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_LockObject::AddRef( void)
+FLMINT FTKAPI F_LockObject::AddRef( void)
 {
 	return( f_atomicInc( &m_refCnt));
 }
@@ -223,7 +223,7 @@ FLMINT FLMAPI F_LockObject::AddRef( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_LockObject::Release( void)
+FLMINT FTKAPI F_LockObject::Release( void)
 {
 	FLMINT	iRefCnt = f_atomicDec( &m_refCnt);
 
@@ -267,7 +267,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_LockObject::timeoutThread(
+RCODE FTKAPI F_LockObject::timeoutThread(
 	IF_Thread *			pThread)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -327,7 +327,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_LockObject::timeoutLockWaiter(
+void FTKAPI F_LockObject::timeoutLockWaiter(
 	FLMUINT					uiThreadId)
 {
 	FLMUINT					uiCurrTime;
@@ -364,7 +364,7 @@ void FLMAPI F_LockObject::timeoutLockWaiter(
 Desc:	Inserts a waiter into the global list of waiters, sorted by
 		its end wait time.
 ****************************************************************************/
-void FLMAPI F_LockObject::timeoutAllWaiters( void)
+void FTKAPI F_LockObject::timeoutAllWaiters( void)
 {
 	F_LOCK_WAITER *	pLockWaiter;
 	
@@ -550,7 +550,7 @@ void F_LockObject::removeWaiter(
 Desc:	Lock this object.  If object is locked, wait the specified
 		number of seconds.
 ****************************************************************************/
-RCODE FLMAPI F_LockObject::lock(
+RCODE FTKAPI F_LockObject::lock(
 	F_SEM					hWaitSem,
 	FLMBOOL				bExclReq,
 	FLMUINT				uiMaxWaitSecs,
@@ -694,7 +694,7 @@ Exit:
 Desc:	Unlock this object.  If there is a pending lock request, give
 		the lock to the next waiter.
 ****************************************************************************/
-RCODE FLMAPI F_LockObject::unlock(
+RCODE FTKAPI F_LockObject::unlock(
 	F_LOCK_STATS *		pLockStats)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -814,7 +814,7 @@ RCODE FLMAPI F_LockObject::unlock(
 /****************************************************************************
 Desc: Returns information about the pending lock requests.
 ****************************************************************************/
-RCODE FLMAPI F_LockObject::getLockInfo(
+RCODE FTKAPI F_LockObject::getLockInfo(
 	FLMINT				iPriority,
 	eLockType *			peCurrLockType,
 	FLMUINT *			puiThreadId,
@@ -930,7 +930,7 @@ RCODE FLMAPI F_LockObject::getLockInfo(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_LockObject::getLockInfo(
+RCODE FTKAPI F_LockObject::getLockInfo(
 	IF_LockInfoClient *	pLockInfo)
 {
 	RCODE						rc = NE_FLM_OK;
@@ -997,7 +997,7 @@ Exit:
 Desc:	Return a list that includes the current lock holder as well as
 		the lock waiters.
 ****************************************************************************/
-RCODE FLMAPI F_LockObject::getLockQueue(
+RCODE FTKAPI F_LockObject::getLockQueue(
 	F_LOCK_USER **		ppLockUsers)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -1062,7 +1062,7 @@ Exit:
 /****************************************************************************
 Desc: Returns TRUE if there are lock waiters with a priority > iPriority
 ****************************************************************************/
-FLMBOOL FLMAPI F_LockObject::haveHigherPriorityWaiter(
+FLMBOOL FTKAPI F_LockObject::haveHigherPriorityWaiter(
 	FLMINT				iPriority)
 {
 	F_LOCK_WAITER *	pLockWaiter;

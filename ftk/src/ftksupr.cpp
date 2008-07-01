@@ -82,7 +82,7 @@ F_SuperFileHdl::~F_SuperFileHdl()
 /****************************************************************************
 Desc:	Configures the super file object
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::setup(
+RCODE FTKAPI F_SuperFileHdl::setup(
 	IF_SuperFileClient *		pSuperFileClient,
 	IF_FileHdlCache *			pFileHdlCache,
 	FLMUINT						uiFileOpenFlags,
@@ -120,7 +120,7 @@ Exit:
 /****************************************************************************
 Desc: Creates a file
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::createFile(
+RCODE FTKAPI F_SuperFileHdl::createFile(
 	FLMUINT			uiFileNumber,
 	IF_FileHdl **	ppFileHdl)
 {
@@ -199,7 +199,7 @@ Exit:
 /****************************************************************************
 Desc:	Reads data from a file number into a buffer
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::readOffset(
+RCODE FTKAPI F_SuperFileHdl::readOffset(
 	FLMUINT			uiFileNumber,
 	FLMUINT			uiOffset,
 	FLMUINT			uiBytesToRead,
@@ -233,7 +233,7 @@ Exit:
 /****************************************************************************
 Desc:	Reads a database block into a buffer
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::readBlock(
+RCODE FTKAPI F_SuperFileHdl::readBlock(
 	FLMUINT			uiBlkAddress,
 	FLMUINT			uiBytesToRead,
 	void *			pvBuffer,
@@ -349,7 +349,7 @@ Exit:
 /****************************************************************************
 Desc:	Flush dirty files to disk.
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::flush( void)
+RCODE FTKAPI F_SuperFileHdl::flush( void)
 {
 	RCODE		rc = NE_FLM_OK;
 	
@@ -381,7 +381,7 @@ Exit:
 /****************************************************************************
 Desc:	Truncates back to an end of file block address.
 ****************************************************************************/
-RCODE	FLMAPI F_SuperFileHdl::truncateFile(
+RCODE	FTKAPI F_SuperFileHdl::truncateFile(
 	FLMUINT			uiEOFBlkAddress)
 {
 	RCODE 			rc = NE_FLM_OK;
@@ -432,7 +432,7 @@ Exit:
 /****************************************************************************
 Desc:	Extends to an end of file block address.
 ****************************************************************************/
-RCODE	FLMAPI F_SuperFileHdl::allocateBlocks(
+RCODE	FTKAPI F_SuperFileHdl::allocateBlocks(
 	FLMUINT			uiStartAddress,
 	FLMUINT			uiEndAddress)
 {
@@ -503,7 +503,7 @@ Exit:
 /****************************************************************************
 Desc:	Truncates back to an end of file block address.
 ****************************************************************************/
-RCODE	FLMAPI F_SuperFileHdl::truncateFile(
+RCODE	FTKAPI F_SuperFileHdl::truncateFile(
 	FLMUINT			uiFileNumber,
 	FLMUINT			uiOffset)
 {
@@ -534,7 +534,7 @@ Exit:
 Desc:	Truncate to zero length any files between the specified start
 		and end files.
 ****************************************************************************/
-void FLMAPI F_SuperFileHdl::truncateFiles(
+void FTKAPI F_SuperFileHdl::truncateFiles(
 	FLMUINT			uiStartFileNum,
 	FLMUINT			uiEndFileNum)
 {
@@ -556,7 +556,7 @@ void FLMAPI F_SuperFileHdl::truncateFiles(
 /****************************************************************************
 Desc:	Returns the physical size of a file
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::getFileSize(
+RCODE FTKAPI F_SuperFileHdl::getFileSize(
 	FLMUINT			uiFileNumber,
 	FLMUINT64 *		pui64FileSize)
 {
@@ -588,7 +588,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns the path of a file given its file number
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::getFilePath(
+RCODE FTKAPI F_SuperFileHdl::getFilePath(
 	FLMUINT			uiFileNumber,
 	char *			pszIoPath)
 {
@@ -598,7 +598,7 @@ RCODE FLMAPI F_SuperFileHdl::getFilePath(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_SuperFileHdl::canDoAsync( void)
+FLMBOOL FTKAPI F_SuperFileHdl::canDoAsync( void)
 {
 	FLMBOOL		bCanDoAsync = FALSE;
 	
@@ -623,7 +623,7 @@ FLMBOOL FLMAPI F_SuperFileHdl::canDoAsync( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_SuperFileHdl::canDoDirectIO( void)
+FLMBOOL FTKAPI F_SuperFileHdl::canDoDirectIO( void)
 {
 	FLMBOOL		bCanDoDirectIO = FALSE;
 	
@@ -648,7 +648,7 @@ FLMBOOL FLMAPI F_SuperFileHdl::canDoDirectIO( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::releaseFiles( void)
+RCODE FTKAPI F_SuperFileHdl::releaseFiles( void)
 {
 	RCODE			rc = NE_FLM_OK;
 	
@@ -680,7 +680,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns a file handle given the file's number
 ****************************************************************************/
-RCODE FLMAPI F_SuperFileHdl::getFileHdl(
+RCODE FTKAPI F_SuperFileHdl::getFileHdl(
 	FLMUINT						uiFileNum,
 	FLMBOOL						bForUpdate,
 	IF_FileHdl **				ppFileHdl)

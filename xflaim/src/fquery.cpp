@@ -666,7 +666,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a unicode value to the query criteria.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addUnicodeValue(
+RCODE XFLAPI F_Query::addUnicodeValue(
 	const FLMUNICODE *	puzVal)
 {
 	RCODE			rc = NE_XFLM_OK;
@@ -757,7 +757,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a UTF8 value to the query criteria.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addUTF8Value(
+RCODE XFLAPI F_Query::addUTF8Value(
 	const char *	pszVal,
 	FLMUINT			uiUTF8Len)
 {
@@ -866,7 +866,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a binary value to the query criteria.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addBinaryValue(
+RCODE XFLAPI F_Query::addBinaryValue(
 	const void *		pvVal,
 	FLMUINT				uiValLen)
 {
@@ -893,7 +893,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a UINT value to the query criteria.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addUINTValue(
+RCODE XFLAPI F_Query::addUINTValue(
 	FLMUINT	uiVal
 	)
 {
@@ -916,7 +916,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds an INT value to the query criteria.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addINTValue(
+RCODE XFLAPI F_Query::addINTValue(
 	FLMINT	iVal
 	)
 {
@@ -939,7 +939,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a UINT64 value to the query criteria.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addUINT64Value(
+RCODE XFLAPI F_Query::addUINT64Value(
 	FLMUINT64	ui64Val
 	)
 {
@@ -962,7 +962,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds an INT64 value to the query criteria.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addINT64Value(
+RCODE XFLAPI F_Query::addINT64Value(
 	FLMINT64	i64Val
 	)
 {
@@ -985,7 +985,7 @@ Exit:
 /***************************************************************************
 Desc:	Adds a BOOL value to the query criteria.
 ***************************************************************************/
-RCODE FLMAPI F_Query::addBoolean(
+RCODE XFLAPI F_Query::addBoolean(
 	FLMBOOL	bVal,
 	FLMBOOL	bUnknown
 	)
@@ -1013,7 +1013,7 @@ Exit:
 /***************************************************************************
 Desc:	Add an XPATH component
 ***************************************************************************/
-RCODE FLMAPI F_Query::addXPathComponent(
+RCODE XFLAPI F_Query::addXPathComponent(
 	eXPathAxisTypes		eXPathAxis,
 	eDomNodeType			eNodeType,
 	FLMUINT					uiDictNum,
@@ -1265,7 +1265,7 @@ FINLINE FLMBOOL hasContextPosTest(
 /***************************************************************************
 Desc:	Add an operator to the query expression
 ***************************************************************************/
-RCODE FLMAPI F_Query::addOperator(
+RCODE XFLAPI F_Query::addOperator(
 	eQueryOperators		eOperator,
 	FLMUINT					uiCompareRules,
 	IF_OperandComparer *	pOpComparer)
@@ -1807,7 +1807,7 @@ Exit:
 /***************************************************************************
 Desc:	Add a function to the query expression
 ***************************************************************************/
-RCODE FLMAPI F_Query::addFunction(
+RCODE XFLAPI F_Query::addFunction(
 	eQueryFunctions	eFunction,
 	IF_QueryValFunc *	pFuncObj,
 	FLMBOOL				bHaveXPathExpr)
@@ -10099,7 +10099,7 @@ FSTATIC void fqReleaseQueryExpr(
 /***************************************************************************
 Desc:	Release the resources of a query
 ***************************************************************************/
-void FLMAPI F_Query::resetQuery( void)
+void XFLAPI F_Query::resetQuery( void)
 {
 	if (m_pQuery)
 	{
@@ -12603,7 +12603,7 @@ Exit:
 /***************************************************************************
 Desc:	Get first node/document that passes query expression.
 ***************************************************************************/
-RCODE FLMAPI F_Query::getFirst(
+RCODE XFLAPI F_Query::getFirst(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit)
@@ -12800,7 +12800,7 @@ Exit:
 /***************************************************************************
 Desc:	Get last node/document that passes query expression.
 ***************************************************************************/
-RCODE FLMAPI F_Query::getLast(
+RCODE XFLAPI F_Query::getLast(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit)
@@ -12994,7 +12994,7 @@ Exit:
 /***************************************************************************
 Desc:	Get next node/document that passes query expression.
 ***************************************************************************/
-RCODE FLMAPI F_Query::getNext(
+RCODE XFLAPI F_Query::getNext(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit,
@@ -13175,7 +13175,7 @@ Exit:
 /***************************************************************************
 Desc:	Get previous node/document that passes query expression.
 ***************************************************************************/
-RCODE FLMAPI F_Query::getPrev(
+RCODE XFLAPI F_Query::getPrev(
 	IF_Db *			ifpDb,
 	IF_DOMNode **	ppNode,
 	FLMUINT			uiTimeLimit,
@@ -13356,7 +13356,7 @@ Exit:
 /***************************************************************************
 Desc:	Get current document that passes query expression.
 ***************************************************************************/
-RCODE FLMAPI F_Query::getCurrent(
+RCODE XFLAPI F_Query::getCurrent(
 	IF_Db *				ifpDb,
 	IF_DOMNode **		ppNode)
 {
@@ -13480,7 +13480,7 @@ Exit:
 /***************************************************************************
 Desc:	Get statistics and optimization information.
 ***************************************************************************/
-RCODE FLMAPI F_Query::getStatsAndOptInfo(
+RCODE XFLAPI F_Query::getStatsAndOptInfo(
 	FLMUINT *			puiNumOptInfos,
 	XFLM_OPT_INFO **	ppOptInfo)
 {
@@ -13584,7 +13584,7 @@ Exit:
 /***************************************************************************
 Desc:	Free the optimization info structure.
 ***************************************************************************/
-void FLMAPI F_Query::freeStatsAndOptInfo(
+void XFLAPI F_Query::freeStatsAndOptInfo(
 	XFLM_OPT_INFO **	ppOptInfo)
 {
 	if (*ppOptInfo)
@@ -13597,7 +13597,7 @@ void FLMAPI F_Query::freeStatsAndOptInfo(
 /****************************************************************************
 Desc:		Create an empty query object and return it's interface...
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::createIFQuery(
+RCODE XFLAPI F_DbSystem::createIFQuery(
 	IF_Query **			ppQuery)
 {
 	RCODE					rc = NE_XFLM_OK;
@@ -13802,7 +13802,7 @@ Exit:
 /****************************************************************************
 Desc:	Setup duplicate handling for a query.
 ****************************************************************************/
-void FLMAPI F_Query::setDupHandling(
+void XFLAPI F_Query::setDupHandling(
 	FLMBOOL	bRemoveDups
 	)
 {
@@ -13820,7 +13820,7 @@ void FLMAPI F_Query::setDupHandling(
 /****************************************************************************
 Desc:	Set an index for the query.
 ****************************************************************************/
-RCODE FLMAPI F_Query::setIndex(
+RCODE XFLAPI F_Query::setIndex(
 	FLMUINT	uiIndex
 	)
 {
@@ -13844,7 +13844,7 @@ Exit:
 /****************************************************************************
 Desc:	Set an index for the query.
 ****************************************************************************/
-RCODE FLMAPI F_Query::getIndex(
+RCODE XFLAPI F_Query::getIndex(
 	IF_Db *			ifpDb,
 	FLMUINT *		puiIndex,
 	FLMBOOL *		pbHaveMultiple)
@@ -14348,7 +14348,7 @@ Exit:
 /****************************************************************************
 Desc:	Copy criteria from another query object.
 ****************************************************************************/
-RCODE FLMAPI F_Query::copyCriteria(
+RCODE XFLAPI F_Query::copyCriteria(
 	IF_Query *	pSrcQuery
 	)
 {

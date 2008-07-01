@@ -25,7 +25,7 @@
 
 #include "flaimsys.h"
 
-FSTATIC void FLMAPI lgWriteComplete(
+FSTATIC void SQFAPI lgWriteComplete(
 	IF_IOBuffer *	pIOBuffer,
 	void *			pvData);
 	
@@ -70,7 +70,7 @@ void scaLogWrite(
 Desc:	This is the callback routine that is called when a disk write is
 		completed.
 ****************************************************************************/
-FSTATIC void FLMAPI lgWriteComplete(
+FSTATIC void SQFAPI lgWriteComplete(
 	IF_IOBuffer *	pIOBuffer,
 	void *			pvData)
 {

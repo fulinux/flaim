@@ -327,13 +327,13 @@ public:
 			pszBackupSetPath, pszRflDir));
 	}
 
-	FINLINE RCODE FLMAPI openRflFile(
+	FINLINE RCODE XFLAPI openRflFile(
 		FLMUINT	uiFileNum)
 	{
 		return( F_FSRestore::openRflFile( uiFileNum));
 	}
 
-	FINLINE RCODE FLMAPI read(
+	FINLINE RCODE XFLAPI read(
 		FLMUINT			uiLength,
 		void *			pvBuffer,
 		FLMUINT *		puiBytesRead)
@@ -367,28 +367,28 @@ public:
 		m_ui64RflBytesRead = 0;
 	}
 
-	RCODE FLMAPI reportProgress(
+	RCODE XFLAPI reportProgress(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64BytesToDo,
 		FLMUINT64			ui64BytesDone);
 
-	RCODE FLMAPI reportError(
+	RCODE XFLAPI reportError(
 		eRestoreAction *	peAction,
 		RCODE					rcErr);
 
-	RCODE FLMAPI reportBeginTrans(
+	RCODE XFLAPI reportBeginTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE FLMAPI reportCommitTrans(
+	RCODE XFLAPI reportCommitTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE FLMAPI reportAbortTrans(
+	RCODE XFLAPI reportAbortTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE FLMAPI reportOpenRflFile(
+	RCODE XFLAPI reportOpenRflFile(
 		eRestoreAction *	peAction,
 		FLMUINT				uiFileNum)
 	{
@@ -399,7 +399,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportRflRead(
+	RCODE XFLAPI reportRflRead(
 		eRestoreAction *	peAction,
 		FLMUINT				uiFileNum,
 		FLMUINT				uiBytesRead)
@@ -412,7 +412,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportBlockChainFree(
+	RCODE XFLAPI reportBlockChainFree(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT64,				// ui64MaintDocNum,
@@ -425,15 +425,15 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportEnableEncryption(
+	RCODE XFLAPI reportEnableEncryption(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE FLMAPI reportWrapKey(
+	RCODE XFLAPI reportWrapKey(
 		eRestoreAction *	peAction,
 		FLMUINT64			ui64TransId);
 
-	RCODE FLMAPI reportRollOverDbKey(
+	RCODE XFLAPI reportRollOverDbKey(
 		eRestoreAction *	peAction,
 		FLMUINT64)			// ui64TransId)
 	{
@@ -441,7 +441,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportDocumentDone(
+	RCODE XFLAPI reportDocumentDone(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -451,7 +451,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportNodeCreate(
+	RCODE XFLAPI reportNodeCreate(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -464,7 +464,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportNodeDelete(
+	RCODE XFLAPI reportNodeDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -474,7 +474,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportNodeChildrenDelete(
+	RCODE XFLAPI reportNodeChildrenDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -485,7 +485,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportInsertBefore(
+	RCODE XFLAPI reportInsertBefore(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -497,7 +497,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportNodeUpdate(
+	RCODE XFLAPI reportNodeUpdate(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -507,7 +507,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportNodeSetValue(
+	RCODE XFLAPI reportNodeSetValue(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -517,7 +517,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportNodeFlagsUpdate(
+	RCODE XFLAPI reportNodeFlagsUpdate(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -529,7 +529,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportNodeSetPrefixId(
+	RCODE XFLAPI reportNodeSetPrefixId(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -540,7 +540,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 		
-	RCODE FLMAPI reportSetNextNodeId(
+	RCODE XFLAPI reportSetNextNodeId(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -550,7 +550,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportNodeSetMetaValue(
+	RCODE XFLAPI reportNodeSetMetaValue(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -562,7 +562,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 	
-	RCODE FLMAPI reportAttributeDelete(
+	RCODE XFLAPI reportAttributeDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -573,7 +573,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportAttributeSetValue(
+	RCODE XFLAPI reportAttributeSetValue(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -584,7 +584,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 	
-	RCODE FLMAPI reportNodeSetPrefixId(
+	RCODE XFLAPI reportNodeSetPrefixId(
 		eRestoreAction *		peAction,
 		FLMUINT64,				// ui64TransId,
 		FLMUINT,					// uiCollection,
@@ -649,21 +649,21 @@ public:
 		m_pShell = pShell;
 	}
 
-	RCODE FLMAPI backupStatus(
+	RCODE XFLAPI backupStatus(
 		FLMUINT64		ui64BytesToDo,
 		FLMUINT64		ui64BytesDone);
 
-	FINLINE FLMINT FLMAPI getRefCount( void)
+	FINLINE FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_BackupStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT FLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_BackupStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT FLMAPI Release( void)
+	virtual FINLINE FLMINT XFLAPI Release( void)
 	{
 		return( IF_BackupStatus::Release());
 	}
@@ -2298,7 +2298,7 @@ public:
 	{
 	}
 
-	RCODE FLMAPI dbCopyStatus(
+	RCODE XFLAPI dbCopyStatus(
 		FLMUINT64		ui64BytesToCopy,
 		FLMUINT64		ui64BytesCopied,
 		FLMBOOL			bNewSrcFile,
@@ -2362,7 +2362,7 @@ public:
 	{
 	}
 
-	FINLINE RCODE FLMAPI dbRenameStatus(
+	FINLINE RCODE XFLAPI dbRenameStatus(
 		const char *	pszSrcFileName,
 		const char *	pszDstFileName)
 	{
@@ -7953,7 +7953,7 @@ public:
 	{
 	}
 	
-	RCODE FLMAPI infoStatus(
+	RCODE XFLAPI infoStatus(
 		FLMUINT		uiCurrLfNum,
 		FLMBOOL		bIsCollection,
 		char *		pszCurrLfName,
@@ -8025,7 +8025,7 @@ private:
 Desc: Callback function that is called while gathering data on an index
 		or collection.
 *****************************************************************************/
-RCODE FLMAPI SH_BTreeInfoStatus::infoStatus(
+RCODE XFLAPI SH_BTreeInfoStatus::infoStatus(
 	FLMUINT		uiCurrLfNum,
 	FLMBOOL		bIsCollection,
 	char *		pszCurrLfName,

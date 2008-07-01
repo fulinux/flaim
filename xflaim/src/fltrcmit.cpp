@@ -565,7 +565,7 @@ Exit:
 Area : TRANSACTION
 Desc : Commits an active transaction.
 *END************************************************************************/
-RCODE FLMAPI F_Db::transCommit(
+RCODE XFLAPI F_Db::transCommit(
 	FLMBOOL *	pbEmpty)	// may be NULL
 {
 	RCODE	rc = NE_XFLM_OK;

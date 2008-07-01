@@ -539,7 +539,7 @@ Desc:	Collect b-tree information for an index.  If uiIndexNum is zero,
 		If we already have information on the index, we will clear the
 		information and get it again.
 ****************************************************************************/
-RCODE FLMAPI F_BTreeInfo::collectIndexInfo(
+RCODE XFLAPI F_BTreeInfo::collectIndexInfo(
 	IF_Db *					ifpDb,
 	FLMUINT					uiIndexNum,
 	IF_BTreeInfoStatus *	pInfoStatus)
@@ -675,7 +675,7 @@ Desc:	Collect b-tree information for a collection.  If uiCollectionNum is
 		If we already have information on the collection, we will clear the
 		information and get it again.
 ****************************************************************************/
-RCODE FLMAPI F_BTreeInfo::collectCollectionInfo(
+RCODE XFLAPI F_BTreeInfo::collectCollectionInfo(
 	IF_Db *					ifpDb,
 	FLMUINT					uiCollectionNum,
 	IF_BTreeInfoStatus *	pInfoStatus)
@@ -813,7 +813,7 @@ Exit:
 /****************************************************************************
 Desc:	Create an empty b-tree info. object and return it's interface...
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::createIFBTreeInfo(
+RCODE XFLAPI F_DbSystem::createIFBTreeInfo(
 	IF_BTreeInfo **	ppBTreeInfo)
 {
 	RCODE					rc = NE_XFLM_OK;

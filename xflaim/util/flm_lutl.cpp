@@ -144,7 +144,7 @@ public:
 	{
 	}
 
-	void FLMAPI catchEvent(
+	void XFLAPI catchEvent(
 		eEventType	eEvent,
 		IF_Db *		pDb,
 		FLMUINT		uiThreadId,
@@ -202,7 +202,7 @@ Desc:	Thread that displays the current status of all indexes in a database
 Note:	The caller must open the database and pass a handle to the thread.
 		The handle will be closed when the thread exits.
 *****************************************************************************/
-RCODE FLMAPI flstIndexManagerThread(
+RCODE FTKAPI flstIndexManagerThread(
 	IF_Thread *		pThread)
 {
 	RCODE						rc = NE_XFLM_OK;
@@ -836,7 +836,7 @@ Name:	flstMemoryManagerThread
 Desc:	Thread that displays the current status of a database's cache
 Note:	The caller must pass a valid share handle to the thread on startup.
 *****************************************************************************/
-RCODE FLMAPI flstMemoryManagerThread(
+RCODE FTKAPI flstMemoryManagerThread(
 	IF_Thread *		pThread)
 {
 	RCODE					rc = NE_XFLM_OK;

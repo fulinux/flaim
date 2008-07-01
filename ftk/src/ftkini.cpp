@@ -50,36 +50,36 @@ public:
 	
 	void init( void);
 	
-	RCODE FLMAPI read(
+	RCODE FTKAPI read(
 		const char *		pszFileName);
 		
-	RCODE FLMAPI write( void);
+	RCODE FTKAPI write( void);
 
-	FLMBOOL FLMAPI getParam(
+	FLMBOOL FTKAPI getParam(
 		const char *	pszParamName,
 		FLMUINT *		puiParamVal);
 	
-	FLMBOOL FLMAPI getParam(
+	FLMBOOL FTKAPI getParam(
 		const char *	pszParamName,
 		FLMBOOL *		pbParamVal);
 	
-	FLMBOOL FLMAPI getParam(
+	FLMBOOL FTKAPI getParam(
 		const char *	pszParamName,
 		char **			ppszParamVal);
 	
-	RCODE FLMAPI setParam(
+	RCODE FTKAPI setParam(
 		const char *	pszParamName,
 		FLMUINT 			uiParamVal);
 
-	RCODE FLMAPI setParam(
+	RCODE FTKAPI setParam(
 		const char *	pszParamName,
 		FLMBOOL			bParamVal);
 
-	RCODE FLMAPI setParam(
+	RCODE FTKAPI setParam(
 		const char *	pszParamName,
 		const char *	pszParamVal);
 
-	FINLINE FLMBOOL FLMAPI testParam(
+	FINLINE FLMBOOL FTKAPI testParam(
 		const char *	pszParamName)
 	{
 		if( findParam( pszParamName))
@@ -179,7 +179,7 @@ F_IniFile::~F_IniFile()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmAllocIniFile(
+RCODE FTKAPI FlmAllocIniFile(
 	IF_IniFile **				ppIniFile)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -221,7 +221,7 @@ void F_IniFile::init( void)
 /****************************************************************************
 Desc:	Read the ini file and parse its contents
 ****************************************************************************/
-RCODE FLMAPI F_IniFile::read(
+RCODE FTKAPI F_IniFile::read(
 	const char *		pszFileName)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -360,7 +360,7 @@ Exit:
 /****************************************************************************
 Desc:	Copies the data stored in the INI_LINE structs to the ini file
 ****************************************************************************/
-RCODE FLMAPI F_IniFile::write( void)
+RCODE FTKAPI F_IniFile::write( void)
 {
 	RCODE					rc = NE_FLM_OK;
 	FLMUINT				uiBytesWritten;
@@ -489,7 +489,7 @@ Exit:
 Desc:	Retrieves the value associated with the specified name from the list
 	   of INI_STRUCTs
 ****************************************************************************/
-FLMBOOL FLMAPI F_IniFile::getParam(
+FLMBOOL FTKAPI F_IniFile::getParam(
 	const char *	pszParamName,
 	FLMUINT *		puiParamVal)
 {
@@ -521,7 +521,7 @@ Exit:
 Desc:	Stores a new value for the specified name (or creates a new name/value
 	   pair) in the list of INI_STRUCTs
 ****************************************************************************/
-RCODE FLMAPI F_IniFile::setParam(
+RCODE FTKAPI F_IniFile::setParam(
 	const char *	pszParamName,
 	FLMUINT 			uiParamVal)
 {
@@ -556,7 +556,7 @@ Exit:
 Desc:	Retrieves the value associated with the specified name from the list
 	   of INI_STRUCTs
 ****************************************************************************/
-FLMBOOL FLMAPI F_IniFile::getParam(
+FLMBOOL FTKAPI F_IniFile::getParam(
 	const char *	pszParamName,
 	FLMBOOL *		pbParamVal)		// Out: The value associated with name
 {
@@ -589,7 +589,7 @@ Exit:
 Desc:	Stores a new value for the specified name (or creates a new name/value
 	   pair) in the list of INI_STRUCTs
 ****************************************************************************/
-RCODE FLMAPI F_IniFile::setParam(
+RCODE FTKAPI F_IniFile::setParam(
 	const char *	pszParamName,
 	FLMBOOL			bParamVal)
 {
@@ -624,7 +624,7 @@ Exit:
 Desc:	Retrieves the value associated with the specified name from the list
 	   of INI_STRUCTs
 ****************************************************************************/
-FLMBOOL FLMAPI F_IniFile::getParam(
+FLMBOOL FTKAPI F_IniFile::getParam(
 	const char *	pszParamName,
 	char **			ppszParamVal)
 {
@@ -658,7 +658,7 @@ Exit:
 Desc:	Stores a new value for the specified name (or creates a new name/value
 	   pair) in the list of INI_STRUCTs
 ****************************************************************************/
-RCODE FLMAPI F_IniFile::setParam(
+RCODE FTKAPI F_IniFile::setParam(
 	const char *	pszParamName,
 	const char *	pszParamVal)
 {

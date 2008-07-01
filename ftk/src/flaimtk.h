@@ -421,51 +421,45 @@
 				extern const xpcselany FLMGUID name \
 						= { l, w1, w2, { b1, b2,  b3,  b4,  b5,  b6,  b7,  b8 } }
 	#endif
-	
-	#define FLMEXTC								extern "C"
-  
-  	#if defined( FLM_WIN)
-      #if defined( FTK_STATIC_LINK)
-         #define FTKEXP
-      #else
-         #if defined( FTK_SOURCE)
-   		   #define FTKEXP						__declspec(dllexport)
-         #else
-   		   #define FTKEXP						__declspec(dllimport)
-         #endif
-      #endif
-      #if defined( FLM_STATIC_LINK)
-         #define FLMEXP
-      #else
-         #if defined( FLM_SOURCE)
-		      #define FLMEXP						__declspec(dllexport)
-         #else
-   		   #define FLMEXP						__declspec(dllimport)
-         #endif
-      #endif
-		#define FLMAPI     						__stdcall
+
+   // platform-specific definitions for FINLINE
+   #if defined( FLM_WIN)
 		#ifdef FLM_DEBUG
 			#define FINLINE						inline
 		#else
 			#define FINLINE						__forceinline
 		#endif
 	#elif defined( FLM_NLM)
-      #define FTKEXP
-      #define FLMEXP
-		#define FLMAPI     						__stdcall
 		#define FINLINE							inline
 	#elif defined( FLM_UNIX)
-      #define FTKEXP
-      #define FLMEXP
-		#define FLMAPI
 		#define FINLINE							inline
 	#else
 		#error Platform not supported
-	#endif
+   #endif
 
-	#define FTKEXPC								FLMEXTC FTKEXP
-   #define FLMEXPC                        FLMEXTC FLMEXP
-	
+   // platform-specific API definitions for FTK* macros
+   #if defined( FLM_WIN)
+      #if defined( FTK_STATIC_LINK)
+         #define FTKEXP
+      #else
+         #if defined( FTK_SOURCE)
+            #define FTKEXP                __declspec(dllexport)
+         #else
+            #define FTKEXP                __declspec(dllimport)
+         #endif
+      #endif
+		#define FTKAPI     						__stdcall
+	#elif defined( FLM_NLM)
+      #define FTKEXP
+		#define FTKAPI     						__stdcall
+	#elif defined( FLM_UNIX)
+      #define FTKEXP
+		#define FTKAPI
+	#else
+		#error Platform not supported
+   #endif
+	#define FTKXPC							   extern "C" FTKEXP
+
 	/****************************************************************************
 	Desc:	Argument lists
 	****************************************************************************/
@@ -677,7 +671,7 @@
 	#define FLM_HTTP_STATUS_GATEWAY_TIMEOUT				504
 	#define FLM_HTTP_STATUS_VERSION_NOT_SUPPORTED		505
 	
-	FTKEXPC const char * FLMAPI FlmGetHTTPStatusString( 
+	FTKXPC const char * FTKAPI FlmGetHTTPStatusString( 
 		FLMUINT				uiStatusCode);
 
 	/****************************************************************************
@@ -692,7 +686,7 @@
 		#define RC_BAD( rc)        ((rc) != NE_FLM_OK)
 	#endif
 
-	FTKEXPC RCODE FLMAPI f_mapPlatformError(
+	FTKXPC RCODE FTKAPI f_mapPlatformError(
 		FLMINT						iError,
 		RCODE							defaultRc);
 		
@@ -1073,21 +1067,21 @@
 	#define F_DEFAULT_THREAD_GROUP				0
 	#define F_INVALID_THREAD_GROUP				0xFFFFFFFF
 	
-	typedef RCODE (FLMAPI * F_THREAD_FUNC)(IF_Thread *);
+	typedef RCODE (FTKAPI * F_THREAD_FUNC)(IF_Thread *);
 	
 	/****************************************************************************
 	Desc:	Startup and shutdown
 	****************************************************************************/
 	
-	FTKEXPC RCODE FLMAPI ftkStartup( void);
+	FTKXPC RCODE FTKAPI ftkStartup( void);
 
-	FTKEXPC void FLMAPI ftkShutdown( void);
+	FTKXPC void FTKAPI ftkShutdown( void);
 
 	/****************************************************************************
 	Desc: Global data
 	****************************************************************************/
 
-	FTKEXPC FLMUINT16 * gv_pui16USCollationTable;
+	FTKXPC FLMUINT16 * gv_pui16USCollationTable;
 
 	/****************************************************************************
 	/// This is a pure virtual base class that other classes inherit from.\   It
@@ -1099,11 +1093,11 @@
 		{
 		}
 
-		virtual FLMINT FLMAPI AddRef( void) = 0;
+		virtual FLMINT FTKAPI AddRef( void) = 0;
 
-		virtual FLMINT FLMAPI Release( void) = 0;
+		virtual FLMINT FTKAPI Release( void) = 0;
 		
-		virtual FLMINT FLMAPI getRefCount( void) = 0;
+		virtual FLMINT FTKAPI getRefCount( void) = 0;
 	};
 
 	/****************************************************************************
@@ -1127,19 +1121,19 @@
 		/// Increment the reference count for this object.
 		/// The reference count is the number of pointers that are referencing this object.
 		/// Return value is the incremented reference count.
-		virtual FLMINT FLMAPI AddRef( void);
+		virtual FLMINT FTKAPI AddRef( void);
 
 		/// Decrement the reference count for this object.
 		/// The reference count is the number of pointers that are referencing this object.
 		/// Return value is the decremented reference count.  If the reference count goes to
 		/// zero, the object will be deleted.
-		virtual FLMINT FLMAPI Release( void);
+		virtual FLMINT FTKAPI Release( void);
 
 		/// Return the current reference count on the object.
-		virtual FLMINT FLMAPI getRefCount( void);
+		virtual FLMINT FTKAPI getRefCount( void);
 
 		/// Overloaded new operator for objects of this class.
-		void * FLMAPI operator new(
+		void * FTKAPI operator new(
 			FLMSIZET			uiSize,				///< Number of bytes to allocate - should be sizeof( ThisClass).
 			const char *	pszFile,				///< Name of source file where this allocation is made.
 			int				iLine)				///< Line number in source file where this allocation request is made.
@@ -1149,7 +1143,7 @@
 			;
 
 		/// Overloaded new operator for objects of this class.
-		void * FLMAPI operator new(
+		void * FTKAPI operator new(
 			FLMSIZET			uiSize)				///< Number of bytes to allocate - should be sizeof( ThisClass).
 		#ifndef FLM_WATCOM_NLM
 			throw()
@@ -1160,7 +1154,7 @@
 		/// This new operator is called when an array of objects of this class are allocated.
 		/// This new operator passes in the current file and line number.  This information is
 		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void * FLMAPI operator new[](
+		void * FTKAPI operator new[](
 			FLMSIZET			uiSize,				///< Number of bytes to allocate - should be sizeof( ThisClass).
 			const char *	pszFile,				///< Name of source file where this allocation is made.
 			int				iLine)				///< Line number in source file where this allocation request is made.
@@ -1171,7 +1165,7 @@
 		
 		/// Overloaded new operator (array) for objects of this class.
 		/// This new operator is called when an array of objects of this class are allocated.
-		void * FLMAPI operator new[](
+		void * FTKAPI operator new[](
 			FLMSIZET			uiSize)				///< Number of bytes to allocate - should be sizeof( ThisClass).
 		#ifndef FLM_WATCOM_NLM
 			throw()
@@ -1179,18 +1173,18 @@
 			;
 		
 		/// Overloaded delete operator for objects of this class.
-		void FLMAPI operator delete(
+		void FTKAPI operator delete(
 			void *			ptr);					///< Pointer to object being freed.
 	
 		/// Overloaded delete operator (array) for objects of this class.
-		void FLMAPI operator delete[](
+		void FTKAPI operator delete[](
 			void *			ptr);					///< Pointer to array of objects being freed.
 			
 	#ifndef FLM_WATCOM_NLM
 		/// Overloaded delete operator for objects of this class (with source file and line number).
 		/// This delete operator passes in the current file and line number.  This information is
 		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void FLMAPI operator delete(
+		void FTKAPI operator delete(
 			void *			ptr,					///< Pointer to object being freed.
 			const char *	file,					///< Name of source file where this delete occurs.
 			int				line);				///< Line number in source file where this delete occurs.
@@ -1201,7 +1195,7 @@
 		/// This delete operator is called when an array of objects of this class is freed.
 		/// This delete operator passes in the current file and line number.  This information is
 		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void FLMAPI operator delete[](
+		void FTKAPI operator delete[](
 			void *			ptr,					///< Pointer to object being freed.
 			const char *	file,					///< Name of source file where this delete occurs.
 			int				line);				///< Line number in source file where this delete occurs.
@@ -1266,12 +1260,12 @@
 			int				line);
 	#endif
 			
-		virtual FINLINE FLMINT FLMAPI AddRef( void)
+		virtual FINLINE FLMINT FTKAPI AddRef( void)
 		{
 			return( ++m_refCnt);
 		}
 
-		virtual FINLINE FLMINT FLMAPI Release( void)
+		virtual FINLINE FLMINT FTKAPI Release( void)
 		{
 			FLMINT		iRefCnt = --m_refCnt;
 
@@ -1283,7 +1277,7 @@
 			return( iRefCnt);
 		}
 
-		virtual FINLINE FLMINT FLMAPI getRefCount( void)
+		virtual FINLINE FLMINT FTKAPI getRefCount( void)
 		{
 			return( m_refCnt);
 		}
@@ -1297,13 +1291,13 @@
 	Desc:	Errors
 	****************************************************************************/
 	#ifdef FLM_DEBUG
-		FTKEXPC RCODE	FLMAPI f_makeErr(
+		FTKXPC RCODE	FTKAPI f_makeErr(
 			RCODE				rc,
 			const char *	pszFile,
 			int				iLine,
 			FLMBOOL			bAssert);
 			
-		FTKEXPC FLMINT FLMAPI f_enterDebugger(
+		FTKXPC FLMINT FTKAPI f_enterDebugger(
 			const char *	pszFile,
 			int				iLine);
 			
@@ -1333,7 +1327,7 @@
 	Desc: Memory
 	****************************************************************************/
 	
-	FTKEXPC RCODE FLMAPI f_allocImp(
+	FTKXPC RCODE FTKAPI f_allocImp(
 		FLMUINT			uiSize,
 		void **			ppvPtr,
 		FLMBOOL			bFromNewOp,
@@ -1343,7 +1337,7 @@
 	#define f_alloc(s,p) \
 		f_allocImp( (s), (void **)(p), FALSE, __FILE__, __LINE__)
 		
-	FTKEXPC RCODE FLMAPI f_callocImp(
+	FTKXPC RCODE FTKAPI f_callocImp(
 		FLMUINT			uiSize,
 		void **			ppvPtr,
 		const char *	pszFile,
@@ -1352,7 +1346,7 @@
 	#define f_calloc(s,p) \
 		f_callocImp( (s), (void **)(p), __FILE__, __LINE__)
 		
-	FTKEXPC RCODE FLMAPI f_reallocImp(
+	FTKXPC RCODE FTKAPI f_reallocImp(
 		FLMUINT			uiSize,
 		void **			ppvPtr,
 		const char *	pszFile,
@@ -1361,7 +1355,7 @@
 	#define f_realloc(s,p) \
 		f_reallocImp( (s), (void **)(p), __FILE__, __LINE__)
 		
-	FTKEXPC RCODE FLMAPI f_recallocImp(
+	FTKXPC RCODE FTKAPI f_recallocImp(
 		FLMUINT			uiSize,
 		void **			ppvPtr,
 		const char *	pszFile,
@@ -1373,14 +1367,14 @@
 	#define f_new \
 		new( __FILE__, __LINE__)
 	
-	FTKEXPC void FLMAPI f_freeImp(
+	FTKXPC void FTKAPI f_freeImp(
 		void **			ppvPtr,
 		FLMBOOL			bFromDelOp);
 		
 	#define f_free(p) \
 		f_freeImp( (void **)(p), FALSE)
 		
-	FTKEXPC void f_resetStackInfoImp(
+	FTKXPC void f_resetStackInfoImp(
 		void *			pvPtr,
 		const char *	pszFileName,
 		int				iLineNumber);
@@ -1388,36 +1382,36 @@
 	#define f_resetStackInfo(p) \
 		f_resetStackInfoImp( (p), __FILE__, __LINE__)
 		
-	FTKEXPC FLMUINT f_msize(
+	FTKXPC FLMUINT f_msize(
 		void *			pvPtr);
 		
-	FTKEXPC RCODE FLMAPI f_allocAlignedBufferImp(
+	FTKXPC RCODE FTKAPI f_allocAlignedBufferImp(
 		FLMUINT			uiMinSize,
 		void **			ppvAlloc);
 		
 	#define f_allocAlignedBuffer(s,p) \
 		f_allocAlignedBufferImp( (s), (void **)(p))
 		
-	FTKEXPC void FLMAPI f_freeAlignedBufferImp(
+	FTKXPC void FTKAPI f_freeAlignedBufferImp(
 		void **			ppvAlloc);
 		
 	#define f_freeAlignedBuffer(p) \
 		f_freeAlignedBufferImp( (void **)(p))
 		
-	FTKEXPC RCODE FLMAPI f_getMemoryInfo(
+	FTKXPC RCODE FTKAPI f_getMemoryInfo(
 		FLMUINT64 *		pui64TotalPhysMem,
 		FLMUINT64 *		pui64AvailPhysMem);
 	
-	FTKEXPC FLMBOOL FLMAPI f_canGetMemoryInfo( void);
+	FTKXPC FLMBOOL FTKAPI f_canGetMemoryInfo( void);
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	flminterface FTKEXP IF_ThreadInfo : public F_Object
 	{
-		virtual FLMUINT FLMAPI getNumThreads( void) = 0;
+		virtual FLMUINT FTKAPI getNumThreads( void) = 0;
 
-		virtual void FLMAPI getThreadInfo(
+		virtual void FTKAPI getThreadInfo(
 			FLMUINT					uiThreadNum,
 			FLMUINT *				puiThreadId,
 			FLMUINT *				puiThreadGroup,
@@ -1427,7 +1421,7 @@
 			const char **			ppszThreadStatus) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmGetThreadInfo(
+	FTKXPC RCODE FTKAPI FlmGetThreadInfo(
 		IF_ThreadInfo **			ppThreadInfo);
 
 	/****************************************************************************
@@ -1435,12 +1429,12 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_IStream : virtual public F_Object
 	{
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			void *					pvBuffer,
 			FLMUINT					uiBytesToRead,
 			FLMUINT *				puiBytesRead = NULL) = 0;
 
-		virtual RCODE FLMAPI closeStream( void) = 0;
+		virtual RCODE FTKAPI closeStream( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1448,14 +1442,14 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_PosIStream : public IF_IStream
 	{
-		virtual FLMUINT64 FLMAPI totalSize( void) = 0;
+		virtual FLMUINT64 FTKAPI totalSize( void) = 0;
 			
-		virtual FLMUINT64 FLMAPI remainingSize( void) = 0;
+		virtual FLMUINT64 FTKAPI remainingSize( void) = 0;
 
-		virtual RCODE FLMAPI positionTo(
+		virtual RCODE FTKAPI positionTo(
 			FLMUINT64				ui64Position) = 0;
 
-		virtual FLMUINT64 FLMAPI getCurrPosition( void) = 0;
+		virtual FLMUINT64 FTKAPI getCurrPosition( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1463,127 +1457,127 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_BufferIStream : public IF_PosIStream
 	{
-		virtual RCODE FLMAPI openStream(
+		virtual RCODE FTKAPI openStream(
 			const char *			pucBuffer,
 			FLMUINT					uiLength,
 			char **					ppucAllocatedBuffer = NULL) = 0;
 	
-		virtual FLMUINT64 FLMAPI totalSize( void) = 0;
+		virtual FLMUINT64 FTKAPI totalSize( void) = 0;
 	
-		virtual FLMUINT64 FLMAPI remainingSize( void) = 0;
+		virtual FLMUINT64 FTKAPI remainingSize( void) = 0;
 	
-		virtual RCODE FLMAPI closeStream( void) = 0;
+		virtual RCODE FTKAPI closeStream( void) = 0;
 	
-		virtual RCODE FLMAPI positionTo(
+		virtual RCODE FTKAPI positionTo(
 			FLMUINT64				ui64Position) = 0;
 	
-		virtual FLMUINT64 FLMAPI getCurrPosition( void) = 0;
+		virtual FLMUINT64 FTKAPI getCurrPosition( void) = 0;
 	
-		virtual void FLMAPI truncateStream(
+		virtual void FTKAPI truncateStream(
 			FLMUINT64				ui64Offset = 0) = 0;
 			
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			void *					pvBuffer,
 			FLMUINT					uiBytesToRead,
 			FLMUINT *				puiBytesRead) = 0;
 			
-		virtual const FLMBYTE * FLMAPI getBufferAtCurrentOffset( void) = 0;
+		virtual const FLMBYTE * FTKAPI getBufferAtCurrentOffset( void) = 0;
 	};
 
-	FTKEXPC RCODE FLMAPI FlmAllocBufferIStream( 
+	FTKXPC RCODE FTKAPI FlmAllocBufferIStream( 
 		IF_BufferIStream **		ppIStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenBufferIStream( 
+	FTKXPC RCODE FTKAPI FlmOpenBufferIStream( 
 		const char *				pucBuffer,
 		FLMUINT						uiLength,
 		IF_PosIStream **			ppIStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenBase64EncoderIStream(
+	FTKXPC RCODE FTKAPI FlmOpenBase64EncoderIStream(
 		IF_IStream *				pSourceIStream,
 		FLMBOOL						bLineBreaks,
 		IF_IStream **				ppIStream);
 
-	FTKEXPC RCODE FLMAPI FlmOpenBase64DecoderIStream(
+	FTKXPC RCODE FTKAPI FlmOpenBase64DecoderIStream(
 		IF_IStream *				pSourceIStream,
 		IF_IStream **				ppIStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenFileIStream(
+	FTKXPC RCODE FTKAPI FlmOpenFileIStream(
 		const char *				pszPath,
 		IF_PosIStream **			ppIStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenMultiFileIStream(
+	FTKXPC RCODE FTKAPI FlmOpenMultiFileIStream(
 		const char *				pszDirectory,
 		const char *				pszBaseName,
 		IF_IStream **				ppIStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenBufferedIStream(
+	FTKXPC RCODE FTKAPI FlmOpenBufferedIStream(
 		IF_IStream *				pSourceIStream,
 		FLMUINT						uiBufferSize,
 		IF_IStream **				ppIStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenUncompressingIStream(
+	FTKXPC RCODE FTKAPI FlmOpenUncompressingIStream(
 		IF_IStream *				pIStream,
 		IF_IStream **				ppIStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenFileOStream(
+	FTKXPC RCODE FTKAPI FlmOpenFileOStream(
 		const char *				pszFileName,
 		FLMBOOL						bTruncateIfExists,
 		IF_OStream **				ppOStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenMultiFileOStream(
+	FTKXPC RCODE FTKAPI FlmOpenMultiFileOStream(
 		const char *				pszDirectory,
 		const char *				pszBaseName,
 		FLMUINT						uiMaxFileSize,
 		FLMBOOL						bOkToOverwrite,
 		IF_OStream **				ppStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenBufferedOStream(
+	FTKXPC RCODE FTKAPI FlmOpenBufferedOStream(
 		IF_OStream *				pOStream,
 		FLMUINT						uiBufferSize,
 		IF_OStream **				ppOStream);
 		
-	FTKEXPC RCODE FLMAPI FlmOpenCompressingOStream(
+	FTKXPC RCODE FTKAPI FlmOpenCompressingOStream(
 		IF_OStream *				pOStream,
 		IF_OStream **				ppOStream);
 		
-	FTKEXPC RCODE FLMAPI FlmAllocSSLIOStream( 
+	FTKXPC RCODE FTKAPI FlmAllocSSLIOStream( 
 		IF_IOStream **				ppIOStream);
 	
-	FTKEXPC RCODE FLMAPI FlmOpenSSLIOStream(
+	FTKXPC RCODE FTKAPI FlmOpenSSLIOStream(
 		const char *				pszHost,
 		FLMUINT						uiPort,
 		FLMUINT						uiFlags,
 		IF_IOStream **				ppIOStream);
 	
-	FTKEXPC RCODE FLMAPI FlmOpenTCPIOStream(
+	FTKXPC RCODE FTKAPI FlmOpenTCPIOStream(
 		const char *				pszHost,
 		FLMUINT						uiPort,
 		FLMUINT						uiFlags,
 		FLMUINT						uiConnectTimeout,
 		IF_IOStream **				ppIOStream);
 	
-	FTKEXPC RCODE FLMAPI FlmOpenTCPListener(
+	FTKXPC RCODE FTKAPI FlmOpenTCPListener(
 		FLMBYTE *					pucBindAddr,
 		FLMUINT						uiBindPort,
 		IF_TCPListener **			ppListener);
 	
-	FTKEXPC RCODE FLMAPI FlmRemoveMultiFileStream(
+	FTKXPC RCODE FTKAPI FlmRemoveMultiFileStream(
 		const char *				pszDirectory,
 		const char *				pszBaseName);
 			
-	FTKEXPC RCODE FLMAPI FlmWriteToOStream(
+	FTKXPC RCODE FTKAPI FlmWriteToOStream(
 		IF_IStream *				pIStream,
 		IF_OStream *				pOStream);
 			
-	FTKEXPC RCODE FLMAPI FlmReadFully(
+	FTKXPC RCODE FTKAPI FlmReadFully(
 		IF_IStream *				pIStream,
 		F_DynaBuf *					pDynaBuf);
 		
-	FTKEXPC RCODE FLMAPI FlmReadLine(
+	FTKXPC RCODE FTKAPI FlmReadLine(
 		IF_IStream *				pIStream,
 		F_DynaBuf *					pBuffer);
 		
-	FTKEXPC void FLMAPI f_streamPrintf(
+	FTKXPC void FTKAPI f_streamPrintf(
 		IF_OStream *				pStream,
 		const char *				pszFormatStr, ...);
 	
@@ -1599,21 +1593,21 @@
 
 	flminterface FTKEXP IF_CollIStream : public IF_PosIStream
 	{
-		virtual RCODE FLMAPI openStream(
+		virtual RCODE FTKAPI openStream(
 			IF_PosIStream *		pIStream,
 			FLMBOOL					bUnicodeStream,
 			FLMUINT					uiLanguage,
 			FLMUINT					uiCompareRules,
 			FLMBOOL					bMayHaveWildCards) = 0;
 			
-		virtual RCODE FLMAPI closeStream( void) = 0;
+		virtual RCODE FTKAPI closeStream( void) = 0;
 	
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			void *					pvBuffer,
 			FLMUINT					uiBytesToRead,
 			FLMUINT *				puiBytesRead) = 0;
 	
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			FLMBOOL					bAllowTwoIntoOne,
 			FLMUNICODE *			puChar,
 			FLMBOOL *				pbCharIsWild,
@@ -1621,19 +1615,19 @@
 			FLMUINT16 *				pui16SubCol,
 			FLMBYTE *				pucCase) = 0;
 			
-		virtual FLMUINT64 FLMAPI totalSize( void) = 0;
+		virtual FLMUINT64 FTKAPI totalSize( void) = 0;
 	
-		virtual FLMUINT64 FLMAPI remainingSize( void) = 0;
+		virtual FLMUINT64 FTKAPI remainingSize( void) = 0;
 	
-		virtual RCODE FLMAPI positionTo(
+		virtual RCODE FTKAPI positionTo(
 			FLMUINT64				ui64Position) = 0;
 	
-		virtual FLMUINT64 FLMAPI getCurrPosition( void) = 0;
+		virtual FLMUINT64 FTKAPI getCurrPosition( void) = 0;
 
-		virtual RCODE FLMAPI positionTo(
+		virtual RCODE FTKAPI positionTo(
 			F_CollStreamPos *		pPos) = 0;
 
-		virtual void FLMAPI getCurrPosition(
+		virtual void FTKAPI getCurrPosition(
 			F_CollStreamPos *		pPos) = 0;
 	};
 	
@@ -1642,12 +1636,12 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_OStream : virtual public F_Object
 	{
-		virtual RCODE FLMAPI write(
+		virtual RCODE FTKAPI write(
 			const void *			pvBuffer,
 			FLMUINT					uiBytesToWrite,
 			FLMUINT *				puiBytesWritten = NULL) = 0;
 
-		virtual RCODE FLMAPI closeStream( void) = 0;
+		virtual RCODE FTKAPI closeStream( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1665,7 +1659,7 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_TCPListener : public F_Object
 	{
-		virtual RCODE FLMAPI connectClient(
+		virtual RCODE FTKAPI connectClient(
 			IF_TCPIOStream **		ppClientStream,
 			FLMUINT					uiTimeout = 0) = 0;
 	};
@@ -1675,35 +1669,35 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_TCPIOStream : public IF_IOStream
 	{
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead) = 0;
 			
-		virtual RCODE FLMAPI write(
+		virtual RCODE FTKAPI write(
 			const void *	pvBuffer,
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten) = 0;
 	
-		virtual const char * FLMAPI getLocalHostName( void) = 0;
+		virtual const char * FTKAPI getLocalHostName( void) = 0;
 	
-		virtual const char * FLMAPI getLocalHostAddress( void) = 0;
+		virtual const char * FTKAPI getLocalHostAddress( void) = 0;
 	
-		virtual const char * FLMAPI getPeerHostName( void) = 0;
+		virtual const char * FTKAPI getPeerHostName( void) = 0;
 	
-		virtual const char * FLMAPI getPeerHostAddress( void) = 0;
+		virtual const char * FTKAPI getPeerHostAddress( void) = 0;
 	
-		virtual RCODE FLMAPI readNoWait(
+		virtual RCODE FTKAPI readNoWait(
 			void *			pvBuffer,
 			FLMUINT			uiCount,
 			FLMUINT *		puiReadRead) = 0;
 	
-		virtual RCODE FLMAPI readAll(
+		virtual RCODE FTKAPI readAll(
 			void *			pvBuffer,
 			FLMUINT			uiCount,
 			FLMUINT *		puiBytesRead) = 0;
 	
-		virtual void FLMAPI setIOTimeout(
+		virtual void FTKAPI setIOTimeout(
 			FLMUINT			uiSeconds) = 0;
 	};
 
@@ -1712,22 +1706,22 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_SSLIOStream : public IF_IOStream
 	{
-		virtual RCODE FLMAPI openStream(
+		virtual RCODE FTKAPI openStream(
 			const char *			pszHost,
 			FLMUINT					uiPort = 443,
 			FLMUINT					uiFlags = 0) = 0;
 		
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			void *					pvBuffer,
 			FLMUINT					uiBytesToRead,
 			FLMUINT *				puiBytesRead = NULL) = 0;
 			
-		virtual RCODE FLMAPI write(
+		virtual RCODE FTKAPI write(
 			const void *			pvBuffer,
 			FLMUINT					uiBytesToWrite,
 			FLMUINT *				puiBytesWritten = NULL) = 0;
 			
-		virtual const char * FLMAPI getPeerCertificateText( void) = 0;
+		virtual const char * FTKAPI getPeerCertificateText( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -1743,53 +1737,53 @@
 	
 	flminterface IF_HTTPHeader : public F_Object
 	{
-		virtual RCODE FLMAPI readRequestHeader(
+		virtual RCODE FTKAPI readRequestHeader(
 			IF_IStream *				pIStream) = 0;
 			
-		virtual RCODE FLMAPI readResponseHeader(
+		virtual RCODE FTKAPI readResponseHeader(
 			IF_IStream *				pIStream) = 0;
 			
-		virtual RCODE FLMAPI writeRequestHeader(
+		virtual RCODE FTKAPI writeRequestHeader(
 			IF_OStream *				pOStream) = 0;
 			
-		virtual RCODE FLMAPI writeResponseHeader(
+		virtual RCODE FTKAPI writeResponseHeader(
 			IF_OStream *				pOStream) = 0;
 			
-		virtual RCODE FLMAPI getHeaderValue(
+		virtual RCODE FTKAPI getHeaderValue(
 			const char *				pszTag,
 			F_DynaBuf *					pBuffer) = 0;
 			
-		virtual RCODE FLMAPI setHeaderValue(
+		virtual RCODE FTKAPI setHeaderValue(
 			const char *				pszTag,
 			const char *				pszValue) = 0;
 			
-		virtual RCODE FLMAPI getHeaderValue(
+		virtual RCODE FTKAPI getHeaderValue(
 			const char *				pszTag,
 			FLMUINT *					puiValue) = 0;
 			
-		virtual RCODE FLMAPI setHeaderValue(
+		virtual RCODE FTKAPI setHeaderValue(
 			const char *				pszTag,
 			FLMUINT 						uiValue) = 0;
 			
-		virtual FLMUINT FLMAPI getStatusCode( void) = 0;
+		virtual FLMUINT FTKAPI getStatusCode( void) = 0;
 		
-		virtual RCODE FLMAPI setStatusCode(
+		virtual RCODE FTKAPI setStatusCode(
 			FLMUINT						uiStatusCode) = 0;
 		
-		virtual RCODE FLMAPI setRequestURI(
+		virtual RCODE FTKAPI setRequestURI(
 			const char *				pszRequestURI) = 0;
 			
-		const char * FLMAPI getRequestURI( void);
+		const char * FTKAPI getRequestURI( void);
 	
-		virtual RCODE FLMAPI setMethod(
+		virtual RCODE FTKAPI setMethod(
 			eHttpMethod					httpMethod) = 0;
 			
 		virtual eHttpMethod getMethod( void) = 0;
 	
-		virtual void FLMAPI resetHeader( void) = 0;
+		virtual void FTKAPI resetHeader( void) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocHTTPHeader( 
+	FTKXPC RCODE FTKAPI FlmAllocHTTPHeader( 
 		IF_HTTPHeader **				ppHTTPHeader);
 
 	/****************************************************************************
@@ -1809,29 +1803,29 @@
 	Desc: Logging
 	****************************************************************************/
 
-	FTKEXPC IF_LogMessageClient * FLMAPI f_beginLogMessage(
+	FTKXPC IF_LogMessageClient * FTKAPI f_beginLogMessage(
 		FLMUINT						uiMsgType,
 		eLogMessageSeverity		eMsgSeverity);
 
-	FTKEXP void FLMAPI f_logPrintf(
+	FTKEXP void FTKAPI f_logPrintf(
 		IF_LogMessageClient *	pLogMessage,
 		const char *				pszFormatStr, ...);
 	
-	FTKEXPC void FLMAPI f_logVPrintf(
+	FTKXPC void FTKAPI f_logVPrintf(
 		IF_LogMessageClient *	pLogMessage,
 		const char *				szFormatStr,
 		f_va_list *					args);
 	
-	FTKEXPC void FLMAPI f_endLogMessage(
+	FTKXPC void FTKAPI f_endLogMessage(
 		IF_LogMessageClient **	ppLogMessage);
 		
-	FTKEXPC void FLMAPI f_logError(
+	FTKXPC void FTKAPI f_logError(
 		RCODE							rc,
 		const char *				pszDoing,
 		const char *				pszFileName,
 		FLMINT						iLineNumber);
 
-	FTKEXP void FLMAPI f_logPrintf(
+	FTKEXP void FTKAPI f_logPrintf(
 		eLogMessageSeverity		msgSeverity,
 		const char *				pszFormatStr, ...);
 		
@@ -1840,12 +1834,12 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_LoggerClient : public F_Object
 	{
-		virtual IF_LogMessageClient * FLMAPI beginMessage(
+		virtual IF_LogMessageClient * FTKAPI beginMessage(
 			FLMUINT					uiMsgType,
 			eLogMessageSeverity	eMsgSeverity = F_DEBUG_MESSAGE) = 0;
 	};
 	
-	FTKEXPC void FLMAPI f_setLoggerClient(
+	FTKXPC void FTKAPI f_setLoggerClient(
 		IF_LoggerClient *			pLogger);
 
 	/****************************************************************************
@@ -1857,14 +1851,14 @@
 	flminterface FTKEXP IF_LogMessageClient : public F_Object
 	{
 		/// Set the current foreground and background colors for the message.  
-		virtual void FLMAPI changeColor(
+		virtual void FTKAPI changeColor(
 			eColorType				eForeColor,
 			eColorType				eBackColor) = 0;
 
 		/// Append a string to the message.  This method may be called
 		/// multiple times by to format a complete message.  The message is not
 		/// complete until the ::endMessage() method is called.
-		virtual void FLMAPI appendString(
+		virtual void FTKAPI appendString(
 			const char *			pszStr) = 0;
 
 		/// Append a newline to the message.  This method is called when a 
@@ -1872,20 +1866,20 @@
 		/// newline character, this method is used.  This allows an application
 		/// to recognize the fact that there are multiple lines in the message
 		/// and to log, display, store, etc. (whatever) them accordingly.
-		virtual void FLMAPI newline( void) = 0;
+		virtual void FTKAPI newline( void) = 0;
 
 		/// End the current message.  The application should finish logging,
 		/// displaying, storing, etc. (whatever) the message.  The object
 		/// should be reset in case a new message is subsequently started.
-		virtual void FLMAPI endMessage( void) = 0;
+		virtual void FTKAPI endMessage( void) = 0;
 
-		virtual void FLMAPI pushForegroundColor( void) = 0;
+		virtual void FTKAPI pushForegroundColor( void) = 0;
 
-		virtual void FLMAPI popForegroundColor( void) = 0;
+		virtual void FTKAPI popForegroundColor( void) = 0;
 
-		virtual void FLMAPI pushBackgroundColor( void) = 0;
+		virtual void FTKAPI pushBackgroundColor( void) = 0;
 
-		virtual void FLMAPI popBackgroundColor( void) = 0;
+		virtual void FTKAPI popBackgroundColor( void) = 0;
 	};
 
 	/****************************************************************************
@@ -1893,66 +1887,66 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_FileSystem : public F_Object
 	{
-		virtual RCODE FLMAPI createFile(
+		virtual RCODE FTKAPI createFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile) = 0;
 
-		virtual RCODE FLMAPI createUniqueFile(
+		virtual RCODE FTKAPI createUniqueFile(
 			char *					pszPath,
 			const char *			pszFileExtension,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile) = 0;
 
-		virtual RCODE FLMAPI createLockFile(
+		virtual RCODE FTKAPI createLockFile(
 			const char *			pszPath,
 			IF_FileHdl **			ppLockFileHdl) = 0;
 	
-		virtual RCODE FLMAPI openFile(
+		virtual RCODE FTKAPI openFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile) = 0;
 
-		virtual RCODE FLMAPI openDir(
+		virtual RCODE FTKAPI openDir(
 			const char *			pszDirName,
 			const char *			pszPattern,
 			IF_DirHdl **			ppDir) = 0;
 
-		virtual RCODE FLMAPI createDir(
+		virtual RCODE FTKAPI createDir(
 			const char *			pszDirName) = 0;
 
-		virtual RCODE FLMAPI removeDir(
+		virtual RCODE FTKAPI removeDir(
 			const char *			pszDirName,
 			FLMBOOL					bClear = FALSE) = 0;
 
-		virtual RCODE FLMAPI doesFileExist(
+		virtual RCODE FTKAPI doesFileExist(
 			const char *			pszFileName) = 0;
 
-		virtual FLMBOOL FLMAPI isDir(
+		virtual FLMBOOL FTKAPI isDir(
 			const char *			pszFileName) = 0;
 
-		virtual RCODE FLMAPI getFileTimeStamp(
+		virtual RCODE FTKAPI getFileTimeStamp(
 			const char *			pszFileName,
 			FLMUINT *				puiTimeStamp) = 0;
 
-		virtual RCODE FLMAPI getFileSize(
+		virtual RCODE FTKAPI getFileSize(
 			const char *			pszFileName,
 			FLMUINT64 *				pui64FileSize) = 0;
 			
-		virtual RCODE FLMAPI deleteFile(
+		virtual RCODE FTKAPI deleteFile(
 			const char *			pszFileName) = 0;
 
-		virtual RCODE FLMAPI deleteMultiFileStream(
+		virtual RCODE FTKAPI deleteMultiFileStream(
 			const char *			pszDirectory,
 			const char *			pszBaseName) = 0;
 	
-		virtual RCODE FLMAPI copyFile(
+		virtual RCODE FTKAPI copyFile(
 			const char *			pszSrcFileName,
 			const char *			pszDestFileName,
 			FLMBOOL					bOverwrite,
 			FLMUINT64 *				pui64BytesCopied) = 0;
 
-		virtual RCODE FLMAPI copyPartialFile(
+		virtual RCODE FTKAPI copyPartialFile(
 			IF_FileHdl *			pSrcFileHdl,
 			FLMUINT64				ui64SrcOffset,
 			FLMUINT64				ui64SrcSize,
@@ -1960,80 +1954,80 @@
 			FLMUINT64				ui64DestOffset,
 			FLMUINT64 *				pui64BytesCopiedRV) = 0;
 	
-		virtual RCODE FLMAPI renameFile(
+		virtual RCODE FTKAPI renameFile(
 			const char *			pszFileName,
 			const char *			pszNewFileName) = 0;
 
-		virtual RCODE FLMAPI setReadOnly(
+		virtual RCODE FTKAPI setReadOnly(
 			const char *			pszFileName,
 			FLMBOOL					bReadOnly) = 0;
 			
-		virtual RCODE FLMAPI getSectorSize(
+		virtual RCODE FTKAPI getSectorSize(
 			const char *			pszFileName,
 			FLMUINT *				puiSectorSize) = 0;
 			
-		virtual void FLMAPI pathCreateUniqueName(
+		virtual void FTKAPI pathCreateUniqueName(
 			FLMUINT *				puiTime,
 			char *					pFileName,
 			const char *			pFileExt,
 			FLMBYTE *				pHighChars,
 			FLMBOOL					bModext) = 0;
 
-		virtual void FLMAPI pathParse(
+		virtual void FTKAPI pathParse(
 			const char *			pszPath,
 			char *					pszServer,
 			char *					pszVolume,
 			char *					pszDirPath,
 			char *					pszFileName) = 0;
 	
-		virtual RCODE FLMAPI pathReduce(
+		virtual RCODE FTKAPI pathReduce(
 			const char *			pszSourcePath,
 			char *					pszDestPath,
 			char *					pszString) = 0;
 	
-		virtual RCODE FLMAPI pathAppend(
+		virtual RCODE FTKAPI pathAppend(
 			char *					pszPath,
 			const char *			pszPathComponent) = 0;
 	
-		virtual RCODE FLMAPI pathToStorageString(
+		virtual RCODE FTKAPI pathToStorageString(
 			const char *			pPath,
 			char *					pszString) = 0;
 	
-		virtual FLMBOOL FLMAPI doesFileMatch(
+		virtual FLMBOOL FTKAPI doesFileMatch(
 			const char *			pszFileName,
 			const char *			pszTemplate) = 0;
 			
-		virtual FLMBOOL FLMAPI canDoAsync( void) = 0;
+		virtual FLMBOOL FTKAPI canDoAsync( void) = 0;
 		
-		virtual RCODE FLMAPI allocIOBuffer(
+		virtual RCODE FTKAPI allocIOBuffer(
 			FLMUINT					uiMinSize,
 			IF_IOBuffer **			ppIOBuffer) = 0;
 			
-		virtual RCODE FLMAPI allocFileHandleCache(
+		virtual RCODE FTKAPI allocFileHandleCache(
 			FLMUINT					uiMaxCachedFiles,
 			FLMUINT					uiIdleTimeoutSecs,
 			IF_FileHdlCache **	ppFileHdlCache) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmGetFileSystem(
+	FTKXPC RCODE FTKAPI FlmGetFileSystem(
 		IF_FileSystem **		ppFileSystem);
 
-	FTKEXPC IF_FileSystem * FLMAPI f_getFileSysPtr( void);
+	FTKXPC IF_FileSystem * FTKAPI f_getFileSysPtr( void);
 
-	FTKEXPC FLMUINT FLMAPI f_getOpenFileCount( void);
+	FTKXPC FLMUINT FTKAPI f_getOpenFileCount( void);
 	
-	FTKEXPC RCODE FLMAPI f_chdir(
+	FTKXPC RCODE FTKAPI f_chdir(
 		const char *			pszDir);
 		
-	FTKEXPC RCODE FLMAPI f_getcwd(
+	FTKXPC RCODE FTKAPI f_getcwd(
 		char *					pszDir);
 		
-	FTKEXPC RCODE FLMAPI f_pathReduce(
+	FTKXPC RCODE FTKAPI f_pathReduce(
 		const char *			pszSourcePath,
 		char *					pszDestPath,
 		char *					pszString);
 
-	FTKEXPC RCODE FLMAPI f_pathAppend(
+	FTKXPC RCODE FTKAPI f_pathAppend(
 		char *					pszPath,
 		const char *			pszPathComponent);
 			
@@ -2042,68 +2036,68 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_FileHdl : virtual public F_Object
 	{
-		virtual RCODE FLMAPI flush( void) = 0;
+		virtual RCODE FTKAPI flush( void) = 0;
 
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			FLMUINT64				ui64Offset,
 			FLMUINT					uiLength,
 			void *					pvBuffer,
 			FLMUINT *				puiBytesRead = NULL) = 0;
 
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			FLMUINT64				ui64ReadOffset,
 			FLMUINT					uiBytesToRead,
 			IF_IOBuffer *			pIOBuffer) = 0;
 			
-		virtual RCODE FLMAPI write(
+		virtual RCODE FTKAPI write(
 			FLMUINT64				ui64Offset,
 			FLMUINT					uiLength,
 			const void *			pvBuffer,
 			FLMUINT *				puiBytesWritten = NULL) = 0;
 
-		virtual RCODE FLMAPI write(
+		virtual RCODE FTKAPI write(
 			FLMUINT64				ui64WriteOffset,
 			FLMUINT					uiBytesToWrite,
 			IF_IOBuffer *			pIOBuffer) = 0;
 			
-		virtual RCODE FLMAPI seek(
+		virtual RCODE FTKAPI seek(
 			FLMUINT64				ui64Offset,
 			FLMINT					iWhence,
 			FLMUINT64 *				pui64NewOffset = NULL) = 0;
 
-		virtual RCODE FLMAPI size(
+		virtual RCODE FTKAPI size(
 			FLMUINT64 *				pui64Size) = 0;
 
-		virtual RCODE FLMAPI tell(
+		virtual RCODE FTKAPI tell(
 			FLMUINT64 *				pui64Offset) = 0;
 			
-		virtual RCODE FLMAPI extendFile(
+		virtual RCODE FTKAPI extendFile(
 			FLMUINT64				ui64FileSize) = 0;
 
-		virtual RCODE FLMAPI truncateFile(
+		virtual RCODE FTKAPI truncateFile(
 			FLMUINT64				ui64FileSize = 0) = 0;
 
-		virtual RCODE FLMAPI closeFile( void) = 0;
+		virtual RCODE FTKAPI closeFile( void) = 0;
 
-		virtual FLMBOOL FLMAPI canDoAsync( void) = 0;
+		virtual FLMBOOL FTKAPI canDoAsync( void) = 0;
 		
-		virtual FLMBOOL FLMAPI canDoDirectIO( void) = 0;
+		virtual FLMBOOL FTKAPI canDoDirectIO( void) = 0;
 
-		virtual void FLMAPI setExtendSize(
+		virtual void FTKAPI setExtendSize(
 			FLMUINT					uiExtendSize) = 0;
 
-		virtual void FLMAPI setMaxAutoExtendSize(
+		virtual void FTKAPI setMaxAutoExtendSize(
 			FLMUINT					uiMaxAutoExtendSize) = 0;
 			
-		virtual FLMUINT FLMAPI getSectorSize( void) = 0;
+		virtual FLMUINT FTKAPI getSectorSize( void) = 0;
 			
-		virtual FLMBOOL FLMAPI isReadOnly( void) = 0;
+		virtual FLMBOOL FTKAPI isReadOnly( void) = 0;
 		
-		virtual FLMBOOL FLMAPI isOpen( void) = 0;
+		virtual FLMBOOL FTKAPI isOpen( void) = 0;
 		
-		virtual RCODE FLMAPI lock( void) = 0;
+		virtual RCODE FTKAPI lock( void) = 0;
 	
-		virtual RCODE FLMAPI unlock( void) = 0;
+		virtual RCODE FTKAPI unlock( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -2111,22 +2105,22 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_FileHdlCache : public F_Object
 	{
-		virtual RCODE FLMAPI openFile(
+		virtual RCODE FTKAPI openFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile) = 0;
 		
-		virtual RCODE FLMAPI createFile(
+		virtual RCODE FTKAPI createFile(
 			const char *			pszFileName,
 			FLMUINT					uiIoFlags,
 			IF_FileHdl **			ppFile) = 0;
 
-		virtual void FLMAPI closeUnusedFiles( 
+		virtual void FTKAPI closeUnusedFiles( 
 			FLMUINT					uiUnusedTime = 0) = 0;
 			
-		virtual FLMUINT FLMAPI getOpenThreshold( void) = 0;
+		virtual FLMUINT FTKAPI getOpenThreshold( void) = 0;
 		
-		virtual RCODE FLMAPI setOpenThreshold(
+		virtual RCODE FTKAPI setOpenThreshold(
 			FLMUINT					uiMaxOpenFiles) = 0;
 	};
 
@@ -2135,47 +2129,47 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_MultiFileHdl : public F_Object
 	{
-		virtual RCODE FLMAPI createFile(
+		virtual RCODE FTKAPI createFile(
 			const char *			pszPath) = 0;
 	
-		virtual RCODE FLMAPI createUniqueFile(
+		virtual RCODE FTKAPI createUniqueFile(
 			const char *			pszPath,
 			const char *			pszFileExtension) = 0;
 	
-		virtual RCODE FLMAPI openFile(
+		virtual RCODE FTKAPI openFile(
 			const char *			pszPath) = 0;
 	
-		virtual RCODE FLMAPI deleteMultiFile(
+		virtual RCODE FTKAPI deleteMultiFile(
 			const char *			pszPath) = 0;
 	
-		virtual RCODE FLMAPI flush( void) = 0;
+		virtual RCODE FTKAPI flush( void) = 0;
 	
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			FLMUINT64				ui64Offset,
 			FLMUINT					uiLength,
 			void *					pvBuffer,
 			FLMUINT *				puiBytesRead = NULL) = 0;
 	
-		virtual RCODE FLMAPI write(
+		virtual RCODE FTKAPI write(
 			FLMUINT64				ui64Offset,
 			FLMUINT					uiLength,
 			void *					pvBuffer,
 			FLMUINT *				puiBytesWritten = NULL) = 0;
 	
-		virtual RCODE FLMAPI getPath(
+		virtual RCODE FTKAPI getPath(
 			char *					pszFilePath) = 0;
 	
-		virtual RCODE FLMAPI size(
+		virtual RCODE FTKAPI size(
 			FLMUINT64 *				pui64FileSize) = 0;
 	
-		virtual RCODE FLMAPI truncateFile(
+		virtual RCODE FTKAPI truncateFile(
 			FLMUINT64				ui64Offset = 0) = 0;
 			
-		virtual void FLMAPI closeFile(
+		virtual void FTKAPI closeFile(
 			FLMBOOL					bDelete = FALSE) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocMultiFileHdl(
+	FTKXPC RCODE FTKAPI FlmAllocMultiFileHdl(
 		IF_MultiFileHdl **		ppFileHdl);
 	
 	/****************************************************************************
@@ -2183,21 +2177,21 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_SuperFileClient : public F_Object
 	{
-		virtual FLMUINT FLMAPI getFileNumber(
+		virtual FLMUINT FTKAPI getFileNumber(
 			FLMUINT					uiBlockAddr) = 0;
 			
-		virtual FLMUINT FLMAPI getFileOffset(
+		virtual FLMUINT FTKAPI getFileOffset(
 			FLMUINT					uiBlockAddr) = 0;
 			
-		virtual FLMUINT FLMAPI getBlockAddress(
+		virtual FLMUINT FTKAPI getBlockAddress(
 			FLMUINT					uiFileNumber,
 			FLMUINT					uiFileOffset) = 0;
 			
-		virtual RCODE FLMAPI getFilePath(
+		virtual RCODE FTKAPI getFilePath(
 			FLMUINT					uiFileNumber,
 			char *					pszPath) = 0;
 			
-		virtual FLMUINT64 FLMAPI getMaxFileSize( void) = 0;
+		virtual FLMUINT64 FTKAPI getMaxFileSize( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -2211,87 +2205,87 @@
 	
 		virtual ~F_SuperFileHdl();
 	
-		RCODE FLMAPI setup(
+		RCODE FTKAPI setup(
 			IF_SuperFileClient *	pSuperFileClient,
 			IF_FileHdlCache *		pFileHdlCache,
 			FLMUINT					uiFileOpenFlags,
 			FLMUINT					uiFileCreateFlags);
 	
-		RCODE FLMAPI createFile(
+		RCODE FTKAPI createFile(
 			FLMUINT					uiFileNumber,
 			IF_FileHdl **			ppFileHdl = NULL);
 			
-		RCODE	FLMAPI getFileHdl(
+		RCODE	FTKAPI getFileHdl(
 			FLMUINT					uiFileNumber,
 			FLMBOOL					bGetForUpdate,
 			IF_FileHdl **			ppFileHdlRV);
 	
-		RCODE FLMAPI readOffset(
+		RCODE FTKAPI readOffset(
 			FLMUINT					uiFileNumber,
 			FLMUINT					uiOffset,
 			FLMUINT					uiBytesToRead,
 			void *					pvBuffer,
 			FLMUINT *				puiBytesRead);
 	
-		RCODE FLMAPI readBlock(
+		RCODE FTKAPI readBlock(
 			FLMUINT					uiBlkAddress,
 			FLMUINT					uiBytesToRead,
 			void *					pvBuffer,
 			FLMUINT *				puiBytesRead);
 	
-		RCODE FLMAPI writeBlock(
+		RCODE FTKAPI writeBlock(
 			FLMUINT					uiBlkAddress,
 			FLMUINT					uiBytesToWrite,
 			const void *			pvBuffer,
 			FLMUINT *				puiBytesWritten);
 	
-		RCODE FLMAPI writeBlock(
+		RCODE FTKAPI writeBlock(
 			FLMUINT					uiBlkAddress,
 			FLMUINT					uiBytesToWrite,
 			IF_IOBuffer *			pIOBuffer);
 			
-		RCODE FLMAPI getFilePath(
+		RCODE FTKAPI getFilePath(
 			FLMUINT					uiFileNumber,
 			char *					pszPath);
 	
-		RCODE FLMAPI getFileSize(
+		RCODE FTKAPI getFileSize(
 			FLMUINT					uiFileNumber,
 			FLMUINT64 *				pui64FileSize);
 	
-		RCODE FLMAPI releaseFiles( void);
+		RCODE FTKAPI releaseFiles( void);
 	
-		RCODE	FLMAPI allocateBlocks(
+		RCODE	FTKAPI allocateBlocks(
 			FLMUINT					uiStartAddress,
 			FLMUINT					uiEndAddress);
 			
-		RCODE FLMAPI truncateFile(
+		RCODE FTKAPI truncateFile(
 			FLMUINT					uiEOFBlkAddress);
 	
-		RCODE FLMAPI truncateFile(
+		RCODE FTKAPI truncateFile(
 			FLMUINT					uiFileNumber,
 			FLMUINT					uiOffset);
 
-		void FLMAPI truncateFiles(
+		void FTKAPI truncateFiles(
 			FLMUINT					uiStartFileNum,
 			FLMUINT					uiEndFileNum);
 	
-		RCODE FLMAPI flush( void);
+		RCODE FTKAPI flush( void);
 	
-		FINLINE void FLMAPI setExtendSize(
+		FINLINE void FTKAPI setExtendSize(
 			FLMUINT					uiExtendSize)
 		{
 			m_uiExtendSize = uiExtendSize;
 		}
 	
-		FINLINE void FLMAPI setMaxAutoExtendSize(
+		FINLINE void FTKAPI setMaxAutoExtendSize(
 			FLMUINT					uiMaxAutoExtendSize)
 		{
 			m_uiMaxAutoExtendSize = uiMaxAutoExtendSize;
 		}
 	
-		FLMBOOL FLMAPI canDoAsync( void);
+		FLMBOOL FTKAPI canDoAsync( void);
 		
-		FLMBOOL FLMAPI canDoDirectIO( void);
+		FLMBOOL FTKAPI canDoDirectIO( void);
 	
 	private:
 	
@@ -2314,58 +2308,58 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_AsyncClient : virtual public F_Object
 	{
-		virtual RCODE FLMAPI waitToComplete( void) = 0;
+		virtual RCODE FTKAPI waitToComplete( void) = 0;
 		
-		virtual RCODE FLMAPI getCompletionCode( void) = 0;
+		virtual RCODE FTKAPI getCompletionCode( void) = 0;
 		
-		virtual FLMUINT FLMAPI getElapsedTime( void) = 0;
+		virtual FLMUINT FTKAPI getElapsedTime( void) = 0;
 	};
 	
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	typedef void (FLMAPI * F_BUFFER_COMPLETION_FUNC)(IF_IOBuffer *, void *);
+	typedef void (FTKAPI * F_BUFFER_COMPLETION_FUNC)(IF_IOBuffer *, void *);
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	flminterface FTKEXP IF_IOBuffer : virtual public F_Object
 	{
-		virtual FLMBYTE * FLMAPI getBufferPtr( void) = 0;
+		virtual FLMBYTE * FTKAPI getBufferPtr( void) = 0;
 	
-		virtual FLMUINT FLMAPI getBufferSize( void) = 0;
+		virtual FLMUINT FTKAPI getBufferSize( void) = 0;
 		
-		virtual void FLMAPI setCompletionCallback(
+		virtual void FTKAPI setCompletionCallback(
 			F_BUFFER_COMPLETION_FUNC	fnCompletion,
 			void *							pvData) = 0;
 			
-		virtual RCODE FLMAPI addCallbackData(
+		virtual RCODE FTKAPI addCallbackData(
 			void *							pvData) = 0;
 			
-		virtual void * FLMAPI getCallbackData(
+		virtual void * FTKAPI getCallbackData(
 			FLMUINT							uiSlot) = 0;
 			
-		virtual FLMUINT FLMAPI getCallbackDataCount( void) = 0;
+		virtual FLMUINT FTKAPI getCallbackDataCount( void) = 0;
 			
-		virtual void FLMAPI setAsyncClient(
+		virtual void FTKAPI setAsyncClient(
 			IF_AsyncClient *				pAsyncClient) = 0;
 			
-		virtual void FLMAPI notifyComplete(
+		virtual void FTKAPI notifyComplete(
 			RCODE								completionRc) = 0;
 			
-		virtual void FLMAPI setPending( void) = 0;
+		virtual void FTKAPI setPending( void) = 0;
 		
-		virtual void FLMAPI clearPending( void) = 0;
+		virtual void FTKAPI clearPending( void) = 0;
 		
-		virtual FLMBOOL FLMAPI isPending( void) = 0;
+		virtual FLMBOOL FTKAPI isPending( void) = 0;
 		
-		virtual FLMBOOL FLMAPI isComplete( void) = 0;
+		virtual FLMBOOL FTKAPI isComplete( void) = 0;
 		
-		virtual RCODE FLMAPI waitToComplete( void) = 0;
+		virtual RCODE FTKAPI waitToComplete( void) = 0;
 		
-		virtual RCODE FLMAPI getCompletionCode( void) = 0;
+		virtual RCODE FTKAPI getCompletionCode( void) = 0;
 
-		virtual FLMUINT FLMAPI getElapsedTime( void) = 0;
+		virtual FLMUINT FTKAPI getElapsedTime( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -2373,16 +2367,16 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_IOBufferMgr : public F_Object
 	{
-		virtual RCODE FLMAPI getBuffer(
+		virtual RCODE FTKAPI getBuffer(
 			FLMUINT					uiBufferSize,
 			IF_IOBuffer **			ppIOBuffer) = 0;
 	
-		virtual FLMBOOL FLMAPI isIOPending( void) = 0;
+		virtual FLMBOOL FTKAPI isIOPending( void) = 0;
 		
-		virtual RCODE FLMAPI waitForAllPendingIO( void) = 0;
+		virtual RCODE FTKAPI waitForAllPendingIO( void) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocIOBufferMgr(
+	FTKXPC RCODE FTKAPI FlmAllocIOBufferMgr(
 		FLMUINT					uiMaxBuffers,
 		FLMUINT					uiMaxBytes,
 		FLMBOOL					bReuseBuffers,
@@ -2393,16 +2387,16 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_DirHdl : public F_Object
 	{
-		virtual RCODE FLMAPI next( void) = 0;
+		virtual RCODE FTKAPI next( void) = 0;
 
-		virtual const char * FLMAPI currentItemName( void) = 0;
+		virtual const char * FTKAPI currentItemName( void) = 0;
 
-		virtual void FLMAPI currentItemPath(
+		virtual void FTKAPI currentItemPath(
 			char *					pszPath) = 0;
 
-		virtual FLMUINT64 FLMAPI currentItemSize( void) = 0;
+		virtual FLMUINT64 FTKAPI currentItemSize( void) = 0;
 
-		virtual FLMBOOL FLMAPI currentItemIsDir( void) = 0;
+		virtual FLMBOOL FTKAPI currentItemIsDir( void) = 0;
 	};
 	
 	/****************************************************************************
@@ -2410,7 +2404,7 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_ResultSetCompare : public F_Object
 	{
-		virtual RCODE FLMAPI compare(
+		virtual RCODE FTKAPI compare(
 			const void *			pvData1,
 			FLMUINT					uiLength1,
 			const void *			pvData2,
@@ -2423,7 +2417,7 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_ResultSetSortStatus : public F_Object
 	{
-		virtual RCODE FLMAPI reportSortStatus(
+		virtual RCODE FTKAPI reportSortStatus(
 			FLMUINT64				ui64EstTotalUnits,
 			FLMUINT64				ui64UnitsDone) = 0;
 	};
@@ -2435,7 +2429,7 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_ResultSet : public F_Object
 	{
-		virtual RCODE FLMAPI setupResultSet(
+		virtual RCODE FTKAPI setupResultSet(
 			const char *				pszPath,
 			IF_ResultSetCompare *	pCompare,
 			FLMUINT						uiEntrySize,
@@ -2443,68 +2437,68 @@
 			FLMBOOL						bEntriesInOrder = FALSE,
 			const char *				pszFileName = NULL) = 0;
 
-		virtual FLMUINT64 FLMAPI getTotalEntries( void) = 0;
+		virtual FLMUINT64 FTKAPI getTotalEntries( void) = 0;
 
-		virtual RCODE FLMAPI addEntry(
+		virtual RCODE FTKAPI addEntry(
 			const void *			pvEntry,
 			FLMUINT					uiEntryLength = 0) = 0;
 
-		virtual RCODE FLMAPI finalizeResultSet(
+		virtual RCODE FTKAPI finalizeResultSet(
 			IF_ResultSetSortStatus *	pSortStatus = NULL,
 			FLMUINT64 *						pui64TotalEntries = NULL) = 0;
 
-		virtual RCODE FLMAPI getFirst(
+		virtual RCODE FTKAPI getFirst(
 			void *					pvEntryBuffer,
 			FLMUINT					uiBufferLength = 0,
 			FLMUINT *				puiEntryLength = NULL) = 0;
 
-		virtual RCODE FLMAPI getNext(
+		virtual RCODE FTKAPI getNext(
 			void *					pvEntryBuffer,
 			FLMUINT					uiBufferLength = 0,
 			FLMUINT *				puiEntryLength = NULL) = 0;
 
-		virtual RCODE FLMAPI getLast(
+		virtual RCODE FTKAPI getLast(
 			void *					pvEntryBuffer,
 			FLMUINT					uiBufferLength = 0,
 			FLMUINT *				puiEntryLength = NULL) = 0;
 
-		virtual RCODE FLMAPI getPrev(
+		virtual RCODE FTKAPI getPrev(
 			void *					pvEntryBuffer,
 			FLMUINT					uiBufferLength = 0,
 			FLMUINT *				puiEntryLength = NULL) = 0;
 
-		virtual RCODE FLMAPI getCurrent(
+		virtual RCODE FTKAPI getCurrent(
 			void *					pvEntryBuffer,
 			FLMUINT					uiBufferLength = 0,
 			FLMUINT *				puiEntryLength = NULL) = 0;
 
-		virtual RCODE FLMAPI findMatch(
+		virtual RCODE FTKAPI findMatch(
 			const void *			pvMatchEntry,
 			void *					pvFoundEntry) = 0;
 
-		virtual RCODE FLMAPI findMatch(
+		virtual RCODE FTKAPI findMatch(
 			const void *			pvMatchEntry,
 			FLMUINT					uiMatchEntryLength,
 			void *					pvFoundEntry,
 			FLMUINT *				puiFoundEntryLength) = 0;
 
-		virtual RCODE FLMAPI modifyCurrent(
+		virtual RCODE FTKAPI modifyCurrent(
 			const void *			pvEntry,
 			FLMUINT					uiEntryLength = 0) = 0;
 
-		virtual FLMUINT64 FLMAPI getPosition( void) = 0;
+		virtual FLMUINT64 FTKAPI getPosition( void) = 0;
 
-		virtual RCODE FLMAPI setPosition(
+		virtual RCODE FTKAPI setPosition(
 			FLMUINT64				ui64Position) = 0;
 
-		virtual RCODE FLMAPI resetResultSet(
+		virtual RCODE FTKAPI resetResultSet(
 			FLMBOOL					bDelete = TRUE) = 0;
 
-		virtual RCODE FLMAPI flushToFile( void) = 0;
+		virtual RCODE FTKAPI flushToFile( void) = 0;
 
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocResultSet(
+	FTKXPC RCODE FTKAPI FlmAllocResultSet(
 		IF_ResultSet **			ppResultSet);
 
 	/*****************************************************************************
@@ -2512,26 +2506,26 @@
 	*****************************************************************************/
 	flminterface FTKEXP IF_BTreeResultSet : public F_Object
 	{
-		virtual RCODE FLMAPI addEntry(
+		virtual RCODE FTKAPI addEntry(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyLength,
 			FLMBYTE *				pucEntry,
 			FLMUINT					uiEntryLength) = 0;
 	
-		virtual RCODE FLMAPI modifyEntry(
+		virtual RCODE FTKAPI modifyEntry(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyLength,
 			FLMBYTE *				pucEntry,
 			FLMUINT					uiEntryLength) = 0;
 	
-		virtual RCODE FLMAPI getCurrent(
+		virtual RCODE FTKAPI getCurrent(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyLength,
 			FLMBYTE *				pucEntry,
 			FLMUINT					uiEntryLength,
 			FLMUINT *				puiReturnLength) = 0;
 	
-		virtual RCODE FLMAPI getNext(
+		virtual RCODE FTKAPI getNext(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyBufLen,
 			FLMUINT *				puiKeylen,
@@ -2539,7 +2533,7 @@
 			FLMUINT					uiBufferLength,
 			FLMUINT *				puiReturnLength) = 0;
 	
-		virtual RCODE FLMAPI getPrev(
+		virtual RCODE FTKAPI getPrev(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyBufLen,
 			FLMUINT *				puiKeylen,
@@ -2547,7 +2541,7 @@
 			FLMUINT					uiBufferLength,
 			FLMUINT *				puiReturnLength) = 0;
 	
-		virtual RCODE FLMAPI getFirst(
+		virtual RCODE FTKAPI getFirst(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyBufLen,
 			FLMUINT *				puiKeylen,
@@ -2555,7 +2549,7 @@
 			FLMUINT					uiBufferLength,
 			FLMUINT *				puiReturnLength) = 0;
 	
-		virtual RCODE FLMAPI getLast(
+		virtual RCODE FTKAPI getLast(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyBufLen,
 			FLMUINT *				puiKeylen,
@@ -2563,19 +2557,19 @@
 			FLMUINT					uiBufferLength,
 			FLMUINT *				puiReturnLength) = 0;
 	
-		virtual RCODE FLMAPI findEntry(
+		virtual RCODE FTKAPI findEntry(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyLen,
 			FLMBYTE *				pucBuffer,
 			FLMUINT					uiBufferLength,
 			FLMUINT *				puiReturnLength) = 0;
 	
-		virtual RCODE FLMAPI deleteEntry(
+		virtual RCODE FTKAPI deleteEntry(
 			FLMBYTE *				pucKey,
 			FLMUINT					uiKeyLength) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocBTreeResultSet(
+	FTKXPC RCODE FTKAPI FlmAllocBTreeResultSet(
 		IF_ResultSetCompare *	pCompare,
 		IF_BTreeResultSet **		ppBTreeResultSet);
 
@@ -2587,39 +2581,39 @@
 
 	flminterface FTKEXP IF_RandomGenerator : public F_Object
 	{
-		virtual void FLMAPI randomize( void) = 0;
+		virtual void FTKAPI randomize( void) = 0;
 
-		virtual void FLMAPI setSeed(
+		virtual void FTKAPI setSeed(
 			FLMUINT32				ui32seed) = 0;
 			
-		virtual FLMUINT32 FLMAPI getSeed( void) = 0;
+		virtual FLMUINT32 FTKAPI getSeed( void) = 0;
 
-		virtual FLMUINT32 FLMAPI getUINT32(
+		virtual FLMUINT32 FTKAPI getUINT32(
 			FLMUINT32 				ui32Low = 0,
 			FLMUINT32 				ui32High = FLM_MAX_RANDOM) = 0;
 
-		virtual FLMBOOL FLMAPI getBoolean( void) = 0;
+		virtual FLMBOOL FTKAPI getBoolean( void) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocRandomGenerator(
+	FTKXPC RCODE FTKAPI FlmAllocRandomGenerator(
 		IF_RandomGenerator **	ppRandomGenerator);
 		
-	FTKEXPC FLMUINT32 FLMAPI f_getRandomUINT32(
+	FTKXPC FLMUINT32 FTKAPI f_getRandomUINT32(
 		FLMUINT32					ui32Low = 0,
 		FLMUINT32					ui32High = FLM_MAX_RANDOM);
 	
-	FTKEXPC FLMBYTE FLMAPI f_getRandomByte( void);
+	FTKXPC FLMBYTE FTKAPI f_getRandomByte( void);
 		
 	/**********************************************************************
 	Desc:	Atomic operations
 	**********************************************************************/
-	FTKEXPC FLMINT32 FLMAPI f_atomicInc(
+	FTKXPC FLMINT32 FTKAPI f_atomicInc(
 		FLMATOMIC *					piTarget);
 	
-	FTKEXPC FLMINT32 FLMAPI f_atomicDec(
+	FTKXPC FLMINT32 FTKAPI f_atomicDec(
 		FLMATOMIC *					piTarget);
 	
-	FTKEXPC FLMINT32 FLMAPI f_atomicExchange(
+	FTKXPC FLMINT32 FTKAPI f_atomicExchange(
 		FLMATOMIC *					piTarget,
 		FLMINT32						i32NewVal);
 		
@@ -2629,27 +2623,27 @@
 	typedef void *					F_MUTEX;
 	#define F_MUTEX_NULL			NULL
 	
-	FTKEXPC RCODE FLMAPI f_mutexCreate(
+	FTKXPC RCODE FTKAPI f_mutexCreate(
 		F_MUTEX *					phMutex);
 	
-	FTKEXPC void FLMAPI f_mutexDestroy(
+	FTKXPC void FTKAPI f_mutexDestroy(
 		F_MUTEX *					phMutex);
 			
-	FTKEXPC void FLMAPI f_mutexLock(
+	FTKXPC void FTKAPI f_mutexLock(
 		F_MUTEX						hMutex);
 		
-	FTKEXPC void FLMAPI f_mutexUnlock(
+	FTKXPC void FTKAPI f_mutexUnlock(
 		F_MUTEX						hMutex);
 
 #ifdef FLM_DEBUG
-	FTKEXPC void FLMAPI f_assertMutexLocked(
+	FTKXPC void FTKAPI f_assertMutexLocked(
 		F_MUTEX						hMutex);
 #else
 	#define f_assertMutexLocked( h) (void)(h)
 #endif
 
 #ifdef FLM_DEBUG
-	FTKEXPC void FLMAPI f_assertMutexNotLocked(
+	FTKXPC void FTKAPI f_assertMutexNotLocked(
 		F_MUTEX						hMutex);
 #else
 	#define f_assertMutexNotLocked( h) (void)(h)
@@ -2661,20 +2655,20 @@
 	typedef void *					F_SEM;
 	#define F_SEM_NULL			NULL
 	
-	FTKEXPC RCODE FLMAPI f_semCreate(
+	FTKXPC RCODE FTKAPI f_semCreate(
 		F_SEM *						phSem);
 	
-	FTKEXPC void FLMAPI f_semDestroy(
+	FTKXPC void FTKAPI f_semDestroy(
 		F_SEM *						phSem);
 	
-	FTKEXPC RCODE FLMAPI f_semWait(
+	FTKXPC RCODE FTKAPI f_semWait(
 		F_SEM							hSem,
 		FLMUINT						uiTimeout);
 	
-	FTKEXPC void FLMAPI f_semSignal(
+	FTKXPC void FTKAPI f_semSignal(
 		F_SEM							hSem);
 
-	FTKEXPC FLMUINT FLMAPI f_semGetSignalCount(
+	FTKXPC FLMUINT FTKAPI f_semGetSignalCount(
 		F_SEM							hSem);
 
 	/****************************************************************************
@@ -2695,13 +2689,13 @@
 														///< operation is complete.
 	} F_NOTIFY_LIST_ITEM;
 
-	FTKEXPC RCODE FLMAPI f_notifyWait(
+	FTKXPC RCODE FTKAPI f_notifyWait(
 		F_MUTEX						hMutex,
 		F_SEM							hSem,
 		void *						pvData,
 		F_NOTIFY_LIST_ITEM **	ppNotifyList);
 		
-	FTKEXPC void FLMAPI f_notifySignal(
+	FTKXPC void FTKAPI f_notifySignal(
 		F_NOTIFY_LIST_ITEM *		pNotifyList,
 		RCODE							notifyRc);
 		
@@ -2711,22 +2705,22 @@
 	typedef void *					F_RWLOCK;
 	#define F_RWLOCK_NULL		NULL
 	
-	FTKEXPC RCODE FLMAPI f_rwlockCreate(
+	FTKXPC RCODE FTKAPI f_rwlockCreate(
 		F_RWLOCK *					phReadWriteLock);
 		
-	FTKEXPC void FLMAPI f_rwlockDestroy(
+	FTKXPC void FTKAPI f_rwlockDestroy(
 		F_RWLOCK *					phReadWriteLock);
 		
-	FTKEXPC RCODE FLMAPI f_rwlockAcquire(
+	FTKXPC RCODE FTKAPI f_rwlockAcquire(
 		F_RWLOCK						hReadWriteLock,
 		F_SEM							hSem,
 		FLMBOOL						bWriter);
 		
-	FTKEXPC RCODE FLMAPI f_rwlockPromote(
+	FTKXPC RCODE FTKAPI f_rwlockPromote(
 		F_RWLOCK						hReadWriteLock,
 		F_SEM							hSem);
 		
-	FTKEXPC RCODE FLMAPI f_rwlockRelease(
+	FTKXPC RCODE FTKAPI f_rwlockRelease(
 		F_RWLOCK						hReadWriteLock);
 	
 	/****************************************************************************
@@ -2734,9 +2728,9 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_ThreadMgr : public F_Object
 	{
-		virtual RCODE FLMAPI setupThreadMgr( void) = 0;
+		virtual RCODE FTKAPI setupThreadMgr( void) = 0;
 		
-		virtual RCODE FLMAPI createThread(
+		virtual RCODE FTKAPI createThread(
 			IF_Thread **			ppThread,
 			F_THREAD_FUNC			fnThread,
 			const char *			pszThreadName = NULL,
@@ -2746,40 +2740,40 @@
 			void *					pvParm2 = NULL,
 			FLMUINT					uiStackSize = F_THREAD_DEFAULT_STACK_SIZE) = 0;
 	
-		virtual void FLMAPI shutdownThreadGroup(
+		virtual void FTKAPI shutdownThreadGroup(
 			FLMUINT					uiThreadGroup) = 0;
 	
-		virtual void FLMAPI setThreadShutdownFlag(
+		virtual void FTKAPI setThreadShutdownFlag(
 			FLMUINT					uiThreadId) = 0;
 	
-		virtual RCODE FLMAPI findThread(
+		virtual RCODE FTKAPI findThread(
 			IF_Thread **			ppThread,
 			FLMUINT					uiThreadGroup,
 			FLMUINT					uiAppId = 0,
 			FLMBOOL					bOkToFindMe = TRUE) = 0;
 	
-		virtual RCODE FLMAPI getNextGroupThread(
+		virtual RCODE FTKAPI getNextGroupThread(
 			IF_Thread **			ppThread,
 			FLMUINT					uiThreadGroup,
 			FLMUINT *				puiThreadId) = 0;
 	
-		virtual RCODE FLMAPI getThreadInfo(
+		virtual RCODE FTKAPI getThreadInfo(
 			F_Pool *					pPool,
 			F_THREAD_INFO **		ppThreadInfo,
 			FLMUINT *				puiNumThreads) = 0;
 			
-		virtual RCODE FLMAPI getThreadName(
+		virtual RCODE FTKAPI getThreadName(
 			FLMUINT					uiThreadId,
 			char *					pszThreadName,
 			FLMUINT *				puiLength) = 0;
 	
-		virtual FLMUINT FLMAPI getThreadGroupCount(
+		virtual FLMUINT FTKAPI getThreadGroupCount(
 			FLMUINT					uiThreadGroup) = 0;
 			
-		virtual FLMUINT FLMAPI allocGroupId( void) = 0;
+		virtual FLMUINT FTKAPI allocGroupId( void) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmGetThreadMgr(
+	FTKXPC RCODE FTKAPI FlmGetThreadMgr(
 		IF_ThreadMgr **			ppThreadMgr);
 
 	/****************************************************************************
@@ -2787,7 +2781,7 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_Thread : public F_Object
 	{
-		virtual RCODE FLMAPI startThread(
+		virtual RCODE FTKAPI startThread(
 			F_THREAD_FUNC			fnThread,
 			const char *			pszThreadName = NULL,
 			FLMUINT					uiThreadGroup = F_DEFAULT_THREAD_GROUP,
@@ -2796,53 +2790,53 @@
 			void *					pvParm2 = NULL,
 			FLMUINT        		uiStackSize = F_THREAD_DEFAULT_STACK_SIZE) = 0;
 	
-		virtual void FLMAPI stopThread( void) = 0;
+		virtual void FTKAPI stopThread( void) = 0;
 	
-		virtual FLMUINT FLMAPI getThreadId( void) = 0;
+		virtual FLMUINT FTKAPI getThreadId( void) = 0;
 	
-		virtual FLMBOOL FLMAPI getShutdownFlag( void) = 0;
+		virtual FLMBOOL FTKAPI getShutdownFlag( void) = 0;
 	
-		virtual RCODE FLMAPI getExitCode( void) = 0;
+		virtual RCODE FTKAPI getExitCode( void) = 0;
 	
-		virtual void * FLMAPI getParm1( void) = 0;
+		virtual void * FTKAPI getParm1( void) = 0;
 	
-		virtual void FLMAPI setParm1(
+		virtual void FTKAPI setParm1(
 			void *					pvParm) = 0;
 	
-		virtual void * FLMAPI getParm2( void) = 0;
+		virtual void * FTKAPI getParm2( void) = 0;
 	
-		virtual void FLMAPI setParm2(
+		virtual void FTKAPI setParm2(
 			void *					pvParm) = 0;
 	
-		virtual void FLMAPI setShutdownFlag( void) = 0;
+		virtual void FTKAPI setShutdownFlag( void) = 0;
 	
-		virtual FLMBOOL FLMAPI isThreadRunning( void) = 0;
+		virtual FLMBOOL FTKAPI isThreadRunning( void) = 0;
 	
-		virtual void FLMAPI setThreadStatusStr(
+		virtual void FTKAPI setThreadStatusStr(
 			const char *			pszStatus) = 0;
 	
-		virtual void FLMAPI setThreadStatus(
+		virtual void FTKAPI setThreadStatus(
 			const char *			pszBuffer, ...) = 0;
 	
-		virtual void FLMAPI setThreadStatus(
+		virtual void FTKAPI setThreadStatus(
 			eThreadStatus			genericStatus) = 0;
 	
-		virtual void FLMAPI setThreadAppId(
+		virtual void FTKAPI setThreadAppId(
 			FLMUINT					uiAppId) = 0;
 	
-		virtual FLMUINT FLMAPI getThreadAppId( void) = 0;
+		virtual FLMUINT FTKAPI getThreadAppId( void) = 0;
 	
-		virtual FLMUINT FLMAPI getThreadGroup( void) = 0;
+		virtual FLMUINT FTKAPI getThreadGroup( void) = 0;
 	
-		virtual void FLMAPI cleanupThread( void) = 0;
+		virtual void FTKAPI cleanupThread( void) = 0;
 		
-		virtual void FLMAPI sleep(
+		virtual void FTKAPI sleep(
 			FLMUINT					uiMilliseconds) = 0;
 			
-		virtual void FLMAPI waitToComplete( void) = 0;
+		virtual void FTKAPI waitToComplete( void) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI f_threadCreate(
+	FTKXPC RCODE FTKAPI f_threadCreate(
 		IF_Thread **			ppThread,
 		F_THREAD_FUNC			fnThread,
 		const char *			pszThreadName = NULL,
@@ -2852,56 +2846,56 @@
 		void *					pvParm2 = NULL,
 		FLMUINT					uiStackSize = F_THREAD_DEFAULT_STACK_SIZE);
 	
-	FTKEXPC void FLMAPI f_threadDestroy(
+	FTKXPC void FTKAPI f_threadDestroy(
 		IF_Thread **			ppThread);
 	
-	FTKEXPC FLMUINT FLMAPI f_threadId( void);
+	FTKXPC FLMUINT FTKAPI f_threadId( void);
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
 	flminterface FTKEXP IF_IniFile : public F_Object
 	{
-		virtual RCODE FLMAPI read(
+		virtual RCODE FTKAPI read(
 			const char *			pszFileName) = 0;
 			
-		virtual RCODE FLMAPI write( void) = 0;
+		virtual RCODE FTKAPI write( void) = 0;
 	
-		virtual FLMBOOL FLMAPI getParam(
+		virtual FLMBOOL FTKAPI getParam(
 			const char *			pszParamName,
 			FLMUINT *				puiParamVal) = 0;
 		
-		virtual FLMBOOL FLMAPI getParam(
+		virtual FLMBOOL FTKAPI getParam(
 			const char *			pszParamName,
 			FLMBOOL *				pbParamVal) = 0;
 		
-		virtual FLMBOOL FLMAPI getParam(
+		virtual FLMBOOL FTKAPI getParam(
 			const char *			pszParamName,
 			char **					ppszParamVal) = 0;
 		
-		virtual RCODE FLMAPI setParam(
+		virtual RCODE FTKAPI setParam(
 			const char *			pszParamName,
 			FLMUINT 					uiParamVal) = 0;
 	
-		virtual RCODE FLMAPI setParam(
+		virtual RCODE FTKAPI setParam(
 			const char *			pszParamName,
 			FLMBOOL					bParamVal) = 0;
 	
-		virtual RCODE FLMAPI setParam(
+		virtual RCODE FTKAPI setParam(
 			const char *			pszParamName,
 			const char *			pszParamVal) = 0;
 	
-		virtual FLMBOOL FLMAPI testParam(
+		virtual FLMBOOL FTKAPI testParam(
 			const char *			pszParamName) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocIniFile(
+	FTKXPC RCODE FTKAPI FlmAllocIniFile(
 		IF_IniFile **				ppIniFile);
 	
 	/****************************************************************************
 	Desc: Serial numbers
 	****************************************************************************/
-	FTKEXPC RCODE FLMAPI f_createSerialNumber(
+	FTKXPC RCODE FTKAPI f_createSerialNumber(
 		FLMBYTE *					pszSerialNumber);
 
 	#define F_SERIAL_NUM_SIZE				16
@@ -2909,159 +2903,159 @@
 	/****************************************************************************
 	Desc: Checksum
 	****************************************************************************/
-	FTKEXPC void FLMAPI f_updateCRC(
+	FTKXPC void FTKAPI f_updateCRC(
 		const void *				pvBuffer,
 		FLMUINT						uiLength,
 		FLMUINT32 *					pui32CRC);
 		
-	FTKEXPC FLMUINT32 FLMAPI f_calcFastChecksum(
+	FTKXPC FLMUINT32 FTKAPI f_calcFastChecksum(
 		const void *				pvBuffer,
 		FLMUINT						uiLength,
 		FLMUINT *					puiSum = NULL,
 		FLMUINT *					puiXOR = NULL);
 
-	FTKEXPC FLMBYTE FLMAPI f_calcPacketChecksum(
+	FTKXPC FLMBYTE FTKAPI f_calcPacketChecksum(
 		const void *				pvPacket,
 		FLMUINT						uiBytesToChecksum);
 		
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	FTKEXPC char * FLMAPI f_uwtoa(
+	FTKXPC char * FTKAPI f_uwtoa(
 		FLMUINT16					value,
 		char *						ptr);
 
-	FTKEXPC char * FLMAPI f_udtoa(
+	FTKXPC char * FTKAPI f_udtoa(
 		FLMUINT						value,
 		char *						ptr);
 
-	FTKEXPC char * FLMAPI f_wtoa(
+	FTKXPC char * FTKAPI f_wtoa(
 		FLMINT16						value,
 		char *						ptr);
 
-	FTKEXPC char * FLMAPI f_dtoa(
+	FTKXPC char * FTKAPI f_dtoa(
 		FLMINT						value,
 		char *						ptr);
 
-	FTKEXPC char * FLMAPI f_ui64toa(
+	FTKXPC char * FTKAPI f_ui64toa(
 		FLMUINT64					value,
 		char *						ptr);
 
-	FTKEXPC char * FLMAPI f_i64toa(
+	FTKXPC char * FTKAPI f_i64toa(
 		FLMINT64						value,
 		char *						ptr);
 
-	FTKEXPC FLMINT FLMAPI f_atoi(
+	FTKXPC FLMINT FTKAPI f_atoi(
 		const char *				ptr);
 
-	FTKEXPC FLMINT FLMAPI f_atol(
+	FTKXPC FLMINT FTKAPI f_atol(
 		const char *				ptr);
 
-	FTKEXPC FLMINT FLMAPI f_atod(
+	FTKXPC FLMINT FTKAPI f_atod(
 		const char *				ptr);
 
-	FTKEXPC FLMUINT FLMAPI f_atoud(
+	FTKXPC FLMUINT FTKAPI f_atoud(
 		const char *				ptr,
 		FLMBOOL						bAllowUnprefixedHex = FALSE);
 
-	FTKEXPC FLMUINT64 FLMAPI f_atou64(
+	FTKXPC FLMUINT64 FTKAPI f_atou64(
 		const char *  				pszBuf);
 
-	FTKEXPC FLMBOOL FLMAPI f_atobool( 
+	FTKXPC FLMBOOL FTKAPI f_atobool( 
 		const char *				pszStr,
 		FLMBOOL *					pbValidFormat = NULL);
 	
-	FTKEXPC FLMUINT FLMAPI f_unilen(
+	FTKXPC FLMUINT FTKAPI f_unilen(
 		const FLMUNICODE *		puzStr);
 
-	FTKEXPC FLMUNICODE * FLMAPI f_unicpy(
+	FTKXPC FLMUNICODE * FTKAPI f_unicpy(
 		FLMUNICODE *				puzDestStr,
 		const FLMUNICODE *		puzSrcStr);
 
-	FTKEXPC FLMBOOL FLMAPI f_uniIsUpper(
+	FTKXPC FLMBOOL FTKAPI f_uniIsUpper(
 		FLMUNICODE					uChar);
 		
-	FTKEXPC FLMBOOL FLMAPI f_uniIsLower(
+	FTKXPC FLMBOOL FTKAPI f_uniIsLower(
 		FLMUNICODE					uChar);
 	
-	FTKEXPC FLMBOOL FLMAPI f_uniIsAlpha(
+	FTKXPC FLMBOOL FTKAPI f_uniIsAlpha(
 		FLMUNICODE					uChar);
 	
-	FTKEXPC FLMBOOL FLMAPI f_uniIsDecimalDigit(
+	FTKXPC FLMBOOL FTKAPI f_uniIsDecimalDigit(
 		FLMUNICODE					uChar);
 	
-	FTKEXPC FLMUNICODE FLMAPI f_uniToLower(
+	FTKXPC FLMUNICODE FTKAPI f_uniToLower(
 		FLMUNICODE					uChar);
 
-	FTKEXPC FLMINT FLMAPI f_unicmp(
+	FTKXPC FLMINT FTKAPI f_unicmp(
 		const FLMUNICODE *		puzStr1,
 		const FLMUNICODE *		puzStr2);
 
-	FTKEXPC FLMINT FLMAPI f_uniicmp(
+	FTKXPC FLMINT FTKAPI f_uniicmp(
 		const FLMUNICODE *		puzStr1,
 		const FLMUNICODE *		puzStr2);
 
-	FTKEXPC FLMINT FLMAPI f_uninativecmp(
+	FTKXPC FLMINT FTKAPI f_uninativecmp(
 		const FLMUNICODE *		puzStr1,
 		const char *				pszStr2);
 
-	FTKEXPC FLMINT FLMAPI f_uninativencmp(
+	FTKXPC FLMINT FTKAPI f_uninativencmp(
 		const FLMUNICODE *		puzStr1,
 		const char  *				pszStr2,
 		FLMUINT						uiCount);
 
-	FTKEXPC RCODE	FLMAPI f_nextUCS2Char(
+	FTKXPC RCODE	FTKAPI f_nextUCS2Char(
 		const FLMBYTE **			ppszUTF8,
 		const FLMBYTE *			pszEndOfUTF8String,
 		FLMUNICODE *				puzChar);
 	
-	FTKEXPC RCODE FLMAPI f_numUCS2Chars(
+	FTKXPC RCODE FTKAPI f_numUCS2Chars(
 		const FLMBYTE *			pszUTF8,
 		FLMUINT *					puiNumChars);
 	
-	FTKEXPC FLMBOOL FLMAPI f_isWhitespace(
+	FTKXPC FLMBOOL FTKAPI f_isWhitespace(
 		FLMUNICODE					ucChar);
 
-	FTKEXPC FLMUNICODE FLMAPI f_convertChar(
+	FTKXPC FLMUNICODE FTKAPI f_convertChar(
 		FLMUNICODE					uzChar,
 		FLMUINT						uiCompareRules);
 	
-	FTKEXPC RCODE FLMAPI f_wpToUnicode(
+	FTKXPC RCODE FTKAPI f_wpToUnicode(
 		FLMUINT16					ui16WPChar,
 		FLMUNICODE *				puUniChar);
 	
-	FTKEXPC FLMBOOL FLMAPI f_unicodeToWP(
+	FTKXPC FLMBOOL FTKAPI f_unicodeToWP(
 		FLMUNICODE					uUniChar,
 		FLMUINT16 *					pui16WPChar);
 		
-	FTKEXPC FLMBOOL FLMAPI f_depricatedUnicodeToWP(
+	FTKXPC FLMBOOL FTKAPI f_depricatedUnicodeToWP(
 		FLMUNICODE					uUniChar,
 		FLMUINT16 *					pui16WPChar);
 
-	FTKEXPC FLMUINT16 FLMAPI f_wpUpper(
+	FTKXPC FLMUINT16 FTKAPI f_wpUpper(
 		FLMUINT16					ui16WpChar);
 	
-	FTKEXPC FLMBOOL FLMAPI f_wpIsUpper(
+	FTKXPC FLMBOOL FTKAPI f_wpIsUpper(
 		FLMUINT16					ui16WpChar);
 	
-	FTKEXPC FLMUINT16 FLMAPI f_wpLower(
+	FTKXPC FLMUINT16 FTKAPI f_wpLower(
 		FLMUINT16					ui16WpChar);
 	
-	FTKEXPC FLMBOOL FLMAPI f_breakWPChar(	
+	FTKXPC FLMBOOL FTKAPI f_breakWPChar(	
 		FLMUINT16					ui16WpChar,
 		FLMUINT16 *					pui16BaseChar,
 		FLMUINT16 *					pui16DiacriticChar);
 
-	FTKEXPC FLMBOOL FLMAPI f_combineWPChar(
+	FTKXPC FLMBOOL FTKAPI f_combineWPChar(
 		FLMUINT16 *					pui16WpChar,
 		FLMUINT16					ui16BaseChar,
 		FLMINT16						ui16DiacriticChar);
 
-	FTKEXPC FLMUINT16 FLMAPI f_wpGetCollationImp(
+	FTKXPC FLMUINT16 FTKAPI f_wpGetCollationImp(
 		FLMUINT16					ui16WpChar,
 		FLMUINT						uiLanguage);
 
-	FINLINE FLMUINT16 FLMAPI f_wpGetCollation(
+	FINLINE FLMUINT16 FTKAPI f_wpGetCollation(
 		FLMUINT16					ui16WpChar,
 		FLMUINT						uiLanguage)
 	{
@@ -3073,7 +3067,7 @@
 		return( f_wpGetCollationImp( ui16WpChar, uiLanguage));
 	}
 
-	FTKEXP RCODE FLMAPI f_wpCheckDoubleCollation(
+	FTKEXP RCODE FTKAPI f_wpCheckDoubleCollation(
 		IF_PosIStream *			pIStream,
 		FLMBOOL						bUnicodeStream,
 		FLMBOOL						bAllowTwoIntoOne,
@@ -3082,35 +3076,35 @@
 		FLMBOOL *					pbTwoIntoOne,
 		FLMUINT						uiLanguage);
 	
-	FTKEXP FLMUINT16 FLMAPI f_wpCheckDoubleCollation(
+	FTKEXP FLMUINT16 FTKAPI f_wpCheckDoubleCollation(
 		FLMUINT16 *					pui16WpChar,
 		FLMBOOL *					pbTwoIntoOne,
 		const FLMBYTE **			ppucInputStr,
 		FLMUINT						uiLanguage);
 	
-	FTKEXPC FLMUINT16 FLMAPI f_wpHanToZenkaku(
+	FTKXPC FLMUINT16 FTKAPI f_wpHanToZenkaku(
 		FLMUINT16					ui16WpChar,
 		FLMUINT16					ui16NextWpChar,
 		FLMUINT16 *					pui16Zenkaku);
 
-	FTKEXPC FLMUINT16 FLMAPI f_wpZenToHankaku(
+	FTKXPC FLMUINT16 FTKAPI f_wpZenToHankaku(
 		FLMUINT16					ui16WpChar,
 		FLMUINT16 * 				pui16DakutenOrHandakuten);
 	
-	FTKEXPC FLMUINT FLMAPI f_wpToMixed(
+	FTKXPC FLMUINT FTKAPI f_wpToMixed(
 		FLMBYTE *					pucWPStr,
 		FLMUINT						uiWPStrLen,
 		const FLMBYTE *			pucLowUpBitStr,
 		FLMUINT						uiLang);
 
-	FTKEXPC RCODE FLMAPI f_asiaParseSubCol(
+	FTKXPC RCODE FTKAPI f_asiaParseSubCol(
 		FLMBYTE *					pucWPStr,
 		FLMUINT *					puiWPStrLen,
 		FLMUINT						uiMaxWPBytes,
 		const FLMBYTE *			pucSubColBuf,
 		FLMUINT *					puiSubColBitPos);
 
-	FTKEXPC RCODE FLMAPI f_asiaColStr2WPStr(
+	FTKXPC RCODE FTKAPI f_asiaColStr2WPStr(
 		const FLMBYTE *			pucColStr,
 		FLMUINT						uiColStrLen,
 		FLMBYTE *					pucWPStr,
@@ -3119,7 +3113,7 @@
 		FLMBOOL *					pbDataTruncated,
 		FLMBOOL *					pbFirstSubstring);
 	
-	FTKEXPC RCODE FLMAPI f_colStr2WPStr(
+	FTKXPC RCODE FTKAPI f_colStr2WPStr(
 		const FLMBYTE *			pucColStr,
 		FLMUINT						uiColStrLen,
 		FLMBYTE *					pucWPStr,
@@ -3129,7 +3123,7 @@
 		FLMBOOL *					pbDataTruncated,
 		FLMBOOL *					pbFirstSubstring);
 	
-	FTKEXPC RCODE FLMAPI f_asiaUTF8ToColText(
+	FTKXPC RCODE FTKAPI f_asiaUTF8ToColText(
 		IF_PosIStream *			pIStream,
 		FLMBYTE *					pucColStr,
 		FLMUINT *					puiColStrLen,
@@ -3141,7 +3135,7 @@
 		FLMBOOL						bDataTruncated,
 		FLMBOOL *					pbDataTruncated);
 	
-	FTKEXPC RCODE FLMAPI f_compareUTF8Strings(
+	FTKXPC RCODE FTKAPI f_compareUTF8Strings(
 		const FLMBYTE *			pucLString,
 		FLMUINT						uiLStrBytes,
 		FLMBOOL						bLeftWild,
@@ -3152,7 +3146,7 @@
 		FLMUINT						uiLanguage,
 		FLMINT *						piResult);
 			
-	FTKEXPC RCODE FLMAPI f_compareUTF8Streams(
+	FTKXPC RCODE FTKAPI f_compareUTF8Streams(
 		IF_PosIStream *			pLStream,
 		FLMBOOL						bLeftWild,
 		IF_PosIStream *			pRStream,
@@ -3161,7 +3155,7 @@
 		FLMUINT						uiLanguage,
 		FLMINT *						piResult);
 		
-	FTKEXPC RCODE FLMAPI f_compareUnicodeStrings(
+	FTKXPC RCODE FTKAPI f_compareUnicodeStrings(
 		const FLMUNICODE *		puzLString,
 		FLMUINT						uiLStrBytes,
 		FLMBOOL						bLeftWild,
@@ -3172,7 +3166,7 @@
 		FLMUINT						uiLanguage,
 		FLMINT *						piResult);
 
-	FTKEXPC RCODE FLMAPI f_compareUnicodeStreams(
+	FTKXPC RCODE FTKAPI f_compareUnicodeStreams(
 		IF_PosIStream *			pLStream,
 		FLMBOOL						bLeftWild,
 		IF_PosIStream *			pRStream,
@@ -3181,94 +3175,94 @@
 		FLMUINT						uiLanguage,
 		FLMINT *						piResult);
 	
-	FTKEXPC RCODE FLMAPI f_compareCollStreams(
+	FTKXPC RCODE FTKAPI f_compareCollStreams(
 		IF_CollIStream *			pLStream,
 		IF_CollIStream *			pRStream,
 		FLMBOOL						bOpIsMatch,
 		FLMUINT						uiLanguage,
 		FLMINT *						piResult);
 		
-	FTKEXPC RCODE FLMAPI f_utf8IsSubStr(
+	FTKXPC RCODE FTKAPI f_utf8IsSubStr(
 		const FLMBYTE *			pszString,
 		const FLMBYTE *			pszSubString,
 		FLMUINT						uiCompareRules,
 		FLMUINT						uiLanguage,
 		FLMBOOL *					pbExists);
 		
-	FTKEXPC RCODE FLMAPI f_readUTF8CharAsUnicode(
+	FTKXPC RCODE FTKAPI f_readUTF8CharAsUnicode(
 		IF_IStream *				pStream,
 		FLMUNICODE *				puChar);
 	
-	FTKEXPC RCODE FLMAPI f_readUTF8CharAsUTF8(
+	FTKXPC RCODE FTKAPI f_readUTF8CharAsUTF8(
 		IF_IStream *				pIStream,
 		FLMBYTE *					pucBuf,
 		FLMUINT *					puiLen);
 	
-	FTKEXPC RCODE FLMAPI f_formatUTF8Text(
+	FTKXPC RCODE FTKAPI f_formatUTF8Text(
 		IF_PosIStream *			pIStream,
 		FLMBOOL						bAllowEscapes,
 		FLMUINT						uiCompareRules,
 		F_DynaBuf *					pDynaBuf);
 		
-	FTKEXPC RCODE FLMAPI f_getNextMetaphone(
+	FTKXPC RCODE FTKAPI f_getNextMetaphone(
 		IF_IStream *				pIStream,
 		FLMUINT *					puiMetaphone,
 		FLMUINT *					puiAltMetaphone = NULL);
 	
-	FTKEXPC FLMUINT FLMAPI f_getSENLength(
+	FTKXPC FLMUINT FTKAPI f_getSENLength(
 		FLMBYTE 						ucByte);
 
-	FTKEXPC FLMUINT FLMAPI f_getSENByteCount(
+	FTKXPC FLMUINT FTKAPI f_getSENByteCount(
 		FLMUINT64					ui64Num);
 		
-	FTKEXP FLMUINT FLMAPI f_encodeSEN(
+	FTKEXP FLMUINT FTKAPI f_encodeSEN(
 		FLMUINT64					ui64Value,
 		FLMBYTE **					ppucBuffer,
 		FLMUINT						uiBytesWanted = 0);
 		
-	FTKEXP RCODE FLMAPI f_encodeSEN(
+	FTKEXP RCODE FTKAPI f_encodeSEN(
 		FLMUINT64					ui64Value,
 		FLMBYTE **					ppucBuffer,
 		FLMBYTE *					pucEnd);
 	
-	FTKEXPC FLMUINT FLMAPI f_encodeSENKnownLength(
+	FTKXPC FLMUINT FTKAPI f_encodeSENKnownLength(
 		FLMUINT64					ui64Value,
 		FLMUINT						uiSenLen,
 		FLMBYTE **					ppucBuffer);
 
-	FTKEXPC RCODE FLMAPI f_decodeSEN(
+	FTKXPC RCODE FTKAPI f_decodeSEN(
 		const FLMBYTE **			ppucBuffer,
 		const FLMBYTE *			pucEnd,
 		FLMUINT *					puiValue);
 	
-	FTKEXPC RCODE FLMAPI f_decodeSEN64(
+	FTKXPC RCODE FTKAPI f_decodeSEN64(
 		const FLMBYTE **			ppucBuffer,
 		const FLMBYTE *			pucEnd,
 		FLMUINT64 *					pui64Value);
 	
-	FTKEXPC RCODE FLMAPI f_readSEN(
+	FTKXPC RCODE FTKAPI f_readSEN(
 		IF_IStream *				pIStream,
 		FLMUINT *					puiValue,
 		FLMUINT *					puiLength = NULL);
 		
-	FTKEXPC RCODE FLMAPI f_readSEN64(
+	FTKXPC RCODE FTKAPI f_readSEN64(
 		IF_IStream *				pIStream,
 		FLMUINT64 *					pui64Value,
 		FLMUINT *					puiLength = NULL);
 		
 	/// Get the language string from a language code
 	/// \ingroup language
-	FTKEXPC FLMUINT FLMAPI f_languageToNum(
+	FTKXPC FLMUINT FTKAPI f_languageToNum(
 		const char *				pszLanguage);
 
 	/// Convert a language string to the appropriate language code.
 	/// \ingroup language
-	FTKEXPC void FLMAPI f_languageToStr(
+	FTKXPC void FTKAPI f_languageToStr(
 		FLMINT						iLangNum,
 		char *						pszLanguage		///< Language string that is to be converted to a code.
 		);
 
-   FTKEXPC RCODE FLMAPI flmUTF8ToColText(
+   FTKXPC RCODE FTKAPI flmUTF8ToColText(
 	   IF_PosIStream *	pIStream,
 	   FLMBYTE *			pucCollatedStr,
 	   FLMUINT *			puiCollatedStrLen,
@@ -3944,15 +3938,15 @@
 		#endif
 	#endif
 	
-	FTKEXPC FLMUINT FLMAPI f_getMaxFileSize( void);
+	FTKXPC FLMUINT FTKAPI f_getMaxFileSize( void);
 
 	/****************************************************************************
 	Desc: CPU release and sleep functions
 	****************************************************************************/
 
-	FTKEXPC void FLMAPI f_yieldCPU( void);
+	FTKXPC void FTKAPI f_yieldCPU( void);
 
-	FTKEXPC void FLMAPI f_sleep(
+	FTKXPC void FTKAPI f_sleep(
 		FLMUINT	uiMilliseconds);
 
 	/****************************************************************************
@@ -3988,52 +3982,52 @@
 	#define f_timeIsLeapYear(year) \
 		(((((year) & 0x03) == 0) && (((year) % 100) != 0)) || (((year) % 400) == 0))
 
-	FTKEXPC void FLMAPI f_timeGetSeconds(
+	FTKXPC void FTKAPI f_timeGetSeconds(
 		FLMUINT	*		puiSeconds);
 
-	FTKEXPC void FLMAPI f_timeGetTimeStamp(
+	FTKXPC void FTKAPI f_timeGetTimeStamp(
 		F_TMSTAMP *		pTimeStamp);
 
-	FTKEXPC FLMINT FLMAPI f_timeGetLocalOffset( void);
+	FTKXPC FLMINT FTKAPI f_timeGetLocalOffset( void);
 
-	FTKEXPC void FLMAPI f_timeSecondsToDate(
+	FTKXPC void FTKAPI f_timeSecondsToDate(
 		FLMUINT			uiSeconds,
 		F_TMSTAMP *		pTimeStamp);
 
-	FTKEXPC void FLMAPI f_timeDateToSeconds(
+	FTKXPC void FTKAPI f_timeDateToSeconds(
 		F_TMSTAMP *		pTimeStamp,
 		FLMUINT *		puiSeconds);
 
-	FTKEXPC FLMINT FLMAPI f_timeCompareTimeStamps(
+	FTKXPC FLMINT FTKAPI f_timeCompareTimeStamps(
 		F_TMSTAMP *		pTimeStamp1,
 		F_TMSTAMP *		pTimeStamp2,
 		FLMUINT			flag);
 
-	FINLINE FLMUINT FLMAPI f_localTimeToUTC(
+	FINLINE FLMUINT FTKAPI f_localTimeToUTC(
 		FLMUINT			uiSeconds)
 	{
 		return( uiSeconds + f_timeGetLocalOffset());
 	}
 	
-	FTKEXPC FLMUINT FLMAPI FLM_GET_TIMER( void);
+	FTKXPC FLMUINT FTKAPI FLM_GET_TIMER( void);
 	
-	FTKEXPC FLMUINT FLMAPI FLM_ELAPSED_TIME(
+	FTKXPC FLMUINT FTKAPI FLM_ELAPSED_TIME(
 		FLMUINT			uiLaterTime,
 		FLMUINT			uiEarlierTime);
 
-	FTKEXPC FLMUINT FLMAPI FLM_SECS_TO_TIMER_UNITS( 
+	FTKXPC FLMUINT FTKAPI FLM_SECS_TO_TIMER_UNITS( 
 		FLMUINT			uiSeconds);
 	
-	FTKEXPC FLMUINT FLMAPI FLM_TIMER_UNITS_TO_SECS( 
+	FTKXPC FLMUINT FTKAPI FLM_TIMER_UNITS_TO_SECS( 
 		FLMUINT			uiTU);
 	
-	FTKEXPC FLMUINT FLMAPI FLM_TIMER_UNITS_TO_MILLI( 
+	FTKXPC FLMUINT FTKAPI FLM_TIMER_UNITS_TO_MILLI( 
 		FLMUINT			uiTU);
 		
-	FTKEXPC FLMUINT FLMAPI FLM_MILLI_TO_TIMER_UNITS( 
+	FTKXPC FLMUINT FTKAPI FLM_MILLI_TO_TIMER_UNITS( 
 		FLMUINT			uiMilliSeconds);
 		
-	FTKEXPC void FLMAPI f_addElapsedTime(
+	FTKXPC void FTKAPI f_addElapsedTime(
 		F_TMSTAMP  *	pStartTime,
 		FLMUINT64 *		pui64ElapMilli);
 	
@@ -4041,27 +4035,27 @@
 	Desc: Quick sort
 	****************************************************************************/
 	
-	typedef FLMINT (FLMAPI * F_SORT_COMPARE_FUNC)(
+	typedef FLMINT (FTKAPI * F_SORT_COMPARE_FUNC)(
 		void *		pvBuffer,
 		FLMUINT		uiPos1,
 		FLMUINT		uiPos2);
 
-	typedef void (FLMAPI * F_SORT_SWAP_FUNC)(
+	typedef void (FTKAPI * F_SORT_SWAP_FUNC)(
 		void *		pvBuffer,
 		FLMUINT		uiPos1,
 		FLMUINT		uiPos2);
 
-	FTKEXPC FLMINT FLMAPI f_qsortUINTCompare(
+	FTKXPC FLMINT FTKAPI f_qsortUINTCompare(
 		void *		pvBuffer,
 		FLMUINT		uiPos1,
 		FLMUINT		uiPos2);
 
-	FTKEXPC void FLMAPI f_qsortUINTSwap(
+	FTKXPC void FTKAPI f_qsortUINTSwap(
 		void *		pvBuffer,
 		FLMUINT		uiPos1,
 		FLMUINT		uiPos2);
 
-	FTKEXPC void FLMAPI f_qsort(
+	FTKXPC void FTKAPI f_qsort(
 		void *					pvBuffer,
 		FLMUINT					uiLowerBounds,
 		FLMUINT					uiUpperBounds,
@@ -4072,7 +4066,7 @@
 	Desc: Environment
 	****************************************************************************/
 	
-	FTKEXPC void FLMAPI f_getenv(
+	FTKXPC void FTKAPI f_getenv(
 		const char *			pszKey,
 		FLMBYTE *				pszBuffer,
 		FLMUINT					uiBufferSize,
@@ -4082,39 +4076,39 @@
 	Desc: f_sprintf
 	****************************************************************************/
 	
-	FTKEXPC FLMINT FLMAPI f_vsprintf(
+	FTKXPC FLMINT FTKAPI f_vsprintf(
 		char *					pszDestStr,
 		const char *			pszFormat,
 		f_va_list *				args);
 
-	FTKEXPC FLMINT FLMAPI f_sprintf(
+	FTKXPC FLMINT FTKAPI f_sprintf(
 		char *					pszDestStr,
 		const char *			pszFormat,
 		...);
 
-	FTKEXP FLMINT FLMAPI f_printf(
+	FTKEXP FLMINT FTKAPI f_printf(
 		const char *			pszFormat,
 		...);
 		
-	FTKEXPC FLMINT FLMAPI f_errprintf(
+	FTKXPC FLMINT FTKAPI f_errprintf(
 		const char *	pszFormat,
 		...);
 		
-	FTKEXP FLMINT FLMAPI f_printf(
+	FTKEXP FLMINT FTKAPI f_printf(
 		IF_PrintfClient *		pClient,
 		const char *			pszFormat,
 		...);
 	
-	FTKEXP FLMINT FLMAPI f_vprintf(
+	FTKEXP FLMINT FTKAPI f_vprintf(
 		IF_PrintfClient *		pClient,
 		const char *			pszFormat,
 		f_va_list *				args);
 		
-	FTKEXP RCODE FLMAPI f_printf(
+	FTKEXP RCODE FTKAPI f_printf(
 		IF_OStream *		pOStream,
 		const char *		pszFormatStr, ...);
 		
-	FTKEXP RCODE FLMAPI f_vprintf(
+	FTKEXP RCODE FTKAPI f_vprintf(
 		IF_OStream *		pOStream,
 		const char *		pszFormatStr, ...);
 
@@ -4122,116 +4116,116 @@
 	Desc:	Memory copying, moving, setting
 	****************************************************************************/
 	
-	FTKEXPC void * FLMAPI f_memcpy(
+	FTKXPC void * FTKAPI f_memcpy(
 		void *				pvDest,
 		const void *		pvSrc,
 		FLMSIZET				uiLength);
 		
-	FTKEXPC void * FLMAPI f_memmove(
+	FTKXPC void * FTKAPI f_memmove(
 		void *				pvDest,
 		const void *		pvSrc,
 		FLMSIZET				uiLength);
 		
-	FTKEXPC void * FLMAPI f_memset(
+	FTKXPC void * FTKAPI f_memset(
 		void *				pvDest,
 		unsigned char		ucByte,
 		FLMSIZET				uiLength);
 		
-	FTKEXPC FLMINT FLMAPI f_memcmp(
+	FTKXPC FLMINT FTKAPI f_memcmp(
 		const void *		pvStr1,
 		const void *		pvStr2,
 		FLMSIZET				uiLength);
 		
-	FTKEXPC char * FLMAPI f_strcat(
+	FTKXPC char * FTKAPI f_strcat(
 		char *				pszDest,
 		const char *		pszSrc);
 		
-	FTKEXPC char * FLMAPI f_strncat(
+	FTKXPC char * FTKAPI f_strncat(
 		char *				pszDest,
 		const char *		pszSrc,
 		FLMSIZET				uiLength);
 		
-	FTKEXPC char * FLMAPI f_strchr(
+	FTKXPC char * FTKAPI f_strchr(
 		const char *		pszStr,
 		unsigned char		ucByte);
 
-	FTKEXPC char * FLMAPI f_strrchr(
+	FTKXPC char * FTKAPI f_strrchr(
 		const char *		pszStr,
 		unsigned char		ucByte);
 		
-	FTKEXPC char * FLMAPI f_strstr(
+	FTKXPC char * FTKAPI f_strstr(
 		const char *		pszStr,
 		const char *		pszSearch);
 		
-	FTKEXPC char * FLMAPI f_strupr(
+	FTKXPC char * FTKAPI f_strupr(
 		char *				pszStr);
 		
-	FTKEXPC FLMINT FLMAPI f_strcmp(
+	FTKXPC FLMINT FTKAPI f_strcmp(
 		const char *		pszStr1,
 		const char *		pszStr2);
 		
-	FTKEXPC FLMINT FLMAPI f_strncmp(
+	FTKXPC FLMINT FTKAPI f_strncmp(
 		const char *		pszStr1,
 		const char *		pszStr2,
 		FLMSIZET				uiLength);
 		
-	FTKEXPC FLMINT FLMAPI f_stricmp(
+	FTKXPC FLMINT FTKAPI f_stricmp(
 		const char *		pszStr1,
 		const char *		pszStr2);
 	
-	FTKEXPC FLMINT FLMAPI f_strnicmp(
+	FTKXPC FLMINT FTKAPI f_strnicmp(
 		const char *		pszStr1,
 		const char *		pszStr2,
 		FLMSIZET				uiLength);
 		
-	FTKEXPC char * FLMAPI f_strcpy(
+	FTKXPC char * FTKAPI f_strcpy(
 		char *				pszDest,
 		const char *		pszSrc);
 
-	FTKEXPC char * FLMAPI f_strncpy(
+	FTKXPC char * FTKAPI f_strncpy(
 		char *				pszDest,
 		const char *		pszSrc,
 		FLMSIZET				uiLength);
 		
-	FTKEXPC FLMUINT FLMAPI f_strlen(
+	FTKXPC FLMUINT FTKAPI f_strlen(
 		const char *		pszStr);
 
-	FTKEXPC RCODE FLMAPI f_strdup(
+	FTKXPC RCODE FTKAPI f_strdup(
 		const char *		pszSrc,
 		char **				ppszDup);
 			
-	FTKEXPC RCODE FLMAPI f_getCharFromUTF8Buf(
+	FTKXPC RCODE FTKAPI f_getCharFromUTF8Buf(
 		const FLMBYTE **	ppucBuf,
 		const FLMBYTE *	pucEnd,
 		FLMUNICODE *		puChar);
 	
-	FTKEXPC RCODE FLMAPI f_uni2UTF8(
+	FTKXPC RCODE FTKAPI f_uni2UTF8(
 		FLMUNICODE			uChar,
 		FLMBYTE *			pucBuf,
 		FLMUINT *			puiBufSize);
 	
-	FTKEXPC RCODE FLMAPI f_getUTF8Length(
+	FTKXPC RCODE FTKAPI f_getUTF8Length(
 		const FLMBYTE *	pucBuf,
 		FLMUINT				uiBufLen,
 		FLMUINT *			puiBytes,
 		FLMUINT *			puiChars);
 	
-	FTKEXPC RCODE FLMAPI f_getUTF8CharFromUTF8Buf(
+	FTKXPC RCODE FTKAPI f_getUTF8CharFromUTF8Buf(
 		FLMBYTE **			ppucBuf,
 		FLMBYTE *			pucEnd,
 		FLMBYTE *			pucDestBuf,
 		FLMUINT *			puiLen);
 	
-	FTKEXPC RCODE	FLMAPI f_unicode2UTF8(
+	FTKXPC RCODE	FTKAPI f_unicode2UTF8(
 		FLMUNICODE *		puzStr,
 		FLMUINT				uiStrLen,
 		FLMBYTE *			pucBuf,
 		FLMUINT *			puiBufLength);
 	
-	FTKEXPC FLMBYTE FLMAPI f_getBase24DigitChar( 
+	FTKXPC FLMBYTE FTKAPI f_getBase24DigitChar( 
 		FLMBYTE				ucValue);
 		
-	FTKEXPC RCODE FLMAPI f_stripCRLF( 
+	FTKXPC RCODE FTKAPI f_stripCRLF( 
 		const FLMBYTE *	pucSourceBuf,
 		FLMUINT				uiSourceLength,
 		F_DynaBuf *			pDestBuf);
@@ -4245,27 +4239,27 @@
 	***************************************************************************/
 	flminterface FTKEXP IF_PrintfClient : public F_Object
 	{
-		virtual FLMINT FLMAPI outputChar(
+		virtual FLMINT FTKAPI outputChar(
 			char				cChar) = 0;
 			
-		virtual FLMINT FLMAPI outputChar(
+		virtual FLMINT FTKAPI outputChar(
 			char				cChar,
 			FLMUINT			uiCount) = 0;
 	
-		virtual FLMINT FLMAPI outputStr(
+		virtual FLMINT FTKAPI outputStr(
 			const char *	pszStr,
 			FLMUINT			uiLen) = 0;
 			
-		virtual FLMINT FLMAPI colorFormatter(
+		virtual FLMINT FTKAPI colorFormatter(
 			char				cFormatChar,
 			eColorType		eColor,
 			FLMUINT			uiFlags) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocStdoutPrintfClient( 
+	FTKXPC RCODE FTKAPI FlmAllocStdoutPrintfClient( 
 		IF_PrintfClient **	ppClient);
 		
-	FTKEXPC RCODE FLMAPI FlmAllocStderrPrintfClient( 
+	FTKXPC RCODE FTKAPI FlmAllocStderrPrintfClient( 
 		IF_PrintfClient **	ppClient);
 		
 	/****************************************************************************
@@ -4275,45 +4269,45 @@
 	{
 	public:
 	
-		virtual FLMBOOL FLMAPI isPubidChar(
+		virtual FLMBOOL FTKAPI isPubidChar(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isQuoteChar(
+		virtual FLMBOOL FTKAPI isQuoteChar(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isWhitespace(
+		virtual FLMBOOL FTKAPI isWhitespace(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isExtender(
+		virtual FLMBOOL FTKAPI isExtender(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isCombiningChar(
+		virtual FLMBOOL FTKAPI isCombiningChar(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isNameChar(
+		virtual FLMBOOL FTKAPI isNameChar(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isNCNameChar(
+		virtual FLMBOOL FTKAPI isNCNameChar(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isIdeographic(
+		virtual FLMBOOL FTKAPI isIdeographic(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isBaseChar(
+		virtual FLMBOOL FTKAPI isBaseChar(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isDigit(
+		virtual FLMBOOL FTKAPI isDigit(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isLetter(
+		virtual FLMBOOL FTKAPI isLetter(
 			FLMUNICODE				uChar) = 0;
 	
-		virtual FLMBOOL FLMAPI isNameValid(
+		virtual FLMBOOL FTKAPI isNameValid(
 			FLMUNICODE *			puzName,
 			FLMBYTE *				pszName) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmGetXMLObject(
+	FTKXPC RCODE FTKAPI FlmGetXMLObject(
 		IF_XML **					ppXmlObject);
 
 	/****************************************************************************
@@ -4321,10 +4315,10 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_NameTable : public F_Object
 	{
-		virtual void FLMAPI clearTable(
+		virtual void FTKAPI clearTable(
 			FLMUINT					uiPoolBlockSize) = 0;
 	
-		virtual RCODE FLMAPI getNextTagTypeAndNumOrder(
+		virtual RCODE FTKAPI getNextTagTypeAndNumOrder(
 			FLMUINT					uiType,
 			FLMUINT *				puiNextPos,
 			FLMUNICODE *			puzTagName = NULL,
@@ -4336,7 +4330,7 @@
 			FLMUINT					uiNamespaceBufSize = 0,
 			FLMBOOL					bTruncatedNamesOk = TRUE) = 0;
 	
-		virtual RCODE FLMAPI getNextTagTypeAndNameOrder(
+		virtual RCODE FTKAPI getNextTagTypeAndNameOrder(
 			FLMUINT					uiType,
 			FLMUINT *				puiNextPos,
 			FLMUNICODE *			puzTagName = NULL,
@@ -4348,7 +4342,7 @@
 			FLMUINT					uiNamespaceBufSize = 0,
 			FLMBOOL					bTruncatedNamesOk = TRUE) = 0;
 	
-		virtual RCODE FLMAPI getFromTagTypeAndName(
+		virtual RCODE FTKAPI getFromTagTypeAndName(
 			FLMUINT					uiType,
 			const FLMUNICODE *	puzTagName,
 			const char *			pszTagName,
@@ -4357,7 +4351,7 @@
 			FLMUINT *				puiTagNum = NULL,
 			FLMUINT *				puiDataType = NULL) = 0;
 	
-		virtual RCODE FLMAPI getFromTagTypeAndNum(
+		virtual RCODE FTKAPI getFromTagTypeAndNum(
 			FLMUINT					uiType,
 			FLMUINT					uiTagNum,
 			FLMUNICODE *			puzTagName = NULL,
@@ -4369,7 +4363,7 @@
 			FLMUINT *				puiNamespaceBufSize = NULL,
 			FLMBOOL					bTruncatedNamesOk = TRUE) = 0;
 	
-		virtual RCODE FLMAPI addTag(
+		virtual RCODE FTKAPI addTag(
 			FLMUINT					uiType,
 			FLMUNICODE *			puzTagName,
 			const char *			pszTagName,
@@ -4378,11 +4372,11 @@
 			FLMUNICODE *			puzNamespace = NULL,
 			FLMBOOL					bCheckDuplicates = TRUE) = 0;
 	
-		virtual void FLMAPI removeTag(
+		virtual void FTKAPI removeTag(
 			FLMUINT					uiType,
 			FLMUINT					uiTagNum) = 0;
 	
-		virtual RCODE FLMAPI cloneNameTable(
+		virtual RCODE FTKAPI cloneNameTable(
 			IF_NameTable **		ppNewNameTable) = 0;
 	};
 
@@ -4391,7 +4385,7 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_DeleteStatus : public F_Object
 	{
-		virtual RCODE FLMAPI reportDelete(
+		virtual RCODE FTKAPI reportDelete(
 			FLMUINT					uiBlocksDeleted,
 			FLMUINT					uiBlockSize) = 0;
 	};
@@ -4401,18 +4395,18 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_Relocator : public F_Object
 	{
-		virtual void FLMAPI relocate(
+		virtual void FTKAPI relocate(
 			void *					pvOldAlloc,
 			void *					pvNewAlloc) = 0;
 	
-		virtual FLMBOOL FLMAPI canRelocate(
+		virtual FLMBOOL FTKAPI canRelocate(
 			void *					pvOldAlloc) = 0;
 	};
 
 	/****************************************************************************
 	Desc:
 	****************************************************************************/
-	typedef void (FLMAPI * F_ALLOC_INIT_FUNC)(
+	typedef void (FTKAPI * F_ALLOC_INIT_FUNC)(
 		void *				pvAlloc,
 		FLMUINT				uiSize);
 	
@@ -4421,38 +4415,38 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_SlabManager : public F_Object
 	{
-		virtual RCODE FLMAPI setup(
+		virtual RCODE FTKAPI setup(
 			FLMUINT 					uiPreallocSize) = 0;
 			
-		virtual RCODE FLMAPI allocSlab(
+		virtual RCODE FTKAPI allocSlab(
 			void **					ppSlab) = 0;
 			
-		virtual void FLMAPI freeSlab(
+		virtual void FTKAPI freeSlab(
 			void **					ppSlab) = 0;
 			
-		virtual RCODE FLMAPI resize(
+		virtual RCODE FTKAPI resize(
 			FLMUINT 					uiNumBytes,
 			FLMBOOL					bPreallocate,
 			FLMUINT *				puiActualSize = NULL) = 0;
 	
-		virtual void FLMAPI incrementTotalBytesAllocated(
+		virtual void FTKAPI incrementTotalBytesAllocated(
 			FLMUINT					uiCount) = 0;
 	
-		virtual void FLMAPI decrementTotalBytesAllocated(
+		virtual void FTKAPI decrementTotalBytesAllocated(
 			FLMUINT					uiCount) = 0;
 	
-		virtual FLMUINT FLMAPI getSlabSize( void) = 0;
+		virtual FLMUINT FTKAPI getSlabSize( void) = 0;
 	
-		virtual FLMUINT FLMAPI getTotalSlabs( void) = 0;
+		virtual FLMUINT FTKAPI getTotalSlabs( void) = 0;
 		
-		virtual FLMUINT FLMAPI totalBytesAllocated( void) = 0;
+		virtual FLMUINT FTKAPI totalBytesAllocated( void) = 0;
 
-		virtual FLMUINT FLMAPI getTotalSlabBytesAllocated( void) = 0;
+		virtual FLMUINT FTKAPI getTotalSlabBytesAllocated( void) = 0;
 	
-		virtual FLMUINT FLMAPI availSlabs( void) = 0;
+		virtual FLMUINT FTKAPI availSlabs( void) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocSlabManager(
+	FTKXPC RCODE FTKAPI FlmAllocSlabManager(
 		IF_SlabManager **			ppSlabManager);
 
 	/****************************************************************************
@@ -4461,7 +4455,7 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_FixedAlloc : public F_Object
 	{
-		virtual RCODE FLMAPI setup(
+		virtual RCODE FTKAPI setup(
 			FLMBOOL					bMultiThreaded,
 			IF_SlabManager *		pSlabManager,
 			IF_Relocator *			pDefaultRelocator,
@@ -4469,28 +4463,28 @@
 			FLM_SLAB_USAGE *		pUsageStats,
 			FLMUINT *				puiTotalBytesAllocated) = 0;
 	
-		virtual void * FLMAPI allocCell(
+		virtual void * FTKAPI allocCell(
 			IF_Relocator *			pRelocator,
 			void *					pvInitialData,
 			FLMUINT					uiDataSize) = 0;
 	
-		virtual void * FLMAPI allocCell(
+		virtual void * FTKAPI allocCell(
 			IF_Relocator *			pRelocator,
 			F_ALLOC_INIT_FUNC		fnAllocInit) = 0;
 	
-		virtual void FLMAPI freeCell( 
+		virtual void FTKAPI freeCell( 
 			void *					ptr) = 0;
 	
-		virtual void FLMAPI freeUnused( void) = 0;
+		virtual void FTKAPI freeUnused( void) = 0;
 	
-		virtual void FLMAPI freeAll( void) = 0;
+		virtual void FTKAPI freeAll( void) = 0;
 	
-		virtual FLMUINT FLMAPI getCellSize( void) = 0;
+		virtual FLMUINT FTKAPI getCellSize( void) = 0;
 		
-		virtual void FLMAPI defragmentMemory( void) = 0;
+		virtual void FTKAPI defragmentMemory( void) = 0;
 	};
 
-	FTKEXPC RCODE FLMAPI FlmAllocFixedAllocator(
+	FTKXPC RCODE FTKAPI FlmAllocFixedAllocator(
 		IF_FixedAlloc **			ppFixedAllocator);
 		
 	/****************************************************************************
@@ -4498,7 +4492,7 @@
 	****************************************************************************/
 	flminterface IF_BlockAlloc : public F_Object
 	{
-		virtual RCODE FLMAPI setup(
+		virtual RCODE FTKAPI setup(
 			FLMBOOL					bMultiThreaded,
 			IF_SlabManager *		pSlabManager,
 			IF_Relocator *			pRelocator,
@@ -4506,20 +4500,20 @@
 			FLM_SLAB_USAGE *		pUsageStats,
 			FLMUINT *				puiTotalBytesAllocated) = 0;
 	
-		virtual RCODE FLMAPI allocBlock(
+		virtual RCODE FTKAPI allocBlock(
 			void **					ppvBlock) = 0;
 	
-		virtual void FLMAPI freeBlock(
+		virtual void FTKAPI freeBlock(
 			void **					ppvBlock) = 0;
 	
-		virtual void FLMAPI freeUnused( void) = 0;
+		virtual void FTKAPI freeUnused( void) = 0;
 	
-		virtual void FLMAPI freeAll( void) = 0;
+		virtual void FTKAPI freeAll( void) = 0;
 	
-		virtual void FLMAPI defragmentMemory( void) = 0;
+		virtual void FTKAPI defragmentMemory( void) = 0;
 	};
 
-	FTKEXPC RCODE FLMAPI FlmAllocBlockAllocator(
+	FTKXPC RCODE FTKAPI FlmAllocBlockAllocator(
 		IF_BlockAlloc **			ppBlockAllocator);
 		
 	/****************************************************************************
@@ -4527,14 +4521,14 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_BufferAlloc : public F_Object
 	{
-		virtual RCODE FLMAPI setup(
+		virtual RCODE FTKAPI setup(
 			FLMBOOL					bMultiThreaded,
 			IF_SlabManager *		pSlabManager,
 			IF_Relocator *			pDefaultRelocator,
 			FLM_SLAB_USAGE *		pUsageStats,
 			FLMUINT *				puiTotalBytesAllocated) = 0;
 	
-		virtual RCODE FLMAPI allocBuf(
+		virtual RCODE FTKAPI allocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiSize,
 			void *					pvInitialData,
@@ -4542,14 +4536,14 @@
 			FLMBYTE **				ppucBuffer,
 			FLMBOOL *				pbAllocatedOnHeap = NULL) = 0;
 	
-		virtual RCODE FLMAPI allocBuf(
+		virtual RCODE FTKAPI allocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiSize,
 			F_ALLOC_INIT_FUNC		fnAllocInit,
 			FLMBYTE **				ppucBuffer,
 			FLMBOOL *				pbAllocatedOnHeap = NULL) = 0;
 			
-		virtual RCODE FLMAPI reallocBuf(
+		virtual RCODE FTKAPI reallocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiOldSize,
 			FLMUINT					uiNewSize,
@@ -4558,20 +4552,20 @@
 			FLMBYTE **				ppucBuffer,
 			FLMBOOL *				pbAllocatedOnHeap = NULL) = 0;
 	
-		virtual void FLMAPI freeBuf(
+		virtual void FTKAPI freeBuf(
 			FLMUINT					uiSize,
 			FLMBYTE **				ppucBuffer) = 0;
 	
-		virtual FLMUINT FLMAPI getTrueSize(
+		virtual FLMUINT FTKAPI getTrueSize(
 			FLMUINT					uiSize,
 			FLMBYTE *				pucBuffer) = 0;
 	
-		virtual FLMUINT FLMAPI getMaxCellSize( void) = 0;
+		virtual FLMUINT FTKAPI getMaxCellSize( void) = 0;
 		
-		virtual void FLMAPI defragmentMemory( void) = 0;
+		virtual void FTKAPI defragmentMemory( void) = 0;
 	};
 
-	FTKEXPC RCODE FLMAPI FlmAllocBufferAllocator(
+	FTKXPC RCODE FTKAPI FlmAllocBufferAllocator(
 		IF_BufferAlloc **			ppBufferAllocator);
 		
 	/****************************************************************************
@@ -4579,7 +4573,7 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_MultiAlloc : public F_Object
 	{
-		virtual RCODE FLMAPI setup(
+		virtual RCODE FTKAPI setup(
 			FLMBOOL					bMultiThreaded,
 			IF_SlabManager *		pSlabManager,
 			IF_Relocator *			pDefaultRelocator,
@@ -4587,32 +4581,32 @@
 			FLM_SLAB_USAGE *		pUsageStats,
 			FLMUINT *				puiTotalBytesAllocated) = 0;
 	
-		virtual RCODE FLMAPI allocBuf(
+		virtual RCODE FTKAPI allocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiSize,
 			FLMBYTE **				ppucBuffer) = 0;
 	
-		virtual RCODE FLMAPI allocBuf(
+		virtual RCODE FTKAPI allocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiSize,
 			F_ALLOC_INIT_FUNC		fnAllocInit,
 			FLMBYTE **				ppucBuffer) = 0;
 
-		virtual RCODE FLMAPI reallocBuf(
+		virtual RCODE FTKAPI reallocBuf(
 			IF_Relocator *			pRelocator,
 			FLMUINT					uiNewSize,
 			FLMBYTE **				ppucBuffer) = 0;
 	
-		virtual void FLMAPI freeBuf(
+		virtual void FTKAPI freeBuf(
 			FLMBYTE **				ppucBuffer) = 0;
 	
-		virtual void FLMAPI defragmentMemory( void) = 0;
+		virtual void FTKAPI defragmentMemory( void) = 0;
 	
-		virtual FLMUINT FLMAPI getTrueSize(
+		virtual FLMUINT FTKAPI getTrueSize(
 			FLMBYTE *				pucBuffer) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocMultiAllocator(
+	FTKXPC RCODE FTKAPI FlmAllocMultiAllocator(
 		IF_MultiAlloc **			ppMultiAllocator);
 		
 	/****************************************************************************
@@ -4627,28 +4621,28 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_BlockMgr : public F_Object
 	{
-		virtual FLMUINT FLMAPI getBlockSize( void) = 0;
+		virtual FLMUINT FTKAPI getBlockSize( void) = 0;
 		
-		virtual RCODE FLMAPI getBlock(
+		virtual RCODE FTKAPI getBlock(
 			FLMUINT32				ui32BlockAddr,
 			IF_Block **				ppBlock,
 			FLMBYTE **				ppucBlock = NULL) = 0;
 			
-		virtual RCODE FLMAPI createBlock(
+		virtual RCODE FTKAPI createBlock(
 			IF_Block **				ppBlock,
 			FLMBYTE **				ppucBlock = NULL,
 			FLMUINT32 *				pui32BlockAddr = NULL) = 0;
 		
-		virtual RCODE FLMAPI freeBlock(
+		virtual RCODE FTKAPI freeBlock(
 			IF_Block **				ppBlock,
 			FLMBYTE **				ppucBlock = NULL) = 0;
 		
-		virtual RCODE FLMAPI prepareForUpdate(
+		virtual RCODE FTKAPI prepareForUpdate(
 			IF_Block **				ppBlock,
 			FLMBYTE **				ppucBlock = NULL) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocBlockMgr(
+	FTKXPC RCODE FTKAPI FlmAllocBlockMgr(
 		FLMUINT						uiBlockSize,
 		IF_BlockMgr **				ppBlockMgr);
 	
@@ -4707,34 +4701,34 @@
 	****************************************************************************/
 	flminterface FTKEXP IF_BTree : public F_Object
 	{
-		virtual RCODE FLMAPI btCreate(
+		virtual RCODE FTKAPI btCreate(
 			FLMUINT16					ui16BtreeId,
 			FLMBOOL						bCounts,
 			FLMBOOL						bData,
 			FLMUINT32 *					pui32RootBlockAddr,
 			IF_ResultSetCompare *	pCompare = NULL) = 0;
 
-		virtual RCODE FLMAPI btOpen(
+		virtual RCODE FTKAPI btOpen(
 			FLMUINT32					ui32RootBlockAddr,
 			FLMBOOL						bCounts,
 			FLMBOOL						bData,
 			IF_ResultSetCompare *	pCompare = NULL) = 0;
 	
-		virtual void FLMAPI btClose( void) = 0;
+		virtual void FTKAPI btClose( void) = 0;
 	
-		virtual RCODE FLMAPI btDeleteTree(
+		virtual RCODE FTKAPI btDeleteTree(
 			IF_DeleteStatus *			ifpDeleteStatus = NULL) = 0;
 	
-		virtual RCODE FLMAPI btGetBlockChains(
+		virtual RCODE FTKAPI btGetBlockChains(
 			FLMUINT *					puiBlockChains,
 			FLMUINT *					puiNumLevels) = 0;
 	
-		virtual RCODE FLMAPI btRemoveEntry(
+		virtual RCODE FTKAPI btRemoveEntry(
 			const FLMBYTE *			pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT						uiKeyLen) = 0;
 	
-		virtual RCODE FLMAPI btInsertEntry(
+		virtual RCODE FTKAPI btInsertEntry(
 			const FLMBYTE *			pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT						uiKeyLen,
@@ -4745,7 +4739,7 @@
 			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
-		virtual RCODE FLMAPI btReplaceEntry(
+		virtual RCODE FTKAPI btReplaceEntry(
 			const FLMBYTE *			pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT						uiKeyLen,
@@ -4757,7 +4751,7 @@
 			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
-		virtual RCODE FLMAPI btLocateEntry(
+		virtual RCODE FTKAPI btLocateEntry(
 			FLMBYTE *					pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
@@ -4767,14 +4761,14 @@
 			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
-		virtual RCODE FLMAPI btGetEntry(
+		virtual RCODE FTKAPI btGetEntry(
 			FLMBYTE *					pucKey,
 			FLMUINT						uiKeyLen,
 			FLMBYTE *					pucData,
 			FLMUINT						uiDataBufSize,
 			FLMUINT *					puiDataLen) = 0;
 	
-		virtual RCODE FLMAPI btNextEntry(
+		virtual RCODE FTKAPI btNextEntry(
 			FLMBYTE *					pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
@@ -4782,7 +4776,7 @@
 			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
-		virtual RCODE FLMAPI btPrevEntry(
+		virtual RCODE FTKAPI btPrevEntry(
 			FLMBYTE *					pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
@@ -4790,7 +4784,7 @@
 			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
-		virtual RCODE FLMAPI btFirstEntry(
+		virtual RCODE FTKAPI btFirstEntry(
 			FLMBYTE *					pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
@@ -4798,7 +4792,7 @@
 			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
-		virtual RCODE FLMAPI btLastEntry(
+		virtual RCODE FTKAPI btLastEntry(
 			FLMBYTE *					pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen,
@@ -4806,45 +4800,45 @@
 			FLMUINT32 *					pui32BlockAddr = NULL,
 			FLMUINT *					puiOffsetIndex = NULL) = 0;
 	
-		virtual RCODE FLMAPI btSetReadPosition(
+		virtual RCODE FTKAPI btSetReadPosition(
 			FLMBYTE *					pucKey,
 			FLMUINT						uiKeyLen,
 			FLMUINT						uiPosition) = 0;
 	
-		virtual RCODE FLMAPI btGetReadPosition(
+		virtual RCODE FTKAPI btGetReadPosition(
 			FLMUINT *					puiPosition) = 0;
 	
-		virtual RCODE FLMAPI btPositionTo(
+		virtual RCODE FTKAPI btPositionTo(
 			FLMUINT						uiPosition,
 			FLMBYTE *					pucKey,
 			FLMUINT						uiKeyBufSize,
 			FLMUINT *					puiKeyLen) = 0;
 	
-		virtual RCODE FLMAPI btGetPosition(
+		virtual RCODE FTKAPI btGetPosition(
 			FLMUINT *					puiPosition) = 0;
 	
-		virtual RCODE FLMAPI btRewind( void) = 0;
+		virtual RCODE FTKAPI btRewind( void) = 0;
 	
-//		virtual RCODE FLMAPI btComputeCounts(
+//		virtual RCODE FTKAPI btComputeCounts(
 //			IF_BTree *					pUntilBtree,
 //			FLMUINT *					puiBlockCount,
 //			FLMUINT *					puiKeyCount,
 //			FLMBOOL *					pbTotalsEstimated,
 //			FLMUINT						uiAvgBlockFullness) = 0;
 	
-		virtual FLMBOOL FLMAPI btHasCounts( void) = 0;
+		virtual FLMBOOL FTKAPI btHasCounts( void) = 0;
 	
-		virtual FLMBOOL FLMAPI btHasData( void) = 0;
+		virtual FLMBOOL FTKAPI btHasData( void) = 0;
 		
-		virtual void FLMAPI btResetBtree( void) = 0;
+		virtual void FTKAPI btResetBtree( void) = 0;
 		
-		virtual FLMUINT32 FLMAPI getRootBlockAddr( void) = 0;
+		virtual FLMUINT32 FTKAPI getRootBlockAddr( void) = 0;
 		
 		virtual RCODE btCheck(
 			BTREE_ERR_INFO *			pErrInfo) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocBTree(
+	FTKXPC RCODE FTKAPI FlmAllocBTree(
 		IF_BlockMgr *					pBlockMgr,
 		IF_BTree **						ppBtree);
 
@@ -4888,7 +4882,7 @@
 	
 		/// Initialize memory pool.
 		/// \ingroup pool
-		FINLINE void FLMAPI poolInit(
+		FINLINE void FTKAPI poolInit(
 			FLMUINT			uiBlockSize			///< Default block size for the memory pool.
 			)
 		{
@@ -4900,24 +4894,24 @@
 	
 		/// Allocate memory from a memory pool.
 		/// \ingroup pool
-		RCODE FLMAPI poolAlloc(
+		RCODE FTKAPI poolAlloc(
 			FLMUINT			uiSize,				///< Requested allocation size (in bytes).
 			void **			ppvPtr				///< Pointer to the allocation
 			);
 	
 		/// Allocate memory from a memory pool and initialize memory to zeroes.
 		/// \ingroup pool
-		RCODE FLMAPI poolCalloc(
+		RCODE FTKAPI poolCalloc(
 			FLMUINT			uiSize,				///< Requested allocation size (in bytes).
 			void **			ppvPtr);				///< Pointer to the allocation
 	
 		/// Free all memory blocks in a memory pool.
 		/// \ingroup pool
-		void FLMAPI poolFree( void);
+		void FTKAPI poolFree( void);
 	
 		/// Reset a memory pool back to a mark.\   Free all memory blocks allocated after the mark.
 		/// \ingroup pool
-		void FLMAPI poolReset(
+		void FTKAPI poolReset(
 			void *			pvMark = NULL,		///< Mark that was obtained from GedPoolMark().
 			FLMBOOL			bReduceFirstBlock = FALSE);
 	
@@ -4925,19 +4919,19 @@
 		/// pool which can later be passed to poolReset() to free all memory that was
 		/// allocated after the mark.
 		/// \ingroup pool
-		FINLINE void * FLMAPI poolMark( void)
+		FINLINE void * FTKAPI poolMark( void)
 		{
 			return (void *)(m_pLastBlock
 								 ? (FLMBYTE *)m_pLastBlock + m_pLastBlock->uiFreeOffset
 								 : NULL);
 		}
 	
-		FINLINE FLMUINT FLMAPI getBlockSize( void)
+		FINLINE FLMUINT FTKAPI getBlockSize( void)
 		{
 			return( m_uiBlockSize);
 		}
 	
-		FINLINE FLMUINT FLMAPI getBytesAllocated( void)
+		FINLINE FLMUINT FTKAPI getBytesAllocated( void)
 		{
 			return( m_uiBytesAllocated);
 		}
@@ -5012,7 +5006,7 @@
 			}
 		}
 		
-		FINLINE void FLMAPI truncateData(
+		FINLINE void FTKAPI truncateData(
 			FLMUINT			uiSize)
 		{
 			if( uiSize < m_uiOffset)
@@ -5021,7 +5015,7 @@
 			}
 		}
 		
-		FINLINE RCODE FLMAPI allocSpace(
+		FINLINE RCODE FTKAPI allocSpace(
 			FLMUINT		uiSize,
 			void **		ppvPtr)
 		{
@@ -5043,7 +5037,7 @@
 			return( rc);
 		}
 		
-		FINLINE RCODE FLMAPI appendByte(
+		FINLINE RCODE FTKAPI appendByte(
 			FLMBYTE		ucChar)
 		{
 			RCODE			rc = NE_FLM_OK;
@@ -5061,7 +5055,7 @@
 			return( rc);
 		}
 		
-		FINLINE RCODE FLMAPI appendUniChar(
+		FINLINE RCODE FTKAPI appendUniChar(
 			FLMUNICODE	uChar)
 		{
 			RCODE				rc = NE_FLM_OK;
@@ -5079,7 +5073,7 @@
 			return( rc);
 		}
 		
-		FINLINE RCODE FLMAPI appendData(
+		FINLINE RCODE FTKAPI appendData(
 			const void *		pvData,
 			FLMUINT				uiSize)
 		{
@@ -5105,7 +5099,7 @@
 			return( rc);
 		}
 			
-		FINLINE RCODE FLMAPI appendString(
+		FINLINE RCODE FTKAPI appendString(
 			const char *		pszString)
 		{
 			RCODE			rc = NE_FLM_OK;
@@ -5124,12 +5118,12 @@
 			return( rc);
 		}
 		
-		FINLINE FLMBYTE * FLMAPI getBufferPtr( void)
+		FINLINE FLMBYTE * FTKAPI getBufferPtr( void)
 		{
 			return( m_pucBuffer);
 		}
 		
-		FINLINE FLMUNICODE * FLMAPI getUnicodePtr( void)
+		FINLINE FLMUNICODE * FTKAPI getUnicodePtr( void)
 		{
 			if( m_uiOffset >= sizeof( FLMUNICODE))
 			{
@@ -5139,7 +5133,7 @@
 			return( NULL);
 		}
 		
-		FINLINE FLMUINT FLMAPI getUnicodeLength( void)
+		FINLINE FLMUINT FTKAPI getUnicodeLength( void)
 		{
 			if( m_uiOffset <= sizeof( FLMUNICODE))
 			{
@@ -5149,12 +5143,12 @@
 			return( (m_uiOffset >> 1) - 1);
 		}
 		
-		FINLINE FLMUINT FLMAPI getDataLength( void)
+		FINLINE FLMUINT FTKAPI getDataLength( void)
 		{
 			return( m_uiOffset);
 		}
 		
-		FINLINE RCODE FLMAPI copyFromBuffer(
+		FINLINE RCODE FTKAPI copyFromBuffer(
 			F_DynaBuf *		pSource)
 		{
 			RCODE		rc = NE_FLM_OK;
@@ -5248,11 +5242,11 @@
 			}
 		}
 		
-		RCODE FLMAPI setElementAt( 
+		RCODE FTKAPI setElementAt( 
 			void *				pData, 
 			FLMUINT 				uiIndex);
 		
-		void * FLMAPI getElementAt( 
+		void * FTKAPI getElementAt( 
 			FLMUINT 				uiIndex);
 			
 	private:
@@ -5294,7 +5288,7 @@
 			}
 		}
 		
-		FINLINE void FLMAPI clear( void)
+		FINLINE void FTKAPI clear( void)
 		{
 			if( m_pszVal)
 			{
@@ -5305,31 +5299,31 @@
 			m_uiValStrLen = 0;
 		}
 	
-		FINLINE FLMUINT FLMAPI getLength( void)
+		FINLINE FLMUINT FTKAPI getLength( void)
 		{
 			return( m_uiValStrLen);
 		}
 	
-		RCODE FLMAPI printf( 
+		RCODE FTKAPI printf( 
 			const char * 			pszFormatString, ...);
 		
-		RCODE FLMAPI appendCHAR( 
+		RCODE FTKAPI appendCHAR( 
 			char 						ucChar,
 			FLMUINT 					uiHowMany = 1);
 		
-		RCODE FLMAPI appendTEXT( 
+		RCODE FTKAPI appendTEXT( 
 			const FLMBYTE * 		pszVal);
 		
-		RCODE FLMAPI appendTEXT( 
+		RCODE FTKAPI appendTEXT( 
 			const char * 			pszVal)
 		{
 			return( appendTEXT( (FLMBYTE*)pszVal));
 		}
 		
-		RCODE FLMAPI appendf( 
+		RCODE FTKAPI appendf( 
 			const char *			pszFormatString, ...);
 		
-		FINLINE const char * FLMAPI getTEXT( void)
+		FINLINE const char * FTKAPI getTEXT( void)
 		{
 			if( m_bQuickBufActive)
 			{
@@ -5529,7 +5523,7 @@
 		/// IF_LockInfoClient::addLockInfo() method.  The application should
 		/// return TRUE from this method in order to continue, FALSE if it wants
 		/// to stop and return from the IF_LockObject::getLockInfo() function.
-		virtual FLMBOOL FLMAPI setLockCount(
+		virtual FLMBOOL FTKAPI setLockCount(
 			FLMUINT					uiTotalLocks		///< Total number of lock holders plus lock waiters.
 			) = 0;
 
@@ -5538,7 +5532,7 @@
 		/// to obtain the lock.  The application should return TRUE from this
 		/// method in order to continue, FALSE if it wants to stop and return
 		/// from the IF_LockObject::getLockInfo() function.
-		virtual FLMBOOL FLMAPI addLockInfo(
+		virtual FLMBOOL FTKAPI addLockInfo(
 			FLMUINT		uiLockNum,			///< Position in queue (0 = lock holder, 1..n = lock waiter).
 			FLMUINT		uiThreadID,			///< Thread ID of the lock holder/waiter.
 			FLMUINT		uiTime				///< For the lock holder, this is the amount of time the lock has been
@@ -5586,21 +5580,21 @@
 	****************************************************************************/
 	flminterface IF_LockObject : public F_Object
 	{
-		virtual RCODE FLMAPI lock(
+		virtual RCODE FTKAPI lock(
 			F_SEM						hWaitSem,
 			FLMBOOL					bExclLock,
 			FLMUINT					uiMaxWaitSecs,
 			FLMINT					iPriority,
 			F_LOCK_STATS *			pLockStats = NULL) = 0;
 	
-		virtual RCODE FLMAPI unlock(
+		virtual RCODE FTKAPI unlock(
 			F_LOCK_STATS *			pLockStats = NULL) = 0;
 			
-		virtual FLMUINT FLMAPI getLockCount( void) = 0;
+		virtual FLMUINT FTKAPI getLockCount( void) = 0;
 	
-		virtual FLMUINT FLMAPI getWaiterCount( void) = 0;
+		virtual FLMUINT FTKAPI getWaiterCount( void) = 0;
 		
-		virtual RCODE FLMAPI getLockInfo(
+		virtual RCODE FTKAPI getLockInfo(
 			FLMINT					iPriority,
 			eLockType *				peCurrLockType,
 			FLMUINT *				puiThreadId,
@@ -5609,22 +5603,22 @@
 			FLMUINT *				puiNumSharedQueued = NULL,
 			FLMUINT *				puiPriorityCount = NULL) = 0;
 			
-		virtual RCODE FLMAPI getLockInfo(
+		virtual RCODE FTKAPI getLockInfo(
 			IF_LockInfoClient *	pLockInfo) = 0;
 	
-		virtual RCODE FLMAPI getLockQueue(
+		virtual RCODE FTKAPI getLockQueue(
 			F_LOCK_USER **			ppLockUsers) = 0;
 	
-		virtual FLMBOOL FLMAPI haveHigherPriorityWaiter(
+		virtual FLMBOOL FTKAPI haveHigherPriorityWaiter(
 			FLMINT					iPriority) = 0;
 	
-		virtual void FLMAPI timeoutLockWaiter(
+		virtual void FTKAPI timeoutLockWaiter(
 			FLMUINT					uiThreadId) = 0;
 	
-		virtual void FLMAPI timeoutAllWaiters( void) = 0;
+		virtual void FTKAPI timeoutAllWaiters( void) = 0;
 	};
 	
-	FTKEXPC RCODE FLMAPI FlmAllocLockObject(
+	FTKXPC RCODE FTKAPI FlmAllocLockObject(
 		IF_LockObject **			ppLockObject);
 	
 	/****************************************************************************
@@ -5751,20 +5745,20 @@
 							: FALSE);
 	}
 	
-	FTKEXPC FLMBOOL FLMAPI f_isNumber(
+	FTKXPC FLMBOOL FTKAPI f_isNumber(
 		const char *	pszStr,
 		FLMBOOL *		pbNegative = NULL,
 		FLMBOOL *		pbHex = NULL);
 	
-	FTKEXPC RCODE FLMAPI f_filecpy(
+	FTKXPC RCODE FTKAPI f_filecpy(
 		const char *				pszSourceFile,
 		const char *				pszData);
 		
-	FTKEXPC RCODE FLMAPI f_filecat(
+	FTKXPC RCODE FTKAPI f_filecat(
 		const char *				pszSourceFile,
 		const char *				pszData);
 		
-	FTKEXPC RCODE FLMAPI f_filetobuf(
+	FTKXPC RCODE FTKAPI f_filetobuf(
 		const char *				pszSourceFile,
 		char **						ppszBuffer);
 		
@@ -5950,12 +5944,12 @@
 	
 	typedef struct FTX_WINDOW	FTX_WINDOW;
 	
-	typedef FLMBOOL (FLMAPI * KEY_HANDLER)(
+	typedef FLMBOOL (FTKAPI * KEY_HANDLER)(
 		FLMUINT			uiKeyIn,
 		FLMUINT *		puiKeyOut,
 		void *			pvAppData);
 	
-	FTKEXPC RCODE FLMAPI FTXInit(
+	FTKXPC RCODE FTKAPI FTXInit(
 		const char *	pszAppName = NULL,
 		FLMUINT			uiCols = 0,
 		FLMUINT			uiRows = 0,
@@ -5964,159 +5958,159 @@
 		KEY_HANDLER 	pKeyHandler = NULL,
 		void *			pvKeyHandlerData = NULL);
 	
-	FTKEXPC void FLMAPI FTXExit( void);
+	FTKXPC void FTKAPI FTXExit( void);
 	
-	FTKEXPC void FLMAPI FTXCycleScreensNext( void);
+	FTKXPC void FTKAPI FTXCycleScreensNext( void);
 	
-	FTKEXPC void FLMAPI FTXCycleScreensPrev( void);
+	FTKXPC void FTKAPI FTXCycleScreensPrev( void);
 	
-	FTKEXPC void FLMAPI FTXRefreshCursor( void);
+	FTKXPC void FTKAPI FTXRefreshCursor( void);
 	
-	FTKEXPC void FLMAPI FTXInvalidate( void);
+	FTKXPC void FTKAPI FTXInvalidate( void);
 	
-	FTKEXPC void FLMAPI FTXSetShutdownFlag(
+	FTKXPC void FTKAPI FTXSetShutdownFlag(
 		FLMBOOL *		pbShutdownFlag);
 	
-	FTKEXPC RCODE FLMAPI FTXScreenInit(
+	FTKXPC RCODE FTKAPI FTXScreenInit(
 		const char *	pszName,
 		FTX_SCREEN **	ppScreen);
 	
-	FTKEXPC RCODE FLMAPI FTXCaptureScreen(
+	FTKXPC RCODE FTKAPI FTXCaptureScreen(
 		FLMBYTE *		pText,
 		FLMBYTE *		pForeAttrib,
 		FLMBYTE *		pBackAttrib);
 	
-	FTKEXPC void FLMAPI FTXRefresh( void);
+	FTKXPC void FTKAPI FTXRefresh( void);
 	
-	FTKEXPC void FLMAPI FTXSetRefreshState(
+	FTKXPC void FTKAPI FTXSetRefreshState(
 		FLMBOOL			bDisable);
 		
-	FTKEXPC FLMBOOL FLMAPI FTXRefreshDisabled( void);
+	FTKXPC FLMBOOL FTKAPI FTXRefreshDisabled( void);
 	
-	FTKEXPC RCODE FLMAPI FTXAddKey(
+	FTKXPC RCODE FTKAPI FTXAddKey(
 		FLMUINT			uiKey);
 	
-	FTKEXPC RCODE FLMAPI FTXWinInit(
+	FTKXPC RCODE FTKAPI FTXWinInit(
 		FTX_SCREEN *	pScreen,
 		FLMUINT 			uiCols,
 		FLMUINT			uiRows,
 		FTX_WINDOW **	ppWindow);
 	
-	FTKEXPC void FLMAPI FTXWinFree(
+	FTKXPC void FTKAPI FTXWinFree(
 		FTX_WINDOW **	ppWindow);
 	
-	FTKEXPC RCODE FLMAPI FTXWinOpen(
+	FTKXPC RCODE FTKAPI FTXWinOpen(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC RCODE FLMAPI FTXWinSetName(
+	FTKXPC RCODE FTKAPI FTXWinSetName(
 		FTX_WINDOW *	pWindow,
 		char *			pszName);
 	
-	FTKEXPC void FLMAPI FTXWinClose(
+	FTKXPC void FTKAPI FTXWinClose(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC void FLMAPI FTXWinSetFocus(
+	FTKXPC void FTKAPI FTXWinSetFocus(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC void FLMAPI FTXWinPrintChar(
+	FTKXPC void FTKAPI FTXWinPrintChar(
 		FTX_WINDOW *	pWindow,
 		FLMUINT			uiChar);
 	
-	FTKEXPC void FLMAPI FTXWinPrintStr(
+	FTKXPC void FTKAPI FTXWinPrintStr(
 		FTX_WINDOW *	pWindow,
 		const char *	pszString);
 	
-	FTKEXPC void FLMAPI FTXWinPrintf(
+	FTKXPC void FTKAPI FTXWinPrintf(
 		FTX_WINDOW *	pWindow,
 		const char *	pszFormat, ...);
 	
-	FTKEXPC void FLMAPI FTXWinCPrintf(
+	FTKXPC void FTKAPI FTXWinCPrintf(
 		FTX_WINDOW *	pWindow,
 		eColorType		backgroundColor,
 		eColorType		foregroundColor,
 		const char *	pszFormat, ...);
 	
-	FTKEXPC void FLMAPI FTXWinPrintStrXY(
+	FTKXPC void FTKAPI FTXWinPrintStrXY(
 		FTX_WINDOW *	pWindow,
 		const char *	pszString,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI FTXWinMove(
+	FTKXPC void FTKAPI FTXWinMove(
 		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI FTXWinPaintBackground(
+	FTKXPC void FTKAPI FTXWinPaintBackground(
 		FTX_WINDOW *	pWindow,
 		eColorType		backgroundColor);
 	
-	FTKEXPC void FLMAPI FTXWinPaintForeground(
+	FTKXPC void FTKAPI FTXWinPaintForeground(
 		FTX_WINDOW *	pWindow,
 		eColorType		foregroundColor);
 	
-	FTKEXPC void FLMAPI FTXWinPaintRow(
+	FTKXPC void FTKAPI FTXWinPaintRow(
 		FTX_WINDOW *	pWindow,
 		eColorType *	pBackgroundColor,
 		eColorType *	pForegroundColor,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI FTXWinSetChar(
+	FTKXPC void FTKAPI FTXWinSetChar(
 		FTX_WINDOW *	pWindow,
 		FLMUINT			uiChar);
 	
-	FTKEXPC void FLMAPI FTXWinPaintRowForeground(
+	FTKXPC void FTKAPI FTXWinPaintRowForeground(
 		FTX_WINDOW *	pWindow,
 		eColorType		foregroundColor,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI FTXWinPaintRowBackground(
+	FTKXPC void FTKAPI FTXWinPaintRowBackground(
 		FTX_WINDOW *	pWindow,
 		eColorType		backgroundColor,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI FTXWinSetBackFore(
+	FTKXPC void FTKAPI FTXWinSetBackFore(
 		FTX_WINDOW *	pWindow,
 		eColorType		backgroundColor,
 		eColorType		foregroundColor);
 	
-	FTKEXPC void FLMAPI FTXWinGetCanvasSize(
+	FTKXPC void FTKAPI FTXWinGetCanvasSize(
 		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows);
 	
-	FTKEXPC void FLMAPI FTXWinGetSize(
+	FTKXPC void FTKAPI FTXWinGetSize(
 		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows);
 	
-	FTKEXPC FLMUINT FLMAPI FTXWinGetCurrRow(
+	FTKXPC FLMUINT FTKAPI FTXWinGetCurrRow(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC FLMUINT FLMAPI FTXWinGetCurrCol(
+	FTKXPC FLMUINT FTKAPI FTXWinGetCurrCol(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC void FLMAPI FTXWinGetBackFore(
+	FTKXPC void FTKAPI FTXWinGetBackFore(
 		FTX_WINDOW *	pWindow,
 		eColorType *	pBackgroundColor,
 		eColorType *	pForegroundColor);
 	
-	FTKEXPC void FLMAPI FTXWinDrawBorder(
+	FTKXPC void FTKAPI FTXWinDrawBorder(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC void FLMAPI FTXWinSetTitle(
+	FTKXPC void FTKAPI FTXWinSetTitle(
 		FTX_WINDOW *	pWindow,
 		const char *	pszTitle,
 		eColorType		backgroundColor,
 		eColorType		foregroundColor);
 	
-	FTKEXPC void FLMAPI FTXWinSetHelp(
+	FTKXPC void FTKAPI FTXWinSetHelp(
 		FTX_WINDOW *	pWindow,
 		const char *	pszHelp,
 		eColorType		backgroundColor,
 		eColorType		foregroundColor);
 	
-	FTKEXPC RCODE FLMAPI FTXLineEdit(
+	FTKXPC RCODE FTKAPI FTXLineEdit(
 		FTX_WINDOW *	pWindow,
 		char *   		pszBuffer,
 		FLMUINT      	uiBufSize,
@@ -6124,76 +6118,76 @@
 		FLMUINT *		puiCharCount,
 		FLMUINT *   	puiTermChar);
 	
-	FTKEXPC FLMUINT FLMAPI FTXLineEd(
+	FTKXPC FLMUINT FTKAPI FTXLineEd(
 		FTX_WINDOW *	pWindow,
 		char *			pszBuffer,
 		FLMUINT			uiBufSize);
 	
-	FTKEXPC void FLMAPI FTXWinSetCursorPos(
+	FTKXPC void FTKAPI FTXWinSetCursorPos(
 		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI FTXWinGetCursorPos(
+	FTKXPC void FTKAPI FTXWinGetCursorPos(
 		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiCol,
 		FLMUINT *		puiRow);
 	
-	FTKEXPC void FLMAPI FTXWinClear(
+	FTKXPC void FTKAPI FTXWinClear(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC void FLMAPI FTXWinClearXY(
+	FTKXPC void FTKAPI FTXWinClearXY(
 		FTX_WINDOW *	pWindow,
 		FLMUINT 			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI FTXWinClearLine(
+	FTKXPC void FTKAPI FTXWinClearLine(
 		FTX_WINDOW *	pWindow,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI FTXWinClearToEOL(
+	FTKXPC void FTKAPI FTXWinClearToEOL(
 		FTX_WINDOW *	pWindow);
 		
-	FTKEXPC void FLMAPI FTXWinSetCursorType(
+	FTKXPC void FTKAPI FTXWinSetCursorType(
 		FTX_WINDOW *	pWindow,
 		FLMUINT			uiType);
 	
-	FTKEXPC FLMUINT FLMAPI FTXWinGetCursorType(
+	FTKXPC FLMUINT FTKAPI FTXWinGetCursorType(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC RCODE FLMAPI FTXWinInputChar(
+	FTKXPC RCODE FTKAPI FTXWinInputChar(
 		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiChar);
 	
-	FTKEXPC RCODE FLMAPI FTXWinTestKB(
+	FTKXPC RCODE FTKAPI FTXWinTestKB(
 		FTX_WINDOW *	pWindow);
 	
-	FTKEXPC void FLMAPI FTXWinSetScroll(
+	FTKXPC void FTKAPI FTXWinSetScroll(
 		FTX_WINDOW *	pWindow,
 		FLMBOOL			bScroll);
 	
-	FTKEXPC void FLMAPI FTXWinSetLineWrap(
+	FTKXPC void FTKAPI FTXWinSetLineWrap(
 		FTX_WINDOW *	pWindow,
 		FLMBOOL			bLineWrap);
 	
-	FTKEXPC void FLMAPI FTXWinGetScroll(
+	FTKXPC void FTKAPI FTXWinGetScroll(
 		FTX_WINDOW *	pWindow,
 		FLMBOOL *		pbScroll);
 	
-	FTKEXPC RCODE FLMAPI FTXWinGetScreen(
+	FTKXPC RCODE FTKAPI FTXWinGetScreen(
 		FTX_WINDOW *	pWindow,
 		FTX_SCREEN **	ppScreen);
 	
-	FTKEXPC RCODE FLMAPI FTXWinGetPosition(
+	FTKXPC RCODE FTKAPI FTXWinGetPosition(
 		FTX_WINDOW *	pWindow,
 		FLMUINT *		puiCol,
 		FLMUINT *		puiRow);
 	
-	FTKEXPC void FLMAPI FTXScreenFree(
+	FTKXPC void FTKAPI FTXScreenFree(
 		FTX_SCREEN **	ppScreen);
 	
-	FTKEXPC RCODE FLMAPI FTXScreenInitStandardWindows(
+	FTKXPC RCODE FTKAPI FTXScreenInitStandardWindows(
 		FTX_SCREEN *	pScreen,
 		eColorType		titleBackColor,
 		eColorType		titleForeColor,
@@ -6205,19 +6199,19 @@
 		FTX_WINDOW **	ppTitleWin,
 		FTX_WINDOW **	ppMainWin);
 	
-	FTKEXPC void FLMAPI FTXScreenSetShutdownFlag(
+	FTKXPC void FTKAPI FTXScreenSetShutdownFlag(
 		FTX_SCREEN *	pScreen,
 		FLMBOOL *		pbShutdownFlag);
 	
-	FTKEXPC RCODE FLMAPI FTXScreenDisplay(
+	FTKXPC RCODE FTKAPI FTXScreenDisplay(
 		FTX_SCREEN *	pScreen);
 	
-	FTKEXPC RCODE FLMAPI FTXScreenGetSize(
+	FTKXPC RCODE FTKAPI FTXScreenGetSize(
 		FTX_SCREEN *	pScreen,
 		FLMUINT *		puiNumCols,
 		FLMUINT *		puiNumRows);
 	
-	FTKEXPC RCODE FLMAPI FTXMessageWindow(
+	FTKXPC RCODE FTKAPI FTXMessageWindow(
 		FTX_SCREEN *	pScreen,
 		eColorType		backgroundColor,
 		eColorType		foregroundColor,
@@ -6225,7 +6219,7 @@
 		const char *	pszMessage2,
 		FTX_WINDOW **	ppWindow);
 	
-	FTKEXPC RCODE FLMAPI FTXDisplayMessage(
+	FTKXPC RCODE FTKAPI FTXDisplayMessage(
 		FTX_SCREEN *	pScreen,
 		eColorType		backgroundColor,
 		eColorType		foregroundColor,
@@ -6233,79 +6227,79 @@
 		const char *	pszMessage2,
 		FLMUINT *		puiTermChar);
 	
-	FTKEXPC RCODE FLMAPI FTXDisplayScrollWindow(
+	FTKXPC RCODE FTKAPI FTXDisplayScrollWindow(
 		FTX_SCREEN *	pScreen,
 		const char *	pszTitle,
 		const char *	pszMessage,
 		FLMUINT			uiCols,
 		FLMUINT			uiRows);
 	
-	FTKEXPC RCODE FLMAPI FTXGetInput(
+	FTKXPC RCODE FTKAPI FTXGetInput(
 		FTX_SCREEN *	pScreen,
 		const char *	pszMessage,
 		char *			pszResponse,
 		FLMUINT			uiMaxRespLen,
 		FLMUINT *		puiTermChar);
 
-	FTKEXPC void FLMAPI FTXBeep( void);
+	FTKXPC void FTKAPI FTXBeep( void);
 
-	FTKEXPC RCODE FLMAPI f_conInit(
+	FTKXPC RCODE FTKAPI f_conInit(
 		FLMUINT			uiRows,
 		FLMUINT			uiCols,
 		const char *	pszTitle);
 	
-	FTKEXPC void FLMAPI f_conExit( void);
+	FTKXPC void FTKAPI f_conExit( void);
 	
-	FTKEXPC void FLMAPI f_conGetScreenSize(
+	FTKXPC void FTKAPI f_conGetScreenSize(
 		FLMUINT *		puiNumColsRV,
 		FLMUINT *		puiNumRowsRV);
 	
-	FTKEXPC void FLMAPI f_conDrawBorder( void);
+	FTKXPC void FTKAPI f_conDrawBorder( void);
 
-	FTKEXPC void FLMAPI f_conStrOut(
+	FTKXPC void FTKAPI f_conStrOut(
 		const char *	pszString);
 	
-	FTKEXPC void FLMAPI f_conStrOutXY(
+	FTKXPC void FTKAPI f_conStrOutXY(
 		const char *	pszString,
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI f_conPrintf(
+	FTKXPC void FTKAPI f_conPrintf(
 		const char *	pszFormat, ...);
 	
-	FTKEXPC void FLMAPI f_conCPrintf(
+	FTKXPC void FTKAPI f_conCPrintf(
 		eColorType		back,
 		eColorType		fore,
 		const char *	pszFormat, ...);
 	
-	FTKEXPC void FLMAPI f_conClearScreen(
+	FTKXPC void FTKAPI f_conClearScreen(
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI f_conClearLine(
+	FTKXPC void FTKAPI f_conClearLine(
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC void FLMAPI f_conSetBackFore(
+	FTKXPC void FTKAPI f_conSetBackFore(
 		eColorType		backColor,
 		eColorType		foreColor);
 	
-	FTKEXPC FLMUINT FLMAPI f_conGetCursorColumn( void);
+	FTKXPC FLMUINT FTKAPI f_conGetCursorColumn( void);
 
-	FTKEXPC FLMUINT FLMAPI f_conGetCursorRow( void);
+	FTKXPC FLMUINT FTKAPI f_conGetCursorRow( void);
 	
-	FTKEXPC void FLMAPI f_conSetCursorType(
+	FTKXPC void FTKAPI f_conSetCursorType(
 		FLMUINT			uiType);
 		
-	FTKEXPC void FLMAPI f_conSetCursorPos(
+	FTKXPC void FTKAPI f_conSetCursorPos(
 		FLMUINT			uiCol,
 		FLMUINT			uiRow);
 	
-	FTKEXPC FLMUINT FLMAPI f_conGetKey( void);
+	FTKXPC FLMUINT FTKAPI f_conGetKey( void);
 	
-	FTKEXPC FLMBOOL FLMAPI f_conHaveKey( void);
+	FTKXPC FLMBOOL FTKAPI f_conHaveKey( void);
 	
-	FTKEXPC FLMUINT FLMAPI f_conLineEdit(
+	FTKXPC FLMUINT FTKAPI f_conLineEdit(
 		char *			pszString,
 		FLMUINT			uiMaxLen);
 
@@ -6327,26 +6321,26 @@
 	
 		virtual ~F_BufferIStream();
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			const char *		pucBuffer,
 			FLMUINT				uiLength,
 			char **				ppucAllocatedBuffer = NULL);
 	
-		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		FINLINE FLMUINT64 FTKAPI totalSize( void)
 		{
 			f_assert( m_bIsOpen);
 			return( m_uiBufferLen);
 		}
 	
-		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		FINLINE FLMUINT64 FTKAPI remainingSize( void)
 		{
 			f_assert( m_bIsOpen);
 			return( m_uiBufferLen - m_uiOffset);
 		}
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 	
-		FINLINE RCODE FLMAPI positionTo(
+		FINLINE RCODE FTKAPI positionTo(
 			FLMUINT64		ui64Position)
 		{
 			f_assert( m_bIsOpen);
@@ -6363,13 +6357,13 @@
 			return( NE_FLM_OK);
 		}
 	
-		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		FINLINE FLMUINT64 FTKAPI getCurrPosition( void)
 		{
 			f_assert( m_bIsOpen);
 			return( m_uiOffset);
 		}
 	
-		FINLINE void FLMAPI truncateStream(
+		FINLINE void FTKAPI truncateStream(
 			FLMUINT64		ui64Offset = 0)
 		{
 			f_assert( m_bIsOpen);
@@ -6379,7 +6373,7 @@
 			m_uiBufferLen = (FLMUINT)ui64Offset;
 		}
 	
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
@@ -6390,7 +6384,7 @@
 			return( m_pucBuffer);
 		}
 		
-		FINLINE const FLMBYTE * FLMAPI getBufferAtCurrentOffset( void)
+		FINLINE const FLMBYTE * FTKAPI getBufferAtCurrentOffset( void)
 		{
 			f_assert( m_bIsOpen);
 			return( m_pucBuffer ? &m_pucBuffer[ m_uiOffset] : NULL);
@@ -6431,21 +6425,21 @@
 			}
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			const char *	pszPath);
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 	
-		RCODE FLMAPI positionTo(
+		RCODE FTKAPI positionTo(
 			FLMUINT64		ui64Position);
 	
-		FLMUINT64 FLMAPI totalSize( void);
+		FLMUINT64 FTKAPI totalSize( void);
 	
-		FLMUINT64 FLMAPI remainingSize( void);
+		FLMUINT64 FTKAPI remainingSize( void);
 	
-		FLMUINT64 FLMAPI getCurrPosition( void);
+		FLMUINT64 FTKAPI getCurrPosition( void);
 	
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
@@ -6474,18 +6468,18 @@
 			closeStream();
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			IF_IStream *		pIStream,
 			FLMUINT				uiBufferSize);
 	
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			void *				pvBuffer,
 			FLMUINT				uiBytesToRead,
 			FLMUINT *			puiBytesRead);
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 	
-		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		FINLINE FLMUINT64 FTKAPI totalSize( void)
 		{
 			if (!m_pIStream)
 			{
@@ -6496,7 +6490,7 @@
 			return( m_uiBytesAvail);
 		}
 	
-		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		FINLINE FLMUINT64 FTKAPI remainingSize( void)
 		{
 			if( !m_pIStream)
 			{
@@ -6507,7 +6501,7 @@
 			return( m_uiBytesAvail - m_uiBufferOffset);
 		}
 	
-		FINLINE RCODE FLMAPI positionTo(
+		FINLINE RCODE FTKAPI positionTo(
 			FLMUINT64		ui64Position)
 		{
 			if( !m_pIStream)
@@ -6528,7 +6522,7 @@
 			return( NE_FLM_OK);
 		}
 	
-		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		FINLINE FLMUINT64 FTKAPI getCurrPosition( void)
 		{
 			if( !m_pIStream)
 			{
@@ -6566,18 +6560,18 @@
 			closeStream();
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			IF_OStream *	pOStream,
 			FLMUINT			uiBufferSize);
 	
-		RCODE FLMAPI write(
+		RCODE FTKAPI write(
 			const void *	pvBuffer,
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten);
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 	
-		RCODE FLMAPI flush( void);
+		RCODE FTKAPI flush( void);
 	
 	private:
 	
@@ -6604,16 +6598,16 @@
 			closeStream();
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			const char *	pszFilePath,
 			FLMBOOL			bTruncateIfExists);
 	
-		RCODE FLMAPI write(
+		RCODE FTKAPI write(
 			const void *	pvBuffer,
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten);
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 	
 	private:
 	
@@ -6639,16 +6633,16 @@
 			closeStream();
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			const char *	pszDirectory,
 			const char *	pszBaseName);
 	
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 	
 	private:
 	
@@ -6687,12 +6681,12 @@
 			FLMUINT			uiMaxFileSize,
 			FLMBOOL			bOkToOverwrite);
 	
-		RCODE FLMAPI write(
+		RCODE FTKAPI write(
 			const void *	pvBuffer,
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten);
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 	
 		RCODE processDirectory(
 			const char *	pszDirectory,
@@ -6736,7 +6730,7 @@
 			}
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			IF_PosIStream *	pIStream,
 			FLMBOOL				bUnicodeStream,
 			FLMUINT				uiLanguage,
@@ -6761,7 +6755,7 @@
 			return( NE_FLM_OK);
 		}
 	
-		RCODE FLMAPI closeStream( void)
+		RCODE FTKAPI closeStream( void)
 		{
 			if( m_pIStream)
 			{
@@ -6772,7 +6766,7 @@
 			return( NE_FLM_OK);
 		}
 	
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead)
@@ -6790,7 +6784,7 @@
 			return( rc);
 		}
 	
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			FLMBOOL			bAllowTwoIntoOne,
 			FLMUNICODE *	puChar,
 			FLMBOOL *		pbCharIsWild,
@@ -6798,7 +6792,7 @@
 			FLMUINT16 *		pui16SubCol,
 			FLMBYTE *		pucCase);
 			
-		FINLINE FLMUINT64 FLMAPI totalSize( void)
+		FINLINE FLMUINT64 FTKAPI totalSize( void)
 		{
 			if( m_pIStream)
 			{
@@ -6808,7 +6802,7 @@
 			return( 0);
 		}
 	
-		FINLINE FLMUINT64 FLMAPI remainingSize( void)
+		FINLINE FLMUINT64 FTKAPI remainingSize( void)
 		{
 			if( m_pIStream)
 			{
@@ -6818,13 +6812,13 @@
 			return( 0);
 		}
 	
-		FINLINE RCODE FLMAPI positionTo(
+		FINLINE RCODE FTKAPI positionTo(
 			FLMUINT64)
 		{
 			return( RC_SET_AND_ASSERT( NE_FLM_NOT_IMPLEMENTED));
 		}
 	
-		FINLINE RCODE FLMAPI positionTo(
+		FINLINE RCODE FTKAPI positionTo(
 			F_CollStreamPos *	pPos)
 		{
 			
@@ -6836,13 +6830,13 @@
 			return( m_pIStream->positionTo( pPos->ui64Position));
 		}
 	
-		FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+		FINLINE FLMUINT64 FTKAPI getCurrPosition( void)
 		{
 			flmAssert( 0);
 			return( 0);
 		}
 	
-		void FLMAPI getCurrPosition(
+		void FTKAPI getCurrPosition(
 			F_CollStreamPos *		pPos);
 	
 	private:
@@ -6902,15 +6896,15 @@
 			closeStream();
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			IF_IStream *	pIStream);
 		
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 			
-		FINLINE RCODE FLMAPI closeStream( void)
+		FINLINE RCODE FTKAPI closeStream( void)
 		{
 			RCODE		rc = NE_FLM_OK;
 			
@@ -6939,7 +6933,7 @@
 		FLMBYTE				m_ucBuffer[ 8];
 	};
 
-	FTKEXPC RCODE FLMAPI f_base64Encode(
+	FTKXPC RCODE FTKAPI f_base64Encode(
 		const char *		pData,
 		FLMUINT				uiDataLength,
 		F_DynaBuf *			pBuffer);
@@ -6961,16 +6955,16 @@
 			closeStream();
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			IF_IStream *	pIStream,
 			FLMBOOL			bLineBreaks);
 		
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 	
-		FINLINE RCODE FLMAPI closeStream( void)
+		FINLINE RCODE FTKAPI closeStream( void)
 		{
 			RCODE		rc = NE_FLM_OK;
 			
@@ -7030,15 +7024,15 @@
 			closeStream();
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			IF_OStream *	pOStream);
 	
-		RCODE FLMAPI write(
+		RCODE FTKAPI write(
 			const void *	pvBuffer,
 			FLMUINT			uiBytesToWrite,
 			FLMUINT *		puiBytesWritten);
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 	
 	private:
 	
@@ -7095,15 +7089,15 @@
 			closeStream();
 		}
 	
-		RCODE FLMAPI openStream(
+		RCODE FTKAPI openStream(
 			IF_IStream *	pIStream);
 	
-		RCODE FLMAPI read(
+		RCODE FTKAPI read(
 			void *			pvBuffer,
 			FLMUINT			uiBytesToRead,
 			FLMUINT *		puiBytesRead);
 	
-		RCODE FLMAPI closeStream( void);
+		RCODE FTKAPI closeStream( void);
 		
 	private:
 	
@@ -7223,11 +7217,11 @@
 			}
 		}
 
-		RCODE FLMAPI setup(
+		RCODE FTKAPI setup(
 			char *						pszTmpDir,
 			FLMUINT						uiEntrySize);
 
-		FINLINE void FLMAPI setCompareFunc(
+		FINLINE void FTKAPI setCompareFunc(
 			F_DYNSET_COMPARE_FUNC	fnCompare,
 			void *						pvUserData)
 		{
@@ -7236,22 +7230,22 @@
 			m_pAccess->setCompareFunc( fnCompare, pvUserData);
 		}
 
-		RCODE FLMAPI addEntry(
+		RCODE FTKAPI addEntry(
 			void *						pvEntry);
 
-		FINLINE RCODE FLMAPI findMatch(
+		FINLINE RCODE FTKAPI findMatch(
 			void *						pvMatchEntry,
 			void *						pvFoundEntry)
 		{
 			return m_pAccess->search( pvMatchEntry, pvFoundEntry);
 		}
 
-		FINLINE FLMUINT FLMAPI getEntrySize( void)
+		FINLINE FLMUINT FTKAPI getEntrySize( void)
 		{
 			return m_uiEntrySize;
 		}
 
-		FINLINE FLMUINT FLMAPI getTotalEntries( void)
+		FINLINE FLMUINT FTKAPI getTotalEntries( void)
 		{
 			return( m_pAccess->getTotalEntries());
 		}
@@ -7275,16 +7269,16 @@
 		FLMUINT		uiHashValue;
 	} F_BUCKET;
 	
-	FTKEXPC RCODE FLMAPI f_allocHashTable(
+	FTKXPC RCODE FTKAPI f_allocHashTable(
 		FLMUINT					uiHashTblSize,
 		F_BUCKET **				ppHashTblRV);
 		
-	FTKEXPC FLMUINT FLMAPI f_strHashBucket(
+	FTKXPC FLMUINT FTKAPI f_strHashBucket(
 		char *					pszStr,
 		F_BUCKET *				pHashTbl,
 		FLMUINT					uiNumBuckets);
 		
-	FTKEXPC FLMUINT FLMAPI f_binHashBucket(
+	FTKXPC FLMUINT FTKAPI f_binHashBucket(
 		void *					pBuf,
 		FLMUINT					uiBufLen,
 		F_BUCKET *				pHashTbl,
@@ -7319,31 +7313,31 @@
 			flmAssert( !getRefCount());
 		}
 	
-		virtual const void * FLMAPI getKey( void) = 0;
+		virtual const void * FTKAPI getKey( void) = 0;
 		
-		virtual FLMUINT FLMAPI getKeyLength( void) = 0;
+		virtual FLMUINT FTKAPI getKeyLength( void) = 0;
 		
-		FINLINE FLMUINT FLMAPI getKeyCRC( void)
+		FINLINE FLMUINT FTKAPI getKeyCRC( void)
 		{
 			return( m_ui32KeyCRC);
 		}
 	
-		FINLINE FLMUINT FLMAPI getHashBucket( void)
+		FINLINE FLMUINT FTKAPI getHashBucket( void)
 		{
 			return( m_uiHashBucket);
 		}
 	
-		FINLINE F_HashObject * FLMAPI getNextInGlobal( void)
+		FINLINE F_HashObject * FTKAPI getNextInGlobal( void)
 		{
 			return( m_pNextInGlobal);
 		}
 		
-		FINLINE F_HashObject * FLMAPI getNextInBucket( void)
+		FINLINE F_HashObject * FTKAPI getNextInBucket( void)
 		{
 			return( m_pNextInBucket);
 		}
 		
-		virtual FLMUINT FLMAPI getObjectType( void) = 0;
+		virtual FLMUINT FTKAPI getObjectType( void) = 0;
 	
 	protected:
 	
@@ -7375,42 +7369,42 @@
 	
 		virtual ~F_HashTable();
 	
-		RCODE FLMAPI setupHashTable(
+		RCODE FTKAPI setupHashTable(
 			FLMBOOL				bMultithreaded,
 			FLMUINT				uiNumBuckets,
 			FLMUINT				uiMaxObjects);
 	
-		RCODE FLMAPI addObject(
+		RCODE FTKAPI addObject(
 			F_HashObject *		pObject,
 			FLMBOOL				bAllowDuplicates = FALSE);
 	
-		RCODE FLMAPI getNextObjectInGlobal(
+		RCODE FTKAPI getNextObjectInGlobal(
 			F_HashObject **	ppObject);
 	
-		RCODE FLMAPI getNextObjectInBucket(
+		RCODE FTKAPI getNextObjectInBucket(
 			F_HashObject **	ppObject);
 		
-		RCODE FLMAPI getObject(
+		RCODE FTKAPI getObject(
 			const void *		pvKey,
 			FLMUINT				uiKeyLen,
 			F_HashObject **	ppObject,
 			FLMBOOL				bRemove = FALSE);
 	
-		RCODE FLMAPI removeObject(
+		RCODE FTKAPI removeObject(
 			void *				pvKey,
 			FLMUINT				uiKeyLen);
 	
-		RCODE FLMAPI removeObject(
+		RCODE FTKAPI removeObject(
 			F_HashObject *		pObject);
 
-		void FLMAPI removeAllObjects( void);
+		void FTKAPI removeAllObjects( void);
 		
-		void FLMAPI removeAgedObjects(
+		void FTKAPI removeAgedObjects(
 			FLMUINT				uiMaxAge);
 			
-		FLMUINT FLMAPI getMaxObjects( void);
+		FLMUINT FTKAPI getMaxObjects( void);
 			
-		RCODE FLMAPI setMaxObjects(
+		RCODE FTKAPI setMaxObjects(
 			FLMUINT				uiMaxObjects);
 	
 	private:
@@ -7479,10 +7473,10 @@
 			
 		virtual ~F_ArgSet();
 		
-		RCODE FLMAPI setup(
+		RCODE FTKAPI setup(
 			IF_PrintfClient *			pPrintfClient);
 			
-		RCODE FLMAPI addArg(
+		RCODE FTKAPI addArg(
 			const char *				pszIdentifier,
 			const char *				pszShortHelp,
 			FLMBOOL						bCaseSensitive,
@@ -7490,21 +7484,21 @@
 			F_ARG_CONTENT_TYPE		contentType,
 			...); 
 	
-		RCODE FLMAPI parseCommandLine(
+		RCODE FTKAPI parseCommandLine(
 			FLMUINT						uiArgc,
 			const char **				ppszArgv);
 			
-		FLMBOOL FLMAPI argIsPresent( 
+		FLMBOOL FTKAPI argIsPresent( 
 			const char *				pszIdentifier);
 		
-		FLMUINT FLMAPI getValueCount( 
+		FLMUINT FTKAPI getValueCount( 
 			const char *				pszIdentifier);
 	
-		FLMUINT FLMAPI getUINT( 
+		FLMUINT FTKAPI getUINT( 
 			const char *				pszIdentifier,
 			FLMUINT						uiIndex = 0);
 		
-		FLMINT FLMAPI getINT( 
+		FLMINT FTKAPI getINT( 
 			const char *				pszIdentifier,
 			FLMUINT						uiIndex = 0);
 	
@@ -7519,15 +7513,15 @@
 		//	NULL								case-insensitive
 		//	*									anything else is a user error
 		
-		FLMBOOL FLMAPI getBOOL(
+		FLMBOOL FTKAPI getBOOL(
 			const char *				pszIdentifier,
 			FLMUINT						uiIndex = 0);
 	
-		const char * FLMAPI getString(
+		const char * FTKAPI getString(
 			const char *			pszIdentifier,
 			FLMUINT					uiIndex = 0);
 		
-		void FLMAPI getString( 
+		void FTKAPI getString( 
 			const char *			pszIdentifier,
 			char *					pszDestination,
 			FLMUINT					uiDestinationBufferSize,

@@ -213,7 +213,7 @@ RCODE F_DbSystem::compareUnicodeStrings(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::utf8IsSubStr(
+RCODE XFLAPI F_DbSystem::utf8IsSubStr(
 	const FLMBYTE *	pszString,
 	const FLMBYTE *	pszSubString,
 	FLMUINT				uiCompareRules,

@@ -69,20 +69,20 @@ class F_RandomGenerator : public IF_RandomGenerator
 {
 public:
 
-	void FLMAPI randomize( void);
+	void FTKAPI randomize( void);
 
-	void FLMAPI setSeed(
+	void FTKAPI setSeed(
 		FLMUINT32	ui32seed);
 
-	FLMUINT32 FLMAPI getUINT32( void);
+	FLMUINT32 FTKAPI getUINT32( void);
 		
-	FLMUINT32 FLMAPI getUINT32(
+	FLMUINT32 FTKAPI getUINT32(
 		FLMUINT32 	ui32Low,
 		FLMUINT32 	ui32High);
 
-	FLMBOOL FLMAPI getBoolean( void);
+	FLMBOOL FTKAPI getBoolean( void);
 
-	FLMUINT32 FLMAPI getSeed( void)
+	FLMUINT32 FTKAPI getSeed( void)
 	{
 		return( m_ui32Seed);
 	}
@@ -95,7 +95,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmAllocRandomGenerator(
+RCODE FTKAPI FlmAllocRandomGenerator(
 	IF_RandomGenerator **	ppRandomGenerator)
 {
 	if( (*ppRandomGenerator = f_new F_RandomGenerator) == NULL)

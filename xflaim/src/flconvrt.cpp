@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc : Upgrades a database to the latest FLAIM version.
 ****************************************************************************/
-RCODE FLMAPI F_Db::upgrade(
+RCODE XFLAPI F_Db::upgrade(
 	IF_UpgradeClient *	// pUpgradeClient
 	)
 {
@@ -220,7 +220,7 @@ Exit:
 /************************************************************************
 Desc : Enable encryption on the database.
 *************************************************************************/
-RCODE FLMAPI F_Db::enableEncryption( void)
+RCODE XFLAPI F_Db::enableEncryption( void)
 {
 	RCODE					rc = NE_XFLM_OK;
 	F_Rfl *				pRfl = m_pDatabase->m_pRfl;
@@ -352,7 +352,7 @@ Desc : Change the database key from wrapped in the NICI server
 		 NICI server key.  If a password is specified, the key will be
 		 shrouded in it.
 ****************************************************************************/
-RCODE FLMAPI F_Db::wrapKey(
+RCODE XFLAPI F_Db::wrapKey(
 	const char *		pszPassword)
 {
 	RCODE					rc = NE_XFLM_OK;
@@ -556,7 +556,7 @@ Desc : Generate a new database key and re-wrap all existing keys in it
 		 NOTE:  New database key will be wrapped in NICI server key,
 		 even if the previous key was wrapped in a password.
 ****************************************************************************/
-RCODE FLMAPI F_Db::rollOverDbKey( void)
+RCODE XFLAPI F_Db::rollOverDbKey( void)
 {
 	RCODE					rc = NE_XFLM_OK;
 	F_Rfl *				pRfl = m_pDatabase->m_pRfl;

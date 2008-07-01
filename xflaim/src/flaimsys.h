@@ -499,9 +499,9 @@ public:
 		return m_bLoadedAllAttributes;
 	}
 
-	virtual FLMINT FLMAPI AddRef( void);
+	virtual FLMINT XFLAPI AddRef( void);
 
-	virtual FLMINT FLMAPI Release( void);
+	virtual FLMINT XFLAPI Release( void);
 	
 private:
 
@@ -755,48 +755,48 @@ public:
 
 	// Setter methods
 
-	FINLINE void FLMAPI setDocumentID(
+	FINLINE void XFLAPI setDocumentID(
 		FLMUINT64	ui64DocumentID)
 	{
 		m_ui64DocumentID = ui64DocumentID;
 	}
 
-	RCODE FLMAPI setID(
+	RCODE XFLAPI setID(
 		FLMUINT		uiElementNumber,
 		FLMUINT64	ui64ID);
 
-	RCODE FLMAPI setNameId(
+	RCODE XFLAPI setNameId(
 		FLMUINT		uiElementNumber,
 		FLMUINT		uiNameId,
 		FLMBOOL		bIsAttr,
 		FLMBOOL		bIsData);
 
-	RCODE FLMAPI setINT(
+	RCODE XFLAPI setINT(
 		FLMUINT	uiElementNumber,
 		FLMINT	iNum);
 
-	RCODE FLMAPI setINT64(
+	RCODE XFLAPI setINT64(
 		FLMUINT		uiElementNumber,
 		FLMINT64		i64Num);
 
-	RCODE FLMAPI setUINT(
+	RCODE XFLAPI setUINT(
 		FLMUINT	uiElementNumber,
 		FLMUINT	uiNum);
 
-	RCODE FLMAPI setUINT64(
+	RCODE XFLAPI setUINT64(
 		FLMUINT		uiElementNumber,
 		FLMUINT64	ui64Num);
 
-	RCODE FLMAPI setUnicode(
+	RCODE XFLAPI setUnicode(
 		FLMUINT					uiElementNumber,
 		const FLMUNICODE *	puzUnicode);
 
-	RCODE FLMAPI setUTF8(
+	RCODE XFLAPI setUTF8(
 		FLMUINT				uiElementNumber,
 		const FLMBYTE *	pszUtf8,
 		FLMUINT				uiBytesInBuffer = 0);
 
-	FINLINE RCODE FLMAPI setBinary(
+	FINLINE RCODE XFLAPI setBinary(
 		FLMUINT				uiElementNumber,
 		const void *		pvBinary,
 		FLMUINT				uiBinaryLen)
@@ -805,7 +805,7 @@ public:
 							XFLM_BINARY_TYPE, (FLMBYTE *)pvBinary, uiBinaryLen));
 	}
 
-	FINLINE void FLMAPI setRightTruncated(
+	FINLINE void XFLAPI setRightTruncated(
 		FLMUINT	uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -822,7 +822,7 @@ public:
 		}
 	}
 
-	FINLINE void FLMAPI setLeftTruncated(
+	FINLINE void XFLAPI setLeftTruncated(
 		FLMUINT	uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -839,7 +839,7 @@ public:
 		}
 	}
 
-	FINLINE void FLMAPI clearRightTruncated(
+	FINLINE void XFLAPI clearRightTruncated(
 		FLMUINT	uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -856,7 +856,7 @@ public:
 		}
 	}
 
-	FINLINE void FLMAPI clearLeftTruncated(
+	FINLINE void XFLAPI clearLeftTruncated(
 		FLMUINT	uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -873,7 +873,7 @@ public:
 		}
 	}
 
-	FINLINE FLMBOOL FLMAPI isRightTruncated(
+	FINLINE FLMBOOL XFLAPI isRightTruncated(
 		FLMUINT	uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -886,7 +886,7 @@ public:
 		return( FALSE);
 	}
 
-	FINLINE FLMBOOL FLMAPI isLeftTruncated(
+	FINLINE FLMBOOL XFLAPI isLeftTruncated(
 		FLMUINT	uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -901,12 +901,12 @@ public:
 
 	// Getter methods
 
-	FINLINE FLMUINT64 FLMAPI getDocumentID( void)
+	FINLINE FLMUINT64 XFLAPI getDocumentID( void)
 	{
 		return( m_ui64DocumentID);
 	}
 
-	FINLINE FLMUINT64 FLMAPI getID(
+	FINLINE FLMUINT64 XFLAPI getID(
 		FLMUINT		uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -921,7 +921,7 @@ public:
 		}
 	}
 
-	FINLINE FLMUINT FLMAPI getNameId(
+	FINLINE FLMUINT XFLAPI getNameId(
 		FLMUINT		uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -936,7 +936,7 @@ public:
 		}
 	}
 
-	FINLINE FLMBOOL FLMAPI isAttr(
+	FINLINE FLMBOOL XFLAPI isAttr(
 		FLMUINT		uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -951,7 +951,7 @@ public:
 		}
 	}
 
-	FINLINE FLMBOOL FLMAPI isDataComponent(
+	FINLINE FLMBOOL XFLAPI isDataComponent(
 		FLMUINT		uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -966,7 +966,7 @@ public:
 		}
 	}
 
-	FINLINE FLMBOOL FLMAPI isKeyComponent(
+	FINLINE FLMBOOL XFLAPI isKeyComponent(
 		FLMUINT		uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -981,7 +981,7 @@ public:
 		}
 	}
 
-	FLMUINT FLMAPI getDataLength(
+	FLMUINT XFLAPI getDataLength(
 		FLMUINT	uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -996,7 +996,7 @@ public:
 		}
 	}
 
-	FLMUINT FLMAPI getDataType(
+	FLMUINT XFLAPI getDataType(
 		FLMUINT	uiElementNumber)
 	{
 		F_VECTOR_ELEMENT *	pVector;
@@ -1011,12 +1011,12 @@ public:
 		}
 	}
 
-	RCODE FLMAPI getUTF8Ptr(
+	RCODE XFLAPI getUTF8Ptr(
 		FLMUINT				uiElementNumber,
 		const FLMBYTE **	ppszUTF8,
 		FLMUINT *			puiBufLen);
 
-	FINLINE RCODE FLMAPI getINT(
+	FINLINE RCODE XFLAPI getINT(
 		FLMUINT	uiElementNumber,
 		FLMINT *	piNum)
 	{
@@ -1031,7 +1031,7 @@ public:
 							 : RC_SET( NE_XFLM_NOT_FOUND)));
 	}
 
-	FINLINE RCODE FLMAPI getINT64(
+	FINLINE RCODE XFLAPI getINT64(
 		FLMUINT		uiElementNumber,
 		FLMINT64 *	pi64Num)
 	{
@@ -1046,7 +1046,7 @@ public:
 							 : RC_SET( NE_XFLM_NOT_FOUND)));
 	}
 
-	FINLINE RCODE FLMAPI getUINT(
+	FINLINE RCODE XFLAPI getUINT(
 		FLMUINT		uiElementNumber,
 		FLMUINT *	puiNum)
 	{
@@ -1061,7 +1061,7 @@ public:
 							 : RC_SET( NE_XFLM_NOT_FOUND)));
 	}
 
-	FINLINE RCODE FLMAPI getUINT64(
+	FINLINE RCODE XFLAPI getUINT64(
 		FLMUINT		uiElementNumber,
 		FLMUINT64 *	pui64Num)
 	{
@@ -1076,11 +1076,11 @@ public:
 							 : RC_SET( NE_XFLM_NOT_FOUND)));
 	}
 
-	RCODE FLMAPI getUnicode(
+	RCODE XFLAPI getUnicode(
 		FLMUINT			uiElementNumber,
 		FLMUNICODE **	ppuzUnicode);
 
-	FINLINE RCODE FLMAPI getUnicode(
+	FINLINE RCODE XFLAPI getUnicode(
 		FLMUINT			uiElementNumber,
 		F_DynaBuf *		pBuffer)
 	{
@@ -1095,7 +1095,7 @@ public:
 							 : RC_SET( NE_XFLM_NOT_FOUND)));
 	}
 		
-	FINLINE RCODE FLMAPI getUnicode(
+	FINLINE RCODE XFLAPI getUnicode(
 		FLMUINT			uiElementNumber,
 		FLMUNICODE *	puzUnicode,
 		FLMUINT *		puiBufLen)
@@ -1111,7 +1111,7 @@ public:
 							 : RC_SET( NE_XFLM_NOT_FOUND)));
 	}
 
-	FINLINE RCODE FLMAPI getUTF8(
+	FINLINE RCODE XFLAPI getUTF8(
 		FLMUINT			uiElementNumber,
 		FLMBYTE *		pszUTF8,
 		FLMUINT *		puiBufLen)
@@ -1127,7 +1127,7 @@ public:
 							 : RC_SET( NE_XFLM_NOT_FOUND)));
 	}
 
-	FINLINE RCODE FLMAPI getBinary(
+	FINLINE RCODE XFLAPI getBinary(
 		FLMUINT			uiElementNumber,
 		void *			pvBuffer,
 		FLMUINT *		puiLength)
@@ -1152,7 +1152,7 @@ public:
 		return( RC_SET( NE_XFLM_NOT_FOUND));
 	}
 
-	FINLINE RCODE FLMAPI getBinary(
+	FINLINE RCODE XFLAPI getBinary(
 		FLMUINT				uiElementNumber,
 		F_DynaBuf *			pBuffer)
 	{
@@ -1168,7 +1168,7 @@ public:
 		return( RC_SET( NE_XFLM_NOT_FOUND));
 	}
 
-	RCODE FLMAPI outputKey(
+	RCODE XFLAPI outputKey(
 		IF_Db *				pDb,
 		FLMUINT				uiIndexNum,
 		FLMUINT				uiMatchFlags,
@@ -1176,20 +1176,20 @@ public:
 		FLMUINT				uiKeyBufSize,
 		FLMUINT *			puiKeyLen);
 
-	RCODE FLMAPI outputData(
+	RCODE XFLAPI outputData(
 		IF_Db *				pDb,
 		FLMUINT				uiIndexNum,
 		FLMBYTE *			pucDataBuf,
 		FLMUINT				uiDataBufSize,
 		FLMUINT *			puiDataLen);
 
-	RCODE FLMAPI inputKey(
+	RCODE XFLAPI inputKey(
 		IF_Db *				pDb,
 		FLMUINT				uiIndexNum,
 		const FLMBYTE *	pucKey,
 		FLMUINT				uiKeyLen);
 
-	RCODE FLMAPI inputData(
+	RCODE XFLAPI inputData(
 		IF_Db *				pDb,
 		FLMUINT				uiIndexNum,
 		const FLMBYTE *	pucData,
@@ -1197,9 +1197,9 @@ public:
 
 	// Miscellaneous methods
 
-	void FLMAPI reset( void);
+	void XFLAPI reset( void);
 
-	FINLINE const void * FLMAPI getDataPtr(
+	FINLINE const void * XFLAPI getDataPtr(
 		FLMUINT	uiElementNumber)
 	{
 		return( getDataPtr( getVector( uiElementNumber, VECT_SLOT_HAS_DATA)));
@@ -1398,24 +1398,24 @@ public:
 	F_Backup();
 	virtual ~F_Backup();
 
-	FINLINE FLMUINT64 FLMAPI getBackupTransId( void)
+	FINLINE FLMUINT64 XFLAPI getBackupTransId( void)
 	{
 		return( m_ui64TransId);
 	}
 
-	FINLINE FLMUINT64 FLMAPI getLastBackupTransId( void)
+	FINLINE FLMUINT64 XFLAPI getLastBackupTransId( void)
 	{
 		return( m_ui64LastBackupTransId);
 	}
 
-	RCODE FLMAPI backup(
+	RCODE XFLAPI backup(
 		const char *			pszBackupPath,
 		const char *			pszPassword,
 		IF_BackupClient *		pClient,
 		IF_BackupStatus *		pStatus,
 		FLMUINT *				puiIncSeqNum);
 
-	RCODE FLMAPI endBackup( void);
+	RCODE XFLAPI endBackup( void);
 
 private:
 
@@ -1456,21 +1456,21 @@ public:
 
 	virtual ~F_DefaultBackupClient();
 
-	RCODE FLMAPI WriteData(
+	RCODE XFLAPI WriteData(
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite);
 
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_BackupClient::getRefCount());
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_BackupClient::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT XFLAPI Release( void)
 	{
 		return( IF_BackupClient::Release());
 	}
@@ -1499,34 +1499,34 @@ public:
 		const char *	pszBackupSetPath,
 		const char *	pszRflDir);
 
-	RCODE FLMAPI openBackupSet( void);
+	RCODE XFLAPI openBackupSet( void);
 
-	RCODE FLMAPI openIncFile(
+	RCODE XFLAPI openIncFile(
 		FLMUINT			uiFileNum);
 
-	RCODE FLMAPI openRflFile(
+	RCODE XFLAPI openRflFile(
 		FLMUINT			uiFileNum);
 
-	RCODE FLMAPI read(
+	RCODE XFLAPI read(
 		FLMUINT			uiLength,
 		void *			pvBuffer,
 		FLMUINT *		puiBytesRead);
 
-	RCODE FLMAPI close( void);
+	RCODE XFLAPI close( void);
 
-	RCODE FLMAPI abortFile( void);
+	RCODE XFLAPI abortFile( void);
 
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_RestoreClient::getRefCount());
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_RestoreClient::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT XFLAPI Release( void)
 	{
 		return( IF_RestoreClient::Release());
 	}
@@ -1556,7 +1556,7 @@ public:
 	{
 	}
 
-	RCODE FLMAPI reportProgress(
+	RCODE XFLAPI reportProgress(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64BytesToDo,
 		FLMUINT64)			// ui64BytesDone
@@ -1565,7 +1565,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportError(
+	RCODE XFLAPI reportError(
 		eRestoreAction *	peAction,
 		RCODE)				// rcErr
 	{
@@ -1573,7 +1573,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportBeginTrans(
+	RCODE XFLAPI reportBeginTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64)			// ui64TransId
 	{
@@ -1581,7 +1581,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportCommitTrans(
+	RCODE XFLAPI reportCommitTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64)			// ui64TransId
 	{
@@ -1589,7 +1589,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportAbortTrans(
+	RCODE XFLAPI reportAbortTrans(
 		eRestoreAction *	peAction,
 		FLMUINT64)			// ui64TransId
 	{
@@ -1597,7 +1597,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportRemoveData(
+	RCODE XFLAPI reportRemoveData(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT,				// uiLfNum,
@@ -1608,7 +1608,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportInsertData(
+	RCODE XFLAPI reportInsertData(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT,				// uiLfNum,
@@ -1619,7 +1619,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportReplaceData(
+	RCODE XFLAPI reportReplaceData(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT,				// uiLfNum,
@@ -1630,7 +1630,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportLFileCreate(
+	RCODE XFLAPI reportLFileCreate(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT)				// uiLfNum
@@ -1639,7 +1639,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportLFileUpdate(
+	RCODE XFLAPI reportLFileUpdate(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT,				// uiLfNum,
@@ -1653,7 +1653,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportUpdateDict(
+	RCODE XFLAPI reportUpdateDict(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT,				// uiDictType,
@@ -1664,7 +1664,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportIndexSuspend(
+	RCODE XFLAPI reportIndexSuspend(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT)				// uiIndexNum
@@ -1673,7 +1673,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportIndexResume(
+	RCODE XFLAPI reportIndexResume(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT)				// uiIndexNum
@@ -1682,7 +1682,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportReduce(
+	RCODE XFLAPI reportReduce(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT)				// uiCount
@@ -1691,7 +1691,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportUpgrade(
+	RCODE XFLAPI reportUpgrade(
 		eRestoreAction *	peAction,
 		FLMUINT64,			// ui64TransId,
 		FLMUINT,				// uiOldDbVersion,
@@ -1701,7 +1701,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportEnableEncryption(
+	RCODE XFLAPI reportEnableEncryption(
 		eRestoreAction *	peAction,
 		FLMUINT64			// ui64TransId
 		)
@@ -1710,7 +1710,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportWrapKey(
+	RCODE XFLAPI reportWrapKey(
 		eRestoreAction *	peAction,
 		FLMUINT64)			// ui64TransId
 	{
@@ -1718,7 +1718,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportOpenRflFile(
+	RCODE XFLAPI reportOpenRflFile(
 		eRestoreAction *	peAction,
 		FLMUINT)				// uiFileNum
 	{
@@ -1726,7 +1726,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI reportRflRead(
+	RCODE XFLAPI reportRflRead(
 		eRestoreAction *	peAction,
 		FLMUINT,				// uiFileNum,
 		FLMUINT)				// uiBytesRead
@@ -1735,17 +1735,17 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_RestoreStatus::getRefCount());
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_RestoreStatus::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT XFLAPI Release( void)
 	{
 		return( IF_RestoreStatus::Release());
 	}
@@ -1854,40 +1854,40 @@ public:
 		
 	virtual ~F_Db();
 	
-	RCODE FLMAPI transBegin(
+	RCODE XFLAPI transBegin(
 		eDbTransType			eTransType,
 		FLMUINT					uiMaxLockWait = FLM_NO_TIMEOUT,
 		FLMUINT					uiFlags = 0,
 		XFLM_DB_HDR *			pDbHeader = NULL);
 
-	RCODE FLMAPI transBegin(
+	RCODE XFLAPI transBegin(
 		IF_Db *					pDb);
 
-	RCODE FLMAPI transCommit(
+	RCODE XFLAPI transCommit(
 		FLMBOOL *				pbEmpty = NULL);
 
-	RCODE FLMAPI transAbort( void);
+	RCODE XFLAPI transAbort( void);
 
-	FINLINE eDbTransType FLMAPI getTransType( void)
+	FINLINE eDbTransType XFLAPI getTransType( void)
 	{
 		return( m_eTransType);
 	}
 
-	RCODE FLMAPI doCheckpoint(
+	RCODE XFLAPI doCheckpoint(
 		FLMUINT					uiTimeout);
 
-	RCODE FLMAPI dbLock(
+	RCODE XFLAPI dbLock(
 		eLockType				lockType,
 		FLMINT					iPriority,
 		FLMUINT					uiTimeout);
 
-	RCODE FLMAPI dbUnlock( void);
+	RCODE XFLAPI dbUnlock( void);
 
-	RCODE FLMAPI getLockType(
+	RCODE XFLAPI getLockType(
 		eLockType *				pLockType,
 		FLMBOOL *				pbImplicit);
 
-	RCODE FLMAPI getLockInfo(
+	RCODE XFLAPI getLockInfo(
 		FLMINT					iPriority,
 		eLockType *				pCurrLockType,
 		FLMUINT *				puiThreadId,
@@ -1908,79 +1908,79 @@ public:
 
 	// Index methods
 
-	RCODE FLMAPI indexStatus(
+	RCODE XFLAPI indexStatus(
 		FLMUINT					uiIndexNum,
 		XFLM_INDEX_STATUS *	pIndexStatus);
 
-	RCODE FLMAPI indexGetNext(
+	RCODE XFLAPI indexGetNext(
 		FLMUINT *				puiIndexNum);
 
-	RCODE FLMAPI indexSuspend(
+	RCODE XFLAPI indexSuspend(
 		FLMUINT					uiIndexNum);
 
-	RCODE FLMAPI indexResume(
+	RCODE XFLAPI indexResume(
 		FLMUINT					uiIndexNum);
 
 	// Retrieval Functions
 
-	RCODE	FLMAPI keyRetrieve(
+	RCODE	XFLAPI keyRetrieve(
 		FLMUINT					uiIndex,
 		IF_DataVector *		ifpSearchKey,
 		FLMUINT					uiFlags,
 		IF_DataVector *		ifpFoundKey);
 
-	RCODE FLMAPI enableEncryption( void);
+	RCODE XFLAPI enableEncryption( void);
 		
-	RCODE FLMAPI wrapKey(
+	RCODE XFLAPI wrapKey(
 		const char *	pszPassword = NULL);
 
-	RCODE FLMAPI rollOverDbKey( void);
+	RCODE XFLAPI rollOverDbKey( void);
 			
-	RCODE FLMAPI changeItemState(
+	RCODE XFLAPI changeItemState(
 		FLMUINT					uiDictType,
 		FLMUINT					uiDictNum,
 		const char *			pszState);
 
-	RCODE FLMAPI reduceSize(
+	RCODE XFLAPI reduceSize(
 		FLMUINT     			uiCount,
 		FLMUINT *				puiCountRV);
 
-	RCODE FLMAPI upgrade(
+	RCODE XFLAPI upgrade(
 		IF_UpgradeClient *	pUpgradeClient);
 
-	RCODE FLMAPI createRootElement(
+	RCODE XFLAPI createRootElement(
 		FLMUINT					uiCollection,
 		FLMUINT					uiNameId,
 		IF_DOMNode **			ppElementNode,
 		FLMUINT64 *				pui64NodeId = NULL);
 
-	RCODE FLMAPI createDocument(
+	RCODE XFLAPI createDocument(
 		FLMUINT					uiCollection,
 		IF_DOMNode **			ppDocumentNode,
 		FLMUINT64 *				pui64NodeId = NULL);
 
-	RCODE FLMAPI getFirstDocument(
+	RCODE XFLAPI getFirstDocument(
 		FLMUINT					uiCollection,
 		IF_DOMNode **			ppDocumentNode);
 
-	RCODE FLMAPI getLastDocument(
+	RCODE XFLAPI getLastDocument(
 		FLMUINT					uiCollection,
 		IF_DOMNode **			ppDocumentNode);
 
-	RCODE FLMAPI getDocument(
+	RCODE XFLAPI getDocument(
 		FLMUINT					uiCollection,
 		FLMUINT					uiFlags,
 		FLMUINT64				ui64DocumentId,
 		IF_DOMNode **			ppDocumentNode);
 
-	RCODE FLMAPI documentDone(
+	RCODE XFLAPI documentDone(
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64RootId);
 
-	RCODE FLMAPI documentDone(
+	RCODE XFLAPI documentDone(
 		IF_DOMNode *			pDocNode);
 
-	FINLINE RCODE FLMAPI createElementDef(
+	FINLINE RCODE XFLAPI createElementDef(
 		const char *			pszNamespaceURI,
 		const char *			pszElementName,
 		FLMUINT					uiDataType,
@@ -1992,7 +1992,7 @@ public:
 			puiElementNameId, (F_DOMNode **)ppDocumentNode));
 	}
 
-	FINLINE RCODE FLMAPI createElementDef(
+	FINLINE RCODE XFLAPI createElementDef(
 		const FLMUNICODE *	puzNamespaceURI,
 		const FLMUNICODE *	puzElementName,
 		FLMUINT					uiDataType,
@@ -2004,7 +2004,7 @@ public:
 			puiElementNameId, (F_DOMNode **)ppDocumentNode));
 	}
 
-	FINLINE RCODE FLMAPI createUniqueElmDef(
+	FINLINE RCODE XFLAPI createUniqueElmDef(
 		const char *			pszNamespaceURI,
 		const char *			pszElementName,
 		FLMUINT * 				puiElementNameId = NULL,
@@ -2015,7 +2015,7 @@ public:
 			puiElementNameId, (F_DOMNode **)ppDocumentNode));
 	}
 
-	FINLINE RCODE FLMAPI createUniqueElmDef(
+	FINLINE RCODE XFLAPI createUniqueElmDef(
 		const FLMUNICODE *	puzNamespaceURI,
 		const FLMUNICODE *	puzElementName,
 		FLMUINT * 				puiElementNameId = NULL,
@@ -2026,17 +2026,17 @@ public:
 			puiElementNameId, (F_DOMNode **)ppDocumentNode));
 	}
 
-	RCODE FLMAPI getElementNameId(
+	RCODE XFLAPI getElementNameId(
 		const char *			pszNamespaceURI,
 		const char *			pszElementName,
 		FLMUINT *				puiElementNameId);
 
-	RCODE FLMAPI getElementNameId(
+	RCODE XFLAPI getElementNameId(
 		const FLMUNICODE *	puzNamespaceURI,
 		const FLMUNICODE *	puzElementName,
 		FLMUINT *				puiElementNameId);
 
-	FINLINE RCODE FLMAPI createAttributeDef(
+	FINLINE RCODE XFLAPI createAttributeDef(
 		const char *			pszNamespaceURI,
 		const char *			pszAttributeName,
 		FLMUINT					uiDataType,
@@ -2048,7 +2048,7 @@ public:
 			(F_DOMNode **)ppDocumentNode));
 	}
 
-	FINLINE RCODE FLMAPI createAttributeDef(
+	FINLINE RCODE XFLAPI createAttributeDef(
 		const FLMUNICODE *	puzNamespaceURI,
 		const FLMUNICODE *	puzAttributeName,
 		FLMUINT					uiDataType,
@@ -2060,39 +2060,39 @@ public:
 			(F_DOMNode **)ppDocumentNode));
 	}
 
-	RCODE FLMAPI getAttributeNameId(
+	RCODE XFLAPI getAttributeNameId(
 		const char *			pszNamespaceURI,
 		const char *			pszAttributeName,
 		FLMUINT *				puiAttributeNameId);
 
-	RCODE FLMAPI getAttributeNameId(
+	RCODE XFLAPI getAttributeNameId(
 		const FLMUNICODE *	puzNamespaceURI,
 		const FLMUNICODE *	puzAttributeName,
 		FLMUINT *				puiAttributeNameId);
 
-	FINLINE RCODE FLMAPI createPrefixDef(
+	FINLINE RCODE XFLAPI createPrefixDef(
 		const char *			pszPrefixName,
 		FLMUINT *				puiPrefixNumber)
 	{
 		return( createPrefixDef( FALSE, pszPrefixName, puiPrefixNumber));
 	}
 
-	FINLINE RCODE FLMAPI createPrefixDef(
+	FINLINE RCODE XFLAPI createPrefixDef(
 		const FLMUNICODE *	puzPrefixName,
 		FLMUINT * 				puiPrefixNumber)
 	{
 		return( createPrefixDef( TRUE, puzPrefixName, puiPrefixNumber));
 	}
 
-	RCODE FLMAPI getPrefixId(
+	RCODE XFLAPI getPrefixId(
 		const char *			pszPrefixName,
 		FLMUINT *				puiPrefixNumber);
 
-	RCODE FLMAPI getPrefixId(
+	RCODE XFLAPI getPrefixId(
 		const FLMUNICODE *	puzPrefixName,
 		FLMUINT *				puiPrefixNumber);
 
-	FINLINE RCODE FLMAPI createEncDef(
+	FINLINE RCODE XFLAPI createEncDef(
 		const char *			pszEncType,
 		const char *			pszEncName,
 		FLMUINT					uiKeySize = 0,
@@ -2102,7 +2102,7 @@ public:
 			uiKeySize, puiEncDefNumber));
 	}
 
-	FINLINE RCODE FLMAPI createEncDef(
+	FINLINE RCODE XFLAPI createEncDef(
 		const FLMUNICODE *	puzEncType,
 		const FLMUNICODE *	puzEncName,
 		FLMUINT					uiKeySize = 0,
@@ -2112,15 +2112,15 @@ public:
 			uiKeySize, puiEncDefNumber));
 	}
 
-	RCODE FLMAPI getEncDefId(
+	RCODE XFLAPI getEncDefId(
 		const char *			pszEncDefName,
 		FLMUINT *				puiEncDefNumber);
 
-	RCODE FLMAPI getEncDefId(
+	RCODE XFLAPI getEncDefId(
 		const FLMUNICODE *	puzEncDefName,
 		FLMUINT *				puiEncDefNumber);
 
-	FINLINE RCODE FLMAPI createCollectionDef(
+	FINLINE RCODE XFLAPI createCollectionDef(
 		const char *			pszCollectionName,
 		FLMUINT * 				puiCollectionNumber,
 		FLMUINT					uiEncNumber = 0)
@@ -2129,7 +2129,7 @@ public:
 			puiCollectionNumber, uiEncNumber));
 	}
 
-	FINLINE RCODE FLMAPI createCollectionDef(
+	FINLINE RCODE XFLAPI createCollectionDef(
 		const FLMUNICODE *	puzCollectionName,
 		FLMUINT * 				puiCollectionNumber,
 		FLMUINT					uiEncNumber = 0)
@@ -2138,28 +2138,28 @@ public:
 			puiCollectionNumber, uiEncNumber));
 	}
 
-	RCODE FLMAPI getCollectionNumber(
+	RCODE XFLAPI getCollectionNumber(
 		const char *			pszCollectionName,
 		FLMUINT *				puiCollectionNumber);
 
-	RCODE FLMAPI getCollectionNumber(
+	RCODE XFLAPI getCollectionNumber(
 		const FLMUNICODE *	puzCollectionName,
 		FLMUINT *				puiCollectionNumber);
 
-	RCODE FLMAPI getIndexNumber(
+	RCODE XFLAPI getIndexNumber(
 		const char *			pszIndexName,
 		FLMUINT *				puiIndexNumber);
 
-	RCODE FLMAPI getIndexNumber(
+	RCODE XFLAPI getIndexNumber(
 		const FLMUNICODE *	puzIndexName,
 		FLMUINT *				puiIndexNumber);
 
-	RCODE FLMAPI getDictionaryDef(
+	RCODE XFLAPI getDictionaryDef(
 		FLMUINT					uiDictType,
 		FLMUINT					uiDictNumber,
 		IF_DOMNode **			ppDocumentNode);
 
-	RCODE FLMAPI getDictionaryName(
+	RCODE XFLAPI getDictionaryName(
 		FLMUINT					uiDictType,
 		FLMUINT					uiDictNumber,
 		char *					pszName,
@@ -2167,7 +2167,7 @@ public:
 		char *					pszNamespace = NULL,
 		FLMUINT *				puiNamespaceBufSize = NULL);
 
-	RCODE FLMAPI getDictionaryName(
+	RCODE XFLAPI getDictionaryName(
 		FLMUINT					uiDictType,
 		FLMUINT					uiDictNumber,
 		FLMUNICODE *			puzName,
@@ -2175,7 +2175,7 @@ public:
 		FLMUNICODE *			puzNamespace = NULL,
 		FLMUINT *				puiNamespaceBufSize = NULL);
 
-	RCODE FLMAPI getNode(
+	RCODE XFLAPI getNode(
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64NodeId,
 		IF_DOMNode **			ifppNode)
@@ -2200,121 +2200,121 @@ public:
 		return( getNode( uiCollection, ui64NodeId, XFLM_EXCL, ppNode));
 	}
 
-	RCODE FLMAPI getAttribute(
+	RCODE XFLAPI getAttribute(
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64ElementId,
 		FLMUINT					uiAttrName,
 		IF_DOMNode **			ppNode);
 
-	RCODE FLMAPI getDataType(
+	RCODE XFLAPI getDataType(
 		FLMUINT					uiDictType,
 		FLMUINT					uiNameId,
 		FLMUINT *				puiDataType);
 
-	RCODE FLMAPI backupBegin(
+	RCODE XFLAPI backupBegin(
 		eDbBackupType			eBackupType,
 		eDbTransType			eTransType,
 		FLMUINT					uiMaxLockWait,
 		IF_Backup **			ppBackup);
 
-	void FLMAPI getRflFileName(
+	void XFLAPI getRflFileName(
 		FLMUINT					uiFileNum,
 		FLMBOOL					bBaseOnly,
 		char *					pszFileName,
 		FLMUINT *				puiFileNameBufSize,
 		FLMBOOL *				pbNameTruncated = NULL);
 
-	RCODE FLMAPI import(
+	RCODE XFLAPI import(
 		IF_IStream *			pIStream,
 		FLMUINT					uiCollection,
 		IF_DOMNode *			pNodeToLinkTo = NULL,
 		eNodeInsertLoc			eInsertLoc = XFLM_LAST_CHILD,
 		XFLM_IMPORT_STATS *	pImportStats = NULL);
 
-	RCODE FLMAPI importDocument(
+	RCODE XFLAPI importDocument(
 		IF_IStream *			ifpStream,
 		FLMUINT					uiCollection,
 		IF_DOMNode **			ppDocumentNode = NULL,
 		XFLM_IMPORT_STATS *	pImportStats = NULL);
 
-	RCODE FLMAPI exportXML(
+	RCODE XFLAPI exportXML(
 		IF_DOMNode *			pStartNode,
 		IF_OStream *			pOStream,
 		eExportFormatType		eFormat = XFLM_EXPORT_INDENT);
 		
-	RCODE FLMAPI setNextNodeId(
+	RCODE XFLAPI setNextNodeId(
 		FLMUINT					uiCollection,
 		FLMUINT64				ui64NextNodeId);
 
-	RCODE FLMAPI setNextDictNum(
+	RCODE XFLAPI setNextDictNum(
 		FLMUINT					uiDictType,
 		FLMUINT					uiDictNumber);
 
 	// Configuration methods
 
-	RCODE FLMAPI setRflKeepFilesFlag(
+	RCODE XFLAPI setRflKeepFilesFlag(
 		FLMBOOL					bKeep);
 
-	RCODE FLMAPI getRflKeepFlag(
+	RCODE XFLAPI getRflKeepFlag(
 		FLMBOOL *				pbKeep);
 
-	RCODE FLMAPI setRflDir(
+	RCODE XFLAPI setRflDir(
 		const char *			pszNewRflDir);
 
-	void FLMAPI getRflDir(
+	void XFLAPI getRflDir(
 		char *					pszRflDir);
 
-	RCODE FLMAPI getRflFileNum(
+	RCODE XFLAPI getRflFileNum(
 		FLMUINT *				puiRflFileNum);
 
-	RCODE FLMAPI getHighestNotUsedRflFileNum(
+	RCODE XFLAPI getHighestNotUsedRflFileNum(
 		FLMUINT *				puiHighestNotUsedRflFileNum);
 
-	RCODE FLMAPI setRflFileSizeLimits(
+	RCODE XFLAPI setRflFileSizeLimits(
 		FLMUINT					uiMinRflSize,
 		FLMUINT					uiMaxRflSize);
 
-	RCODE FLMAPI getRflFileSizeLimits(
+	RCODE XFLAPI getRflFileSizeLimits(
 		FLMUINT *				puiRflMinFileSize,
 		FLMUINT *				puiRflMaxFileSize);
 
-	RCODE FLMAPI rflRollToNextFile( void);
+	RCODE XFLAPI rflRollToNextFile( void);
 
-	RCODE FLMAPI setKeepAbortedTransInRflFlag(
+	RCODE XFLAPI setKeepAbortedTransInRflFlag(
 		FLMBOOL					bKeep);
 
-	RCODE FLMAPI getKeepAbortedTransInRflFlag(
+	RCODE XFLAPI getKeepAbortedTransInRflFlag(
 		FLMBOOL *				pbKeep);
 
-	RCODE FLMAPI setAutoTurnOffKeepRflFlag(
+	RCODE XFLAPI setAutoTurnOffKeepRflFlag(
 		FLMBOOL					bAutoTurnOff);
 
-	RCODE FLMAPI getAutoTurnOffKeepRflFlag(
+	RCODE XFLAPI getAutoTurnOffKeepRflFlag(
 		FLMBOOL *				pbAutoTurnOff);
 
-	FINLINE void FLMAPI setFileExtendSize(
+	FINLINE void XFLAPI setFileExtendSize(
 		FLMUINT					uiFileExtendSize)
 	{
 		m_pDatabase->m_uiFileExtendSize = uiFileExtendSize;
 	}
 
-	FINLINE FLMUINT FLMAPI getFileExtendSize( void)
+	FINLINE FLMUINT XFLAPI getFileExtendSize( void)
 	{
 		return( m_pDatabase->m_uiFileExtendSize);
 	}
 
-	FINLINE void FLMAPI setAppData(
+	FINLINE void XFLAPI setAppData(
 		void *			pvAppData)
 	{
 		m_pvAppData = pvAppData;
 	}
 
-	FINLINE void * FLMAPI getAppData( void)
+	FINLINE void * XFLAPI getAppData( void)
 	{
 		return( m_pvAppData);
 	}
 
-	FINLINE void FLMAPI setDeleteStatusObject(
+	FINLINE void XFLAPI setDeleteStatusObject(
 		IF_DeleteStatus *		pDeleteStatus)
 	{
 		if (m_pDeleteStatus)
@@ -2327,7 +2327,7 @@ public:
 		}
 	}
 
-	FINLINE void FLMAPI setCommitClientObject(
+	FINLINE void XFLAPI setCommitClientObject(
 		IF_CommitClient *		pCommitClient)
 	{
 		if (m_pCommitClient)
@@ -2343,7 +2343,7 @@ public:
 		}
 	}
 
-	FINLINE void FLMAPI setIndexingClientObject(
+	FINLINE void XFLAPI setIndexingClientObject(
 		IF_IxClient *	pIxClient)
 	{
 		if (m_pIxClient)
@@ -2357,7 +2357,7 @@ public:
 		}
 	}
 
-	FINLINE void FLMAPI setIndexingStatusObject(
+	FINLINE void XFLAPI setIndexingStatusObject(
 		IF_IxStatus *			ifpIxStatus)
 	{
 		if (m_pIxStatus)
@@ -2373,22 +2373,22 @@ public:
 
 	// Configuration information getting methods
 
-	FINLINE FLMUINT FLMAPI getDbVersion( void)
+	FINLINE FLMUINT XFLAPI getDbVersion( void)
 	{
 		return( (FLMUINT)m_pDatabase->m_lastCommittedDbHdr.ui32DbVersion);
 	}
 
-	FINLINE FLMUINT FLMAPI getBlockSize( void)
+	FINLINE FLMUINT XFLAPI getBlockSize( void)
 	{
 		return( m_pDatabase->m_uiBlockSize);
 	}
 
-	FINLINE FLMUINT FLMAPI getDefaultLanguage( void)
+	FINLINE FLMUINT XFLAPI getDefaultLanguage( void)
 	{
 		return( m_pDatabase->m_uiDefaultLanguage);
 	}
 
-	FINLINE FLMUINT64 FLMAPI getTransID( void)
+	FINLINE FLMUINT64 XFLAPI getTransID( void)
 	{
 		if (m_eTransType != XFLM_NO_TRANS)
 		{
@@ -2402,10 +2402,10 @@ public:
 		return( 0);
 	}
 
-	void FLMAPI getCheckpointInfo(
+	void XFLAPI getCheckpointInfo(
 		XFLM_CHECKPOINT_INFO *	pCheckpointInfo);
 
-	RCODE FLMAPI getDbControlFileName(
+	RCODE XFLAPI getDbControlFileName(
 		char *					pszControlFileName,
 		FLMUINT					uiControlFileBufSize)
 	{
@@ -2427,32 +2427,32 @@ public:
 		return( m_pDatabase->m_pDatabaseLockObj->getWaiterCount() ? TRUE : FALSE);
 	}
 
-	RCODE FLMAPI getLockWaiters(
+	RCODE XFLAPI getLockWaiters(
 		IF_LockInfoClient *	pLockInfo);
 
-	RCODE FLMAPI getLastBackupTransID(
+	RCODE XFLAPI getLastBackupTransID(
 		FLMUINT64 *				pui64LastBackupTransID);
 
-	RCODE FLMAPI getBlocksChangedSinceBackup(
+	RCODE XFLAPI getBlocksChangedSinceBackup(
 		FLMUINT *				puiBlocksChangedSinceBackup);
 
-	RCODE FLMAPI getNextIncBackupSequenceNum(
+	RCODE XFLAPI getNextIncBackupSequenceNum(
 		FLMUINT *				puiNextIncBackupSequenceNum);
 
-	void FLMAPI getSerialNumber(
+	void XFLAPI getSerialNumber(
 		char *					pucSerialNumber);
 
-	RCODE FLMAPI getDiskSpaceUsage(
+	RCODE XFLAPI getDiskSpaceUsage(
 		FLMUINT64 *				pui64DataSize,
 		FLMUINT64 *				pui64RollbackSize,
 		FLMUINT64 *				pui64RflSize);
 
-	FINLINE RCODE FLMAPI getMustCloseRC( void)
+	FINLINE RCODE XFLAPI getMustCloseRC( void)
 	{
 		return( m_pDatabase->m_rcMustClose);
 	}
 
-	FINLINE RCODE FLMAPI getAbortRC( void)
+	FINLINE RCODE XFLAPI getAbortRC( void)
 	{
 		return( m_AbortRc);
 	}
@@ -2498,7 +2498,7 @@ public:
 		return( startTransaction( eReqTransType, pbStartedTrans));
 	}
 
-	FINLINE void FLMAPI setMustAbortTrans(
+	FINLINE void XFLAPI setMustAbortTrans(
 		RCODE		rc)
 	{
 		if( RC_BAD( rc) && RC_OK( m_AbortRc))
@@ -3438,24 +3438,24 @@ public:
 	{
 	}
 	
-	FINLINE void FLMAPI clearNodeInfo( void)
+	FINLINE void XFLAPI clearNodeInfo( void)
 	{
 		f_memset( &m_nodeInfo, 0, sizeof( m_nodeInfo));
 		m_ui64TotalNodes = 0;
 	}
 	
-	RCODE FLMAPI addNodeInfo(
+	RCODE XFLAPI addNodeInfo(
 		IF_Db *			pDb,
 		IF_DOMNode *	pNode,
 		FLMBOOL			bDoSubTree,
 		FLMBOOL			bDoSelf = TRUE);
 		
-	FINLINE FLMUINT64 FLMAPI getTotalNodeCount( void)
+	FINLINE FLMUINT64 XFLAPI getTotalNodeCount( void)
 	{
 		return( m_ui64TotalNodes);
 	}
 	
-	FINLINE void FLMAPI getNodeInfo(
+	FINLINE void XFLAPI getNodeInfo(
 		XFLM_NODE_INFO *	pNodeInfo)
 	{
 		f_memcpy( pNodeInfo, &m_nodeInfo, sizeof( m_nodeInfo));
@@ -3505,33 +3505,33 @@ public:
 		m_pool.poolFree();
 	}
 	
-	FINLINE void FLMAPI clearBTreeInfo( void)
+	FINLINE void XFLAPI clearBTreeInfo( void)
 	{
 		m_uiNumIndexes = 0;
 		m_uiNumCollections = 0;
 	}
 	
-	RCODE FLMAPI collectIndexInfo(
+	RCODE XFLAPI collectIndexInfo(
 		IF_Db *					pDb,
 		FLMUINT					uiIndexNum,
 		IF_BTreeInfoStatus *	pInfoStatus);
 		
-	RCODE FLMAPI collectCollectionInfo(
+	RCODE XFLAPI collectCollectionInfo(
 		IF_Db *					pDb,
 		FLMUINT					uiCollectionNum,
 		IF_BTreeInfoStatus *	pInfoStatus);
 			
-	FINLINE FLMUINT FLMAPI getNumIndexes( void)
+	FINLINE FLMUINT XFLAPI getNumIndexes( void)
 	{
 		return( m_uiNumIndexes);
 	}
 		
-	FINLINE FLMUINT FLMAPI getNumCollections( void)
+	FINLINE FLMUINT XFLAPI getNumCollections( void)
 	{
 		return( m_uiNumCollections);
 	}
 		
-	FINLINE FLMBOOL FLMAPI getIndexInfo(
+	FINLINE FLMBOOL XFLAPI getIndexInfo(
 		FLMUINT		uiNthIndex,
 		FLMUINT *	puiIndexNum,
 		char **		ppszIndexName,
@@ -3553,7 +3553,7 @@ public:
 		}
 	}
 		
-	FINLINE FLMBOOL FLMAPI getCollectionInfo(
+	FINLINE FLMBOOL XFLAPI getCollectionInfo(
 		FLMUINT		uiNthCollection,
 		FLMUINT *	puiCollectionNum,
 		char **		ppszCollectionName,
@@ -3575,7 +3575,7 @@ public:
 		}
 	}
 		
-	FINLINE FLMBOOL FLMAPI getIndexLevelInfo(
+	FINLINE FLMBOOL XFLAPI getIndexLevelInfo(
 		FLMUINT						uiNthIndex,
 		FLMUINT						uiBTreeLevel,
 		XFLM_BTREE_LEVEL_INFO *	pLevelInfo)
@@ -3594,7 +3594,7 @@ public:
 		}
 	}
 
-	FINLINE FLMBOOL FLMAPI getCollectionLevelInfo(
+	FINLINE FLMBOOL XFLAPI getCollectionLevelInfo(
 		FLMUINT						uiNthCollection,
 		FLMUINT						uiBTreeLevel,
 		XFLM_BTREE_LEVEL_INFO *	pLevelInfo)
@@ -3707,7 +3707,7 @@ public:
 		}
 	}
 
-	FINLINE RCODE FLMAPI compare(
+	FINLINE RCODE XFLAPI compare(
 		const void *	pvKey1,
 		FLMUINT			uiKeyLen1,
 		const void *	pvKey2,
@@ -3756,17 +3756,17 @@ public:
 		m_bCompareDocId = bCompareDocId;
 	}
 
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_ResultSetCompare::getRefCount());
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_ResultSetCompare::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT XFLAPI Release( void)
 	{
 		return( IF_ResultSetCompare::Release());
 	}
@@ -3936,7 +3936,7 @@ public:
 	
 	// Methods for constructing a query
 
-	FINLINE RCODE FLMAPI setLanguage(
+	FINLINE RCODE XFLAPI setLanguage(
 		FLMUINT	uiLanguage)
 	{
 
@@ -3950,7 +3950,7 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	FINLINE RCODE FLMAPI setCollection(
+	FINLINE RCODE XFLAPI setCollection(
 		FLMUINT	uiCollection
 		)
 	{
@@ -3965,68 +3965,68 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	FINLINE RCODE FLMAPI setupQueryExpr(
+	FINLINE RCODE XFLAPI setupQueryExpr(
 		IF_Db *					pDb,
 		const FLMUNICODE *	puzQuery)
 	{
 		return( setupQueryExpr( TRUE, pDb, (void *)puzQuery));
 	}
 	
-	FINLINE RCODE FLMAPI setupQueryExpr(
+	FINLINE RCODE XFLAPI setupQueryExpr(
 		IF_Db *				pDb,
 		const char *		pszQuery)
 	{
 		return( setupQueryExpr( FALSE, pDb, (void *)pszQuery));
 	}
 
-	RCODE FLMAPI copyCriteria(
+	RCODE XFLAPI copyCriteria(
 		IF_Query *	pSrcQuery);
 
-	RCODE FLMAPI addXPathComponent(
+	RCODE XFLAPI addXPathComponent(
 		eXPathAxisTypes		eXPathAxis,
 		eDomNodeType			eNodeType,
 		FLMUINT					uiNameId,
 		IF_QueryNodeSource *	pNodeSource);
 
-	RCODE FLMAPI addOperator(
+	RCODE XFLAPI addOperator(
 		eQueryOperators		eOperator,
 		FLMUINT					uiCompareRules = 0,
 		IF_OperandComparer *	pOpComparer = NULL);
 
-	RCODE FLMAPI addUnicodeValue(
+	RCODE XFLAPI addUnicodeValue(
 		const FLMUNICODE *	puzVal);
 
-	RCODE FLMAPI addUTF8Value(
+	RCODE XFLAPI addUTF8Value(
 		const char *			pszVal,
 		FLMUINT					uiUTF8Len = 0);
 
-	RCODE FLMAPI addBinaryValue(
+	RCODE XFLAPI addBinaryValue(
 		const void *			pvVal,
 		FLMUINT					uiValLen);
 
-	RCODE FLMAPI addUINTValue(
+	RCODE XFLAPI addUINTValue(
 		FLMUINT					uiVal);
 
-	RCODE FLMAPI addINTValue(
+	RCODE XFLAPI addINTValue(
 		FLMINT					iVal);
 
-	RCODE FLMAPI addUINT64Value(
+	RCODE XFLAPI addUINT64Value(
 		FLMUINT64				ui64Val);
 
-	RCODE FLMAPI addINT64Value(
+	RCODE XFLAPI addINT64Value(
 		FLMINT64					i64Val);
 
-	RCODE FLMAPI addBoolean(
+	RCODE XFLAPI addBoolean(
 		FLMBOOL					bVal,
 		FLMBOOL					bUnknown = FALSE);
 
-	FINLINE RCODE FLMAPI addFunction(
+	FINLINE RCODE XFLAPI addFunction(
 		eQueryFunctions		eFunction)
 	{
 		return( addFunction( eFunction, NULL, FALSE));
 	}
 
-	FINLINE RCODE FLMAPI addFunction(
+	FINLINE RCODE XFLAPI addFunction(
 		IF_QueryValFunc *		pFuncObj,
 		FLMBOOL					bHasXPathExpr)
 	{
@@ -4037,55 +4037,55 @@ public:
 		return( addFunction( XFLM_FUNC_xxx, pFuncObj, bHasXPathExpr));
 	}
 
-	RCODE FLMAPI getFirst(
+	RCODE XFLAPI getFirst(
 		IF_Db *					pDb,
 		IF_DOMNode **			ppNode,
 		FLMUINT					uiTimeLimit = 0);
 
-	RCODE FLMAPI getLast(
+	RCODE XFLAPI getLast(
 		IF_Db *					pDb,
 		IF_DOMNode **			ppNode,
 		FLMUINT					uiTimeLimit = 0);
 
-	RCODE FLMAPI getNext(
+	RCODE XFLAPI getNext(
 		IF_Db *					pDb,
 		IF_DOMNode **			ppNode,
 		FLMUINT					uiTimeLimit = 0,
 		FLMUINT					uiNumToSkip = 0,
 		FLMUINT *				puiNumSkipped = NULL);
 
-	RCODE FLMAPI getPrev(
+	RCODE XFLAPI getPrev(
 		IF_Db *					pDb,
 		IF_DOMNode **			ppNode,
 		FLMUINT					uiTimeLimit = 0,
 		FLMUINT					uiNumToSkip = 0,
 		FLMUINT *				puiNumSkipped = NULL);
 
-	RCODE FLMAPI getCurrent(
+	RCODE XFLAPI getCurrent(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppNode);
 
-	void FLMAPI resetQuery( void);
+	void XFLAPI resetQuery( void);
 
-	RCODE FLMAPI getStatsAndOptInfo(
+	RCODE XFLAPI getStatsAndOptInfo(
 		FLMUINT *			puiNumOptInfos,
 		XFLM_OPT_INFO **	ppOptInfo);
 
-	void FLMAPI freeStatsAndOptInfo(
+	void XFLAPI freeStatsAndOptInfo(
 		XFLM_OPT_INFO **	ppOptInfo);
 
-	void FLMAPI setDupHandling(
+	void XFLAPI setDupHandling(
 		FLMBOOL	bRemoveDups);
 
-	RCODE FLMAPI setIndex(
+	RCODE XFLAPI setIndex(
 		FLMUINT	uiIndex);
 
-	RCODE FLMAPI getIndex(
+	RCODE XFLAPI getIndex(
 		IF_Db *		pDb,
 		FLMUINT *	puiIndex,
 		FLMBOOL *	pbHaveMultiple);
 
-	RCODE FLMAPI addSortKey(
+	RCODE XFLAPI addSortKey(
 		void *			pvSortKeyContext,
 		FLMBOOL			bChildToContext,
 		FLMBOOL			bElement,
@@ -4097,7 +4097,7 @@ public:
 		FLMBOOL			bSortMissingHigh,
 		void **			ppvContext);
 
-	FINLINE RCODE FLMAPI enablePositioning( void)
+	FINLINE RCODE XFLAPI enablePositioning( void)
 	{
 		if (m_bOptimized)
 		{
@@ -4110,30 +4110,30 @@ public:
 		return( NE_XFLM_OK);
 	}
 	
-	RCODE FLMAPI positionTo(
+	RCODE XFLAPI positionTo(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppNode,
 		FLMUINT				uiTimeLimit,
 		FLMUINT				uiPosition);
 			
-	RCODE FLMAPI positionTo(
+	RCODE XFLAPI positionTo(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppNode,
 		FLMUINT				uiTimeLimit,
 		IF_DataVector *	pSearchKey,
 		FLMUINT				uiFlags);
 		
-	RCODE FLMAPI getPosition(
+	RCODE XFLAPI getPosition(
 		IF_Db *				pDb,
 		FLMUINT *			puiPosition);
 		
-	RCODE FLMAPI buildResultSet(
+	RCODE XFLAPI buildResultSet(
 		IF_Db *				pDb,
 		FLMUINT				uiTimeLimit);
 		
-	void FLMAPI stopBuildingResultSet( void);
+	void XFLAPI stopBuildingResultSet( void);
 		
-	RCODE FLMAPI getCounts(
+	RCODE XFLAPI getCounts(
 		IF_Db *				pDb,
 		FLMUINT				uiTimeLimit,
 		FLMBOOL				bPartialCountOk,
@@ -4142,12 +4142,12 @@ public:
 		FLMUINT *			puiPositionableToCount,
 		FLMBOOL *			pbDoneBuildingResultSet = NULL);
 		
-	FINLINE void FLMAPI enableResultSetEncryption( void)
+	FINLINE void XFLAPI enableResultSetEncryption( void)
 	{
 		m_bEncryptResultSet = TRUE;
 	}
 	
-	FINLINE void FLMAPI setQueryStatusObject(
+	FINLINE void XFLAPI setQueryStatusObject(
 		IF_QueryStatus *		pQueryStatus)
 	{
 		if (m_pQueryStatus)
@@ -4160,7 +4160,7 @@ public:
 		}
 	}
 
-	FINLINE void FLMAPI setQueryValidatorObject(
+	FINLINE void XFLAPI setQueryValidatorObject(
 		IF_QueryValidator *		pQueryValidator)
 	{
 		if (m_pQueryValidator)
@@ -4175,7 +4175,7 @@ public:
 	
 private:
 
-	RCODE FLMAPI addFunction(
+	RCODE XFLAPI addFunction(
 		eQueryFunctions		eFunction,
 		IF_QueryValFunc *		pFuncObj,
 		FLMBOOL					bHasXPathExpr);
@@ -4715,31 +4715,31 @@ public:
 
 	virtual ~F_DbSystem();
 
-	virtual FLMINT FLMAPI AddRef(
+	virtual FLMINT XFLAPI AddRef(
 		FLMBOOL		bSysDataLocked);
 	
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT XFLAPI AddRef( void)
 	{
 		return( AddRef( FALSE));
 	}
 
-	virtual FLMINT FLMAPI Release( void);
+	virtual FLMINT XFLAPI Release( void);
 	
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT XFLAPI getRefCount( void)
 	{
 		return( (FLMINT)m_refCnt);
 	}
 
-	RCODE FLMAPI init( void);
+	RCODE XFLAPI init( void);
 
-	RCODE FLMAPI updateIniFile(
+	RCODE XFLAPI updateIniFile(
 		const char *			pszParamName,
 		const char *			pszValue);
 
-	void FLMAPI getFileSystem(
+	void XFLAPI getFileSystem(
 		IF_FileSystem **		ppFileSystem);
 		
-	RCODE FLMAPI dbCreate(
+	RCODE XFLAPI dbCreate(
 		const char *			pszDbFileName,
 		const char *			pszDataDir,
 		const char *			pszRflDir,
@@ -4749,7 +4749,7 @@ public:
 		FLMBOOL					bTempDb,
 		IF_Db **					ppDb);
 
-	FINLINE RCODE FLMAPI dbCreate(
+	FINLINE RCODE XFLAPI dbCreate(
 		const char *			pszDbFileName,
 		const char *			pszDataDir,
 		const char *			pszRflDir,
@@ -4762,7 +4762,7 @@ public:
 								pszDictBuf, pCreateOpts, FALSE, ppDb));
 	}
 
-	FINLINE RCODE FLMAPI dbOpen(
+	FINLINE RCODE XFLAPI dbOpen(
 		const char *			pszDbFileName,
 		const char *			pszDataDir,
 		const char *			pszRflDir,
@@ -4776,7 +4776,7 @@ public:
 							 pszPassword, uiOpenFlags, ppDb));
 	}
 
-	RCODE FLMAPI dbRebuild(						
+	RCODE XFLAPI dbRebuild(						
 		const char *				pszSourceDbPath,
 		const char *				pszSourceDataDir,
 		const char *				pszDestDbPath,
@@ -4790,7 +4790,7 @@ public:
 		FLMUINT64 *					pui64QuarantinedNodes,
 		IF_DbRebuildStatus *		pRebuildStatus);
 
-	RCODE FLMAPI dbCheck(
+	RCODE XFLAPI dbCheck(
 		const char *				pszDbFileName,
 		const char *				pszDataDir,
 		const char *				pszRflDir,
@@ -4799,7 +4799,7 @@ public:
 		IF_DbInfo **				ppDbInfo,
 		IF_DbCheckStatus *		pDbCheck);
 
-	FINLINE RCODE FLMAPI dbDup(
+	FINLINE RCODE XFLAPI dbDup(
 		IF_Db *			ifpDb,
 		IF_Db **			ppDb)
 	{
@@ -4809,7 +4809,7 @@ public:
 									FALSE, NULL, NULL, NULL, ppDb));
 	}
 
-	FINLINE RCODE FLMAPI setDynamicMemoryLimit(
+	FINLINE RCODE XFLAPI setDynamicMemoryLimit(
 		FLMUINT					uiCacheAdjustPercent,
 		FLMUINT					uiCacheAdjustMin,
 		FLMUINT					uiCacheAdjustMax,
@@ -4820,7 +4820,7 @@ public:
 						uiCacheAdjustMax, uiCacheAdjustMinToLeave));
 	}
 
-	FINLINE RCODE FLMAPI setHardMemoryLimit(
+	FINLINE RCODE XFLAPI setHardMemoryLimit(
 		FLMUINT					uiPercent,
 		FLMBOOL					bPercentOfAvail,
 		FLMUINT					uiMin,
@@ -4834,7 +4834,7 @@ public:
 
 	// Determine if dyamic cache adjusting is supported.
 
-	FINLINE FLMBOOL FLMAPI getDynamicCacheSupported( void)
+	FINLINE FLMBOOL XFLAPI getDynamicCacheSupported( void)
 	{
 #ifdef FLM_CAN_GET_PHYS_MEM
 		return( TRUE);
@@ -4843,7 +4843,7 @@ public:
 #endif
 	}
 			
-	FINLINE void FLMAPI getCacheInfo(
+	FINLINE void XFLAPI getCacheInfo(
 		XFLM_CACHE_INFO *		pCacheInfo)
 	{
 		gv_XFlmSysData.pGlobalCacheMgr->getCacheInfo( pCacheInfo);
@@ -4851,14 +4851,14 @@ public:
 
 	// Enable/disable cache debugging mode
 
-	void FLMAPI enableCacheDebug(
+	void XFLAPI enableCacheDebug(
 		FLMBOOL		bDebug);
 
-	FLMBOOL FLMAPI cacheDebugEnabled( void);
+	FLMBOOL XFLAPI cacheDebugEnabled( void);
 
 	// Clear cache
 
-	FINLINE RCODE FLMAPI clearCache(
+	FINLINE RCODE XFLAPI clearCache(
 		IF_Db *		pDb)
 	{
 		return( gv_XFlmSysData.pGlobalCacheMgr->clearCache( pDb));
@@ -4867,120 +4867,120 @@ public:
 	// Close all files that have not been used for the specified number of
 	// seconds.
 
-	RCODE FLMAPI closeUnusedFiles(
+	RCODE XFLAPI closeUnusedFiles(
 		FLMUINT		uiSeconds);
 
 	// Start gathering statistics.
 	
-	void FLMAPI startStats( void);
+	void XFLAPI startStats( void);
 
 	// Stop gathering statistics.
 	
-	void FLMAPI stopStats( void);
+	void XFLAPI stopStats( void);
 
 	// Reset statistics.
 	
-	void FLMAPI resetStats( void);
+	void XFLAPI resetStats( void);
 
-	RCODE FLMAPI getStats(
+	RCODE XFLAPI getStats(
 		XFLM_STATS *			pFlmStats);
 
-	void FLMAPI freeStats(
+	void XFLAPI freeStats(
 		XFLM_STATS *			pFlmStats);
 
 	// Set the maximum number of queries to save.
 	
-	void FLMAPI setQuerySaveMax(
+	void XFLAPI setQuerySaveMax(
 		FLMUINT					uiMaxToSave);
 
-	FLMUINT FLMAPI getQuerySaveMax( void);
+	FLMUINT XFLAPI getQuerySaveMax( void);
 
 	// Set temporary directory.
 	
-	RCODE FLMAPI setTempDir(
+	RCODE XFLAPI setTempDir(
 		const char *			pszPath);
 
-	RCODE FLMAPI getTempDir(
+	RCODE XFLAPI getTempDir(
 		char *					pszPath);
 
 	// Maximum seconds between checkpoints.	
 
-	void FLMAPI setCheckpointInterval(
+	void XFLAPI setCheckpointInterval(
 		FLMUINT					uiSeconds);
 
-	FLMUINT FLMAPI getCheckpointInterval( void);
+	FLMUINT XFLAPI getCheckpointInterval( void);
 
 	// Set interval for dynamically adjusting cache limit.
 
-	void FLMAPI setCacheAdjustInterval(
+	void XFLAPI setCacheAdjustInterval(
 		FLMUINT					uiSeconds);
 
-	FLMUINT FLMAPI getCacheAdjustInterval( void);
+	FLMUINT XFLAPI getCacheAdjustInterval( void);
 
 	// Set interval for dynamically cleaning out old cache blocks and records.
 	
-	void FLMAPI setCacheCleanupInterval(
+	void XFLAPI setCacheCleanupInterval(
 		FLMUINT					uiSeconds);
 
-	FLMUINT FLMAPI getCacheCleanupInterval( void);
+	FLMUINT XFLAPI getCacheCleanupInterval( void);
 
 	// Set interval for cleaning up unused structures.
 
-	void FLMAPI setUnusedCleanupInterval(
+	void XFLAPI setUnusedCleanupInterval(
 		FLMUINT					uiSeconds);
 
-	FLMUINT FLMAPI getUnusedCleanupInterval( void);
+	FLMUINT XFLAPI getUnusedCleanupInterval( void);
 
 	// Set maximum time for an item to be unused.
 	
-	void FLMAPI setMaxUnusedTime(
+	void XFLAPI setMaxUnusedTime(
 		FLMUINT					uiSeconds);
 
-	FLMUINT FLMAPI getMaxUnusedTime( void);
+	FLMUINT XFLAPI getMaxUnusedTime( void);
 	
 	// Specify the logger object
 
-	void FLMAPI setLogger(
+	void XFLAPI setLogger(
 		IF_LoggerClient *		pLogger);
 		
 	// Enable or disable use of ESM
 	
-	void FLMAPI enableExtendedServerMemory(
+	void XFLAPI enableExtendedServerMemory(
 		FLMBOOL					bEnable);
 
-	FLMBOOL FLMAPI extendedServerMemoryEnabled( void);
+	FLMBOOL XFLAPI extendedServerMemoryEnabled( void);
 
-	void FLMAPI deactivateOpenDb(
+	void XFLAPI deactivateOpenDb(
 		const char *			pszDbFileName,
 		const char *			pszDataDir);
 
 	// Maximum dirty cache.
 	
-	void FLMAPI setDirtyCacheLimits(
+	void XFLAPI setDirtyCacheLimits(
 		FLMUINT					uiMaxDirty,
 		FLMUINT					uiLowDirty);
 
-	void FLMAPI getDirtyCacheLimits(
+	void XFLAPI getDirtyCacheLimits(
 		FLMUINT *			puiMaxDirty,
 		FLMUINT *			puiLowDirty);
 
-	RCODE FLMAPI getThreadInfo(
+	RCODE XFLAPI getThreadInfo(
 		IF_ThreadInfo **	ppThreadInfo);
 
-	RCODE FLMAPI registerForEvent(
+	RCODE XFLAPI registerForEvent(
 		eEventCategory		eCategory,
 		IF_EventClient *	pEventClient);
 
-	void FLMAPI deregisterForEvent(
+	void XFLAPI deregisterForEvent(
 		eEventCategory		eCategory,
 		IF_EventClient *	pEventClient);
 
-	RCODE FLMAPI getNextMetaphone(
+	RCODE XFLAPI getNextMetaphone(
 		IF_IStream *		pIStream,
 		FLMUINT *			puiMetaphone,
 		FLMUINT *			puiAltMetaphone = NULL);
 
-	RCODE FLMAPI dbCopy(
+	RCODE XFLAPI dbCopy(
 		const char *		pszSrcDbName,
 		const char *		pszSrcDataDir,
 		const char *		pszSrcRflDir,
@@ -4989,13 +4989,13 @@ public:
 		const char *		pszDestRflDir,
 		IF_DbCopyStatus *	ifpStatus);
 
-	RCODE FLMAPI dbRemove(
+	RCODE XFLAPI dbRemove(
 		const char *		pszDbName,
 		const char *		pszDataDir,
 		const char *		pszRflDir,
 		FLMBOOL				bRemoveRflFiles);
 
-	RCODE FLMAPI dbRename(
+	RCODE XFLAPI dbRename(
 		const char *			pszDbName,
 		const char *			pszDataDir,
 		const char *			pszRflDir,
@@ -5003,7 +5003,7 @@ public:
 		FLMBOOL					bOverwriteDestOk,
 		IF_DbRenameStatus *	ifpStatus);
 
-	RCODE FLMAPI dbRestore(
+	RCODE XFLAPI dbRestore(
 		const char *			pszDbPath,
 		const char *			pszDataDir,
 		const char *			pszRflDir,
@@ -5012,90 +5012,90 @@ public:
 		IF_RestoreClient *	pRestoreObj,
 		IF_RestoreStatus *	pRestoreStatus);
 
-	RCODE FLMAPI strCmp(
+	RCODE XFLAPI strCmp(
 		FLMUINT					uiCompFlags,
 		FLMUINT					uiLanguage,
 		FLMUNICODE *			uzStr1,
 		FLMUNICODE *			uzStr2,
 		FLMINT *					piCmp);
 
-	FLMBOOL FLMAPI errorIsFileCorrupt(
+	FLMBOOL XFLAPI errorIsFileCorrupt(
 		RCODE						rc);
 
-	const char * FLMAPI checkErrorToStr(
+	const char * XFLAPI checkErrorToStr(
 		FLMINT					iCheckErrorCode);
 
-	RCODE FLMAPI openBufferIStream(
+	RCODE XFLAPI openBufferIStream(
 		const char *			pucBuffer,
 		FLMUINT					uiLength,
 		IF_PosIStream **		ppIStream);
 
-	RCODE FLMAPI openFileIStream(
+	RCODE XFLAPI openFileIStream(
 		const char *			pszPath,
 		IF_PosIStream **		ppIStream);
 
-	RCODE FLMAPI openMultiFileIStream(
+	RCODE XFLAPI openMultiFileIStream(
 		const char *			pszDirectory,
 		const char *			pszBaseName,
 		IF_IStream **			ppIStream);
 		
-	RCODE FLMAPI openBufferedIStream(
+	RCODE XFLAPI openBufferedIStream(
 		IF_IStream *			pIStream,
 		FLMUINT					uiBufferSize,
 		IF_IStream **			ppIStream);
 
-	RCODE FLMAPI openUncompressingIStream(
+	RCODE XFLAPI openUncompressingIStream(
 		IF_IStream *			pIStream,
 		IF_IStream **			ppIStream);
 		
-	RCODE FLMAPI openFileOStream(
+	RCODE XFLAPI openFileOStream(
 		const char *			pszFileName,
 		FLMBOOL					bTruncateIfExists,
 		IF_OStream **			ppOStream);
 		
-	RCODE FLMAPI openMultiFileOStream(
+	RCODE XFLAPI openMultiFileOStream(
 		const char *			pszDirectory,
 		const char *			pszBaseName,
 		FLMUINT					uiMaxFileSize,
 		FLMBOOL					bOverwrite,
 		IF_OStream **			ppStream);
 		
-	RCODE FLMAPI removeMultiFileStream(
+	RCODE XFLAPI removeMultiFileStream(
 		const char *			pszDirectory,
 		const char *			pszBaseName);
 		
-	RCODE FLMAPI openBufferedOStream(
+	RCODE XFLAPI openBufferedOStream(
 		IF_OStream *			pOStream,
 		FLMUINT					uiBufferSize,
 		IF_OStream **			ppOStream);
 		
-	RCODE FLMAPI openCompressingOStream(
+	RCODE XFLAPI openCompressingOStream(
 		IF_OStream *			pOStream,
 		IF_OStream **			ppOStream);
 		
-	RCODE FLMAPI writeToOStream(
+	RCODE XFLAPI writeToOStream(
 		IF_IStream *			pIStream,
 		IF_OStream *			pOStream);
 
-	RCODE FLMAPI openBase64Encoder(
+	RCODE XFLAPI openBase64Encoder(
 		IF_IStream *			pInputStream,
 		FLMBOOL					bInsertLineBreaks,
 		IF_IStream **			ppEncodedStream);
 
-	RCODE FLMAPI openBase64Decoder(
+	RCODE XFLAPI openBase64Decoder(
 		IF_IStream *			pInputStream,
 		IF_IStream **			ppDecodedStream);
 
-	RCODE FLMAPI createIFDataVector(
+	RCODE XFLAPI createIFDataVector(
 		IF_DataVector **		ifppDV);
 
-	RCODE FLMAPI createIFResultSet(
+	RCODE XFLAPI createIFResultSet(
 		IF_ResultSet **		ppResultSet);
 
-	RCODE FLMAPI createIFQuery(
+	RCODE XFLAPI createIFQuery(
 		IF_Query **				ppQuery);
 	
-	FINLINE void FLMAPI freeMem(
+	FINLINE void XFLAPI freeMem(
 		void **					ppMem)
 	{
 		f_free( ppMem);
@@ -5135,7 +5135,7 @@ public:
 		return( FALSE);
 	}
 
-	RCODE FLMAPI compareUTF8Strings(
+	RCODE XFLAPI compareUTF8Strings(
 		const FLMBYTE *		pucLString,
 		FLMUINT					uiLStrBytes,
 		FLMBOOL					bLeftWild,
@@ -5146,7 +5146,7 @@ public:
 		FLMUINT					uiLanguage,
 		FLMINT *					piResult);
 			
-	RCODE FLMAPI compareUnicodeStrings(
+	RCODE XFLAPI compareUnicodeStrings(
 		const FLMUNICODE *	puzLString,
 		FLMUINT					uiLStrBytes,
 		FLMBOOL					bLeftWild,
@@ -5157,44 +5157,44 @@ public:
 		FLMUINT					uiLanguage,
 		FLMINT *					piResult);
 
-	RCODE FLMAPI utf8IsSubStr(
+	RCODE XFLAPI utf8IsSubStr(
 		const FLMBYTE *		pszString,
 		const FLMBYTE *		pszSubString,
 		FLMUINT					uiCompareRules,
 		FLMUINT					uiLanguage,
 		FLMBOOL *				pbExists);
 	
-	FLMBOOL FLMAPI uniIsUpper(
+	FLMBOOL XFLAPI uniIsUpper(
 		FLMUNICODE				uzChar);
 
-	FLMBOOL FLMAPI uniIsLower(
+	FLMBOOL XFLAPI uniIsLower(
 		FLMUNICODE				uzChar);
 
-	FLMBOOL FLMAPI uniIsAlpha(
+	FLMBOOL XFLAPI uniIsAlpha(
 		FLMUNICODE				uzChar);
 
-	FLMBOOL FLMAPI uniIsDecimalDigit(
+	FLMBOOL XFLAPI uniIsDecimalDigit(
 		FLMUNICODE				uzChar);
 
-	FLMUNICODE FLMAPI uniToLower(
+	FLMUNICODE XFLAPI uniToLower(
 		FLMUNICODE				uzChar);
 
-	RCODE	FLMAPI nextUCS2Char(
+	RCODE	XFLAPI nextUCS2Char(
 		const FLMBYTE **		ppszUTF8,
 		const FLMBYTE *		pszEndOfUTF8String,
 		FLMUNICODE *			puzChar);
 		
-	RCODE FLMAPI numUCS2Chars(
+	RCODE XFLAPI numUCS2Chars(
 		const FLMBYTE *		pszUTF8,
 		FLMUINT *				puiNumChars);
 
-	RCODE FLMAPI waitToClose(
+	RCODE XFLAPI waitToClose(
 		const char *	pszDbPath);
 	
-	RCODE FLMAPI createIFNodeInfo(
+	RCODE XFLAPI createIFNodeInfo(
 		IF_NodeInfo **			ifppNodeInfo);
 		
-	RCODE FLMAPI createIFBTreeInfo(
+	RCODE XFLAPI createIFBTreeInfo(
 		IF_BTreeInfo **		ifppBTreeInfo);
 		
 private:
@@ -5265,10 +5265,10 @@ private:
 		const char *			pszDestRflDir,
 		IF_DbCopyStatus *		ifpStatus);
 
-	static RCODE FLMAPI monitorThrd(
+	static RCODE XFLAPI monitorThrd(
 		IF_Thread *		pThread);
 		
-	static RCODE FLMAPI cacheCleanupThrd(
+	static RCODE XFLAPI cacheCleanupThrd(
 		IF_Thread *		pThread);
 
 	FLMATOMIC					m_refCnt;
@@ -5403,36 +5403,36 @@ public:
 		FLMUINT32		ui32BlkAddr = 0,
 		FLMUINT			uiOffsetIndex = 0);
 
-	FINLINE FLMUINT64 FLMAPI totalSize( void)
+	FINLINE FLMUINT64 XFLAPI totalSize( void)
 	{
 		return( m_uiStreamSize);
 	}
 
-	FINLINE FLMUINT64 FLMAPI remainingSize( void)
+	FINLINE FLMUINT64 XFLAPI remainingSize( void)
 	{
 		return( m_uiStreamSize - (m_uiBufferStartOffset + m_uiBufferOffset));
 	}
 
-	FINLINE RCODE FLMAPI closeStream( void)
+	FINLINE RCODE XFLAPI closeStream( void)
 	{
 		reset();
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI positionTo(
+	RCODE XFLAPI positionTo(
 		FLMUINT64		ui64Position);
 
-	FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+	FINLINE FLMUINT64 XFLAPI getCurrPosition( void)
 	{
 		return( m_uiBufferStartOffset + m_uiBufferOffset);
 	}
 
-	RCODE FLMAPI read(
+	RCODE XFLAPI read(
 		void *			pvBuffer,
 		FLMUINT			uiBytesToRead,
 		FLMUINT *		puiBytesRead);
 
-	FLMINT FLMAPI Release( void);
+	FLMINT XFLAPI Release( void);
 	
 	FINLINE FLMUINT32 getBlkAddr( void)
 	{
@@ -5493,22 +5493,22 @@ public:
 		reset();
 	}
 
-	RCODE FLMAPI openStream(
+	RCODE XFLAPI openStream(
 		const char *		pucBuffer,
 		FLMUINT				uiLength,
 		char **				ppucAllocatedBuffer = NULL);
 
-	FINLINE FLMUINT64 FLMAPI totalSize( void)
+	FINLINE FLMUINT64 XFLAPI totalSize( void)
 	{
 		return( m_pBufferIStream->totalSize());
 	}
 
-	FINLINE FLMUINT64 FLMAPI remainingSize( void)
+	FINLINE FLMUINT64 XFLAPI remainingSize( void)
 	{
 		return( m_pBufferIStream->remainingSize());
 	}
 
-	FINLINE RCODE FLMAPI closeStream( void)
+	FINLINE RCODE XFLAPI closeStream( void)
 	{
 		RCODE		rc = NE_FLM_OK;
 		
@@ -5521,18 +5521,18 @@ public:
 		return( rc);
 	}
 
-	FINLINE RCODE FLMAPI positionTo(
+	FINLINE RCODE XFLAPI positionTo(
 		FLMUINT64		ui64Position)
 	{
 		return( m_pBufferIStream->positionTo( ui64Position));
 	}
 
-	FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+	FINLINE FLMUINT64 XFLAPI getCurrPosition( void)
 	{
 		return( m_pBufferIStream->getCurrPosition());
 	}
 
-	FINLINE RCODE FLMAPI read(
+	FINLINE RCODE XFLAPI read(
 		void *			pvBuffer,
 		FLMUINT			uiBytesToRead,
 		FLMUINT *		puiBytesRead)
@@ -5540,7 +5540,7 @@ public:
 		return( m_pBufferIStream->read( pvBuffer, uiBytesToRead, puiBytesRead));
 	}
 		
-	FINLINE void FLMAPI truncate(
+	FINLINE void XFLAPI truncate(
 		FLMUINT			uiOffset)
 	{
 		m_pBufferIStream->truncateStream( uiOffset);
@@ -5608,9 +5608,9 @@ public:
 		}
 	}
 
-	FLMINT FLMAPI Release( void);
+	FLMINT XFLAPI Release( void);
 
-	RCODE FLMAPI createNode(
+	RCODE XFLAPI createNode(
 		IF_Db *				pDb,
 		eDomNodeType		eNodeType,
 		FLMUINT				uiNameId,
@@ -5618,34 +5618,34 @@ public:
 		IF_DOMNode **		ppNewNode,
 		FLMUINT64 *			pui64NodeId = NULL);
 
-	RCODE FLMAPI createChildElement(
+	RCODE XFLAPI createChildElement(
 		IF_Db *				pDb,
 		FLMUINT				uiChildElementNameId,
 		eNodeInsertLoc		eLocation,
 		IF_DOMNode **		ppNewChildElementNode,
 		FLMUINT64 *			pui64NodeId = NULL);
 		
-	RCODE FLMAPI deleteNode(
+	RCODE XFLAPI deleteNode(
 		IF_Db *				pDb);
 
-	RCODE FLMAPI deleteChildren(
+	RCODE XFLAPI deleteChildren(
 		IF_Db *				pDb,
 		FLMUINT				uiNameId = 0);
 
-	RCODE FLMAPI createAttribute(
+	RCODE XFLAPI createAttribute(
 		IF_Db *				pDb,
 		FLMUINT				uiAttrNameId,
 		IF_DOMNode **		ppAttrNode);
 
-	RCODE FLMAPI getFirstAttribute(
+	RCODE XFLAPI getFirstAttribute(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppAttrNode);
 
-	RCODE FLMAPI getLastAttribute(
+	RCODE XFLAPI getLastAttribute(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppAttrNode);
 
-	FINLINE RCODE FLMAPI getAttribute(
+	FINLINE RCODE XFLAPI getAttribute(
 		IF_Db *				pDb,
 		FLMUINT				uiAttrNameId,
 		IF_DOMNode **		ppAttrNode)
@@ -5653,36 +5653,36 @@ public:
 		return( hasAttribute( pDb, uiAttrNameId, ppAttrNode));
 	}
 
-	RCODE FLMAPI deleteAttribute(
+	RCODE XFLAPI deleteAttribute(
 		IF_Db *				pDb,
 		FLMUINT				uiAttrNameId);
 
-	RCODE FLMAPI hasAttribute(
+	RCODE XFLAPI hasAttribute(
 		IF_Db *				pDb,
 		FLMUINT				uiAttrNameId,
 		IF_DOMNode **		ppAttrNode = NULL);
 
-	RCODE FLMAPI hasAttributes(
+	RCODE XFLAPI hasAttributes(
 		IF_Db *				pDb,
 		FLMBOOL *			pbHasAttrs);
 
-	RCODE FLMAPI hasNextSibling(
+	RCODE XFLAPI hasNextSibling(
 		IF_Db *				pDb,
 		FLMBOOL *			pbHasNextSibling);
 
-	RCODE FLMAPI hasPreviousSibling(
+	RCODE XFLAPI hasPreviousSibling(
 		IF_Db *				pDb,
 		FLMBOOL *			pbHasPreviousSibling);
 
-	RCODE FLMAPI hasChildren(
+	RCODE XFLAPI hasChildren(
 		IF_Db *				pDb,
 		FLMBOOL *			pbHasChildren);
 
-	RCODE FLMAPI isNamespaceDecl(
+	RCODE XFLAPI isNamespaceDecl(
 		IF_Db *				pDb,
 		FLMBOOL *			pbIsNamespaceDecl);
 
-	FINLINE eDomNodeType FLMAPI getNodeType( void)
+	FINLINE eDomNodeType XFLAPI getNodeType( void)
 	{
 		if( m_uiAttrNameId)
 		{
@@ -5697,51 +5697,51 @@ public:
 		return( INVALID_NODE);
 	}
 	
-	RCODE FLMAPI getNodeId(
+	RCODE XFLAPI getNodeId(
 		IF_Db *				pDb,
 		FLMUINT64 *			pui64NodeId);
 
-	RCODE FLMAPI getParentId(
+	RCODE XFLAPI getParentId(
 		IF_Db *			pDb,
 		FLMUINT64 *		pui64ParentId);
 
-	RCODE FLMAPI getDocumentId(
+	RCODE XFLAPI getDocumentId(
 		IF_Db *				pDb,
 		FLMUINT64 *			pui64DocumentId);
 		
-	RCODE FLMAPI getPrevSibId(
+	RCODE XFLAPI getPrevSibId(
 		IF_Db *				pDb,
 		FLMUINT64 *			pui64PrevSibId);
 
-	RCODE FLMAPI getNextSibId(
+	RCODE XFLAPI getNextSibId(
 		IF_Db *				pDb,
 		FLMUINT64 *			pui64NextSibId);
 
-	RCODE FLMAPI getFirstChildId(
+	RCODE XFLAPI getFirstChildId(
 		IF_Db *				pDb,
 		FLMUINT64 *			pui64FirstChildId);
 
-	RCODE FLMAPI getLastChildId(
+	RCODE XFLAPI getLastChildId(
 		IF_Db *				pDb,
 		FLMUINT64 *			pui64LastChildId);
 
-	RCODE FLMAPI getNameId(
+	RCODE XFLAPI getNameId(
 		IF_Db *				pDb,
 		FLMUINT *			puiNameId);
 
-	virtual RCODE FLMAPI getEncDefId(
+	virtual RCODE XFLAPI getEncDefId(
 		IF_Db *					pDb,
 		FLMUINT *				puiEncDefId);
 
-	RCODE FLMAPI getDataType(
+	RCODE XFLAPI getDataType(
 		IF_Db *				pDb,
 		FLMUINT *			puiDataType);
 
-	RCODE FLMAPI getDataLength(
+	RCODE XFLAPI getDataLength(
 		IF_Db *			pDb,
 		FLMUINT *		puiLength);
 
-	FINLINE RCODE FLMAPI getUINT32(
+	FINLINE RCODE XFLAPI getUINT32(
 		IF_Db *			pDb,
 		FLMUINT32 *		pui32Value)
 	{
@@ -5756,7 +5756,7 @@ public:
 		return( convertToUINT32( ui64Value, FALSE, pui32Value));
 	}
 
-	FINLINE RCODE FLMAPI getUINT(
+	FINLINE RCODE XFLAPI getUINT(
 		IF_Db *			pDb,
 		FLMUINT *		puiValue)
 	{
@@ -5771,14 +5771,14 @@ public:
 		return( convertToUINT( ui64Value, FALSE, puiValue));
 	}
 
-	FINLINE RCODE FLMAPI getUINT64(
+	FINLINE RCODE XFLAPI getUINT64(
 		IF_Db *			pDb,
 		FLMUINT64 *		pui64Value)
 	{
 		return( getNumber64( (F_Db *)pDb, pui64Value, NULL));
 	}
 
-	FINLINE RCODE FLMAPI getINT32(
+	FINLINE RCODE XFLAPI getINT32(
 		IF_Db *			pDb,
 		FLMINT32 *		pi32Value)
 	{
@@ -5794,7 +5794,7 @@ public:
 		return( convertToINT32( ui64Value, bNeg, pi32Value));
 	}
 
-	FINLINE RCODE FLMAPI getINT(
+	FINLINE RCODE XFLAPI getINT(
 		IF_Db *				pDb,
 		FLMINT *				piValue)
 	{
@@ -5810,7 +5810,7 @@ public:
 		return( convertToINT( ui64Value, bNeg, piValue));
 	}
 
-	FINLINE RCODE FLMAPI getINT64(
+	FINLINE RCODE XFLAPI getINT64(
 		IF_Db *				pDb,
 		FLMINT64 *			pi64Value)
 	{
@@ -5826,18 +5826,18 @@ public:
 		return( convertToINT64( ui64Value, bNeg, pi64Value));
 	}
 
-	RCODE FLMAPI getMetaValue(
+	RCODE XFLAPI getMetaValue(
 		IF_Db *					pDb,
 		FLMUINT64 *				pui64Value);
 
-	FINLINE RCODE FLMAPI getUnicodeChars(
+	FINLINE RCODE XFLAPI getUnicodeChars(
 		IF_Db *				pDb,
 		FLMUINT *			puiNumChars)
 	{
 		return( getUnicode( pDb, NULL, 0, 0, FLM_MAX_UINT, puiNumChars));
 	}
 
-	RCODE FLMAPI getUnicode(
+	RCODE XFLAPI getUnicode(
 		IF_Db *				pDb,
 		FLMUNICODE *		puzValueBuffer,
 		FLMUINT				uiBufferSize,
@@ -5846,15 +5846,15 @@ public:
 		FLMUINT *			puiCharsReturned = NULL,
 		FLMUINT *			puiBufferBytesUsed = NULL);
 
-	RCODE FLMAPI getUnicode(
+	RCODE XFLAPI getUnicode(
 		IF_Db *				pDb,
 		FLMUNICODE **		ppuzUnicodeValue);
 
-	RCODE FLMAPI getUnicode(
+	RCODE XFLAPI getUnicode(
 		IF_Db *				pDb,
 		F_DynaBuf *			pDynaBuf);
 
-	RCODE FLMAPI getUTF8(
+	RCODE XFLAPI getUTF8(
 		IF_Db *				pDb,
 		FLMBYTE *			pszValueBuffer,
 		FLMUINT				uiBufferSize,
@@ -5863,26 +5863,26 @@ public:
 		FLMUINT *			puiCharsReturned = NULL,
 		FLMUINT *			puiBufferBytesUsed = NULL);
 
-	RCODE FLMAPI getUTF8(
+	RCODE XFLAPI getUTF8(
 		IF_Db *				pDb,
 		FLMBYTE **			ppszUTF8Value);
 		
-	RCODE FLMAPI getUTF8(
+	RCODE XFLAPI getUTF8(
 		IF_Db *				pDb,
 		F_DynaBuf *			pDynaBuf);
 
-	RCODE FLMAPI getBinary(
+	RCODE XFLAPI getBinary(
 		IF_Db *				pDb,
 		void *				pvValue,
 		FLMUINT				uiByteOffset,
 		FLMUINT				uiBytesRequested,
 		FLMUINT *			puiBytesReturned);
 
-	RCODE FLMAPI getBinary(
+	RCODE XFLAPI getBinary(
 		IF_Db *				pDb,
 		F_DynaBuf *			pBuffer);
 
-	FINLINE RCODE FLMAPI getAttributeValueUINT32(
+	FINLINE RCODE XFLAPI getAttributeValueUINT32(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUINT32 *				pui32Num)
@@ -5900,7 +5900,7 @@ public:
 		return( convertToUINT32( ui64Num, bNeg, pui32Num));
 	}
 
-	FINLINE RCODE FLMAPI getAttributeValueUINT32(
+	FINLINE RCODE XFLAPI getAttributeValueUINT32(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUINT32 *				pui32Num,
@@ -5923,7 +5923,7 @@ public:
 		return( rc);
 	}
 			
-	FINLINE RCODE FLMAPI getAttributeValueUINT(
+	FINLINE RCODE XFLAPI getAttributeValueUINT(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUINT *				puiNum)
@@ -5941,7 +5941,7 @@ public:
 		return( convertToUINT( ui64Num, bNeg, puiNum));
 	}
 
-	FINLINE RCODE FLMAPI getAttributeValueUINT(
+	FINLINE RCODE XFLAPI getAttributeValueUINT(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUINT *				puiNum,
@@ -5964,7 +5964,7 @@ public:
 		return( rc);
 	}
 
-	FINLINE RCODE FLMAPI getAttributeValueUINT64(
+	FINLINE RCODE XFLAPI getAttributeValueUINT64(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUINT64 *				pui64Num)
@@ -5982,7 +5982,7 @@ public:
 		return( convertToUINT64( ui64Num, bNeg, pui64Num));
 	}
 
-	FINLINE RCODE FLMAPI getAttributeValueUINT64(
+	FINLINE RCODE XFLAPI getAttributeValueUINT64(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUINT64 *				pui64Num,
@@ -6005,7 +6005,7 @@ public:
 		return( rc);
 	}
 
-	FINLINE RCODE FLMAPI getAttributeValueINT(
+	FINLINE RCODE XFLAPI getAttributeValueINT(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMINT *					piNum)
@@ -6023,7 +6023,7 @@ public:
 		return( convertToINT( ui64Num, bNeg, piNum));
 	}
 
-	FINLINE RCODE FLMAPI getAttributeValueINT(
+	FINLINE RCODE XFLAPI getAttributeValueINT(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMINT *					piNum,
@@ -6046,7 +6046,7 @@ public:
 		return( rc);
 	}
 	
-	FINLINE RCODE FLMAPI getAttributeValueINT64(
+	FINLINE RCODE XFLAPI getAttributeValueINT64(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMINT64 *				pi64Num)
@@ -6064,7 +6064,7 @@ public:
 		return( convertToINT64( ui64Num, bNeg, pi64Num));
 	}
 
-	FINLINE RCODE FLMAPI getAttributeValueINT64(
+	FINLINE RCODE XFLAPI getAttributeValueINT64(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMINT64 *				pi64Num,
@@ -6087,7 +6087,7 @@ public:
 		return( rc);
 	}
 	
-	FINLINE RCODE FLMAPI getAttributeValueUnicode(
+	FINLINE RCODE XFLAPI getAttributeValueUnicode(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUNICODE *			puzValueBuffer,
@@ -6099,17 +6099,17 @@ public:
 			puzValueBuffer, uiBufferSize, puiCharsReturned, puiBufferBytesUsed));
 	}
 
-	RCODE FLMAPI getAttributeValueUnicode(
+	RCODE XFLAPI getAttributeValueUnicode(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUNICODE **			ppuzValueBuffer);
 
-	RCODE FLMAPI getAttributeValueUnicode(
+	RCODE XFLAPI getAttributeValueUnicode(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		F_DynaBuf *				pDynaBuf);
 		
-	RCODE FLMAPI getAttributeValueUTF8(
+	RCODE XFLAPI getAttributeValueUTF8(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMBYTE *				pucValueBuffer,
@@ -6121,29 +6121,29 @@ public:
 			pucValueBuffer, uiBufferSize, puiCharsReturned, puiBufferBytesUsed));
 	}
 
-	RCODE FLMAPI getAttributeValueUTF8(
+	RCODE XFLAPI getAttributeValueUTF8(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrNameId,
 		FLMBYTE **				ppszValueBuffer);
 		
-	RCODE FLMAPI getAttributeValueUTF8(
+	RCODE XFLAPI getAttributeValueUTF8(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		F_DynaBuf *				pDynaBuf);
 		
-	RCODE FLMAPI getAttributeValueBinary(
+	RCODE XFLAPI getAttributeValueBinary(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		void *					pvValueBuffer,
 		FLMUINT					uiBufferSize,
 		FLMUINT *				puiValueLength);
 
-	RCODE FLMAPI getAttributeValueBinary(
+	RCODE XFLAPI getAttributeValueBinary(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		F_DynaBuf *				pDynaBuf);
 		
-	FINLINE RCODE FLMAPI setUINT(
+	FINLINE RCODE XFLAPI setUINT(
 		IF_Db *				pDb,
 		FLMUINT				uiValue,
 		FLMUINT				uiEncDefId = 0)
@@ -6151,7 +6151,7 @@ public:
 		return( setNumber64( pDb, 0, uiValue, uiEncDefId));
 	}
 
-	FINLINE RCODE FLMAPI setUINT64(
+	FINLINE RCODE XFLAPI setUINT64(
 		IF_Db *				pDb,
 		FLMUINT64			ui64Value,
 		FLMUINT				uiEncDefId = 0)
@@ -6159,7 +6159,7 @@ public:
 		return( setNumber64( pDb, 0, ui64Value, uiEncDefId));
 	}
 
-	FINLINE RCODE FLMAPI setINT(
+	FINLINE RCODE XFLAPI setINT(
 		IF_Db *				pDb,
 		FLMINT				iValue,
 		FLMUINT				uiEncDefId = 0)
@@ -6167,7 +6167,7 @@ public:
 		return( setNumber64( pDb, iValue, 0, uiEncDefId));
 	}
 
-	FINLINE RCODE FLMAPI setINT64(
+	FINLINE RCODE XFLAPI setINT64(
 		IF_Db *				pDb,
 		FLMINT64				i64Value,
 		FLMUINT				uiEncDefId = 0)
@@ -6175,11 +6175,11 @@ public:
 		return( setNumber64( pDb, i64Value, 0, uiEncDefId));
 	}
 
-	RCODE FLMAPI setMetaValue(
+	RCODE XFLAPI setMetaValue(
 		IF_Db *					pDb,
 		FLMUINT64				ui64Value);
 
-	FINLINE RCODE FLMAPI setUnicode(
+	FINLINE RCODE XFLAPI setUnicode(
 		IF_Db *					pDb,
 		const FLMUNICODE *	puzValue,
 		FLMUINT					uiValueLength = 0,
@@ -6200,7 +6200,7 @@ public:
 		}
 	}
 
-	FINLINE RCODE FLMAPI setUTF8(
+	FINLINE RCODE XFLAPI setUTF8(
 		IF_Db *				pDb,
 		const FLMBYTE *	pszValue,
 		FLMUINT				uiValueLength = 0,
@@ -6221,7 +6221,7 @@ public:
 		}
 	}
 
-	FINLINE RCODE FLMAPI setBinary(
+	FINLINE RCODE XFLAPI setBinary(
 		IF_Db *			pDb,
 		const void *	pvValue,
 		FLMUINT			uiValueLength,
@@ -6242,7 +6242,7 @@ public:
 		}
 	}
 
-	FINLINE RCODE FLMAPI setAttributeValueUINT(
+	FINLINE RCODE XFLAPI setAttributeValueUINT(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUINT					uiValue,
@@ -6252,7 +6252,7 @@ public:
 			0, uiValue, uiEncDefId));
 	}
 
-	FINLINE RCODE FLMAPI setAttributeValueUINT64(
+	FINLINE RCODE XFLAPI setAttributeValueUINT64(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMUINT64				ui64Value,
@@ -6262,7 +6262,7 @@ public:
 			0, ui64Value, uiEncDefId));
 	}
 
-	FINLINE RCODE FLMAPI setAttributeValueINT(
+	FINLINE RCODE XFLAPI setAttributeValueINT(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMINT					iValue,
@@ -6272,7 +6272,7 @@ public:
 			iValue, 0, uiEncDefId));
 	}
 
-	FINLINE RCODE FLMAPI setAttributeValueINT64(
+	FINLINE RCODE XFLAPI setAttributeValueINT64(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		FLMINT64					i64Value,
@@ -6282,91 +6282,91 @@ public:
 			i64Value, 0, uiEncDefId));
 	}
 
-	RCODE FLMAPI setAttributeValueUnicode(
+	RCODE XFLAPI setAttributeValueUnicode(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		const FLMUNICODE *	puzValue,
 		FLMUINT					uiEncDefId = 0);
 
-	RCODE FLMAPI setAttributeValueUTF8(
+	RCODE XFLAPI setAttributeValueUTF8(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		const FLMBYTE *		pszValue,
 		FLMUINT					uiLength,
 		FLMUINT					uiEncDefId = 0);
 
-	RCODE FLMAPI setAttributeValueBinary(
+	RCODE XFLAPI setAttributeValueBinary(
 		IF_Db *					pDb,
 		FLMUINT					uiAttrName,
 		const void *			pvValue,
 		FLMUINT					uiLength,
 		FLMUINT					uiEncDefId = 0);
 
-	RCODE FLMAPI getDocumentNode(
+	RCODE XFLAPI getDocumentNode(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppDocument);
 		
-	RCODE FLMAPI getNextDocument(
+	RCODE XFLAPI getNextDocument(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppNextDocument);
 
-	RCODE FLMAPI getPreviousDocument(
+	RCODE XFLAPI getPreviousDocument(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppPrevDocument);
 
-	RCODE FLMAPI getParentNode(
+	RCODE XFLAPI getParentNode(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppParent);
 
-	RCODE FLMAPI getFirstChild(
+	RCODE XFLAPI getFirstChild(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppFirstChild);
 
-	RCODE FLMAPI getLastChild(
+	RCODE XFLAPI getLastChild(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppLastChild);
 
-	RCODE FLMAPI getNextSibling(
+	RCODE XFLAPI getNextSibling(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppNextSibling);
 
-	RCODE FLMAPI getPreviousSibling(
+	RCODE XFLAPI getPreviousSibling(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppPrevSibling);
 
-	RCODE FLMAPI getChild(
+	RCODE XFLAPI getChild(
 		IF_Db *				pDb,
 		eDomNodeType		eNodeType,
 		IF_DOMNode **		ppChild);
 
-	RCODE FLMAPI getChildElement(
+	RCODE XFLAPI getChildElement(
 		IF_Db *				pDb,
 		FLMUINT				uiElementNameId,
 		IF_DOMNode **		ppChild,
 		FLMUINT				uiFlags = 0);
 
-	RCODE FLMAPI getSiblingElement(
+	RCODE XFLAPI getSiblingElement(
 		IF_Db *				pDb,
 		FLMUINT				uiElementNameId,
 		FLMBOOL				bNext,
 		IF_DOMNode **		ppSibling);
 
-	RCODE FLMAPI getAncestorElement(
+	RCODE XFLAPI getAncestorElement(
 		IF_Db *				pDb,
 		FLMUINT				uiElementNameId,
 		IF_DOMNode **		ppAncestor);
 		
-	RCODE FLMAPI getDescendantElement(
+	RCODE XFLAPI getDescendantElement(
 		IF_Db *				pDb,
 		FLMUINT				uiElementNameId,
 		IF_DOMNode **		ppDescendant);
 
-	RCODE FLMAPI insertBefore(
+	RCODE XFLAPI insertBefore(
 		IF_Db *				pDb,
 		IF_DOMNode *		pNewChild,
 		IF_DOMNode *		pRefChild);
 
-	FINLINE RCODE FLMAPI getPrefix(
+	FINLINE RCODE XFLAPI getPrefix(
 		IF_Db *					pDb,
 		FLMUNICODE *			puzPrefixBuffer,
 		FLMUINT					uiBufferSize,
@@ -6376,7 +6376,7 @@ public:
 			puiCharsReturned));
 	}
 
-	FINLINE RCODE FLMAPI getPrefix(
+	FINLINE RCODE XFLAPI getPrefix(
 		IF_Db *					pDb,
 		char *					pszPrefixBuffer,
 		FLMUINT					uiBufferSize,
@@ -6386,29 +6386,29 @@ public:
 			puiCharsReturned));
 	}
 
-	RCODE FLMAPI getPrefixId(
+	RCODE XFLAPI getPrefixId(
 		IF_Db *					pDb,
 		FLMUINT *				puiPrefixId);
 
-	FINLINE RCODE FLMAPI setPrefix(
+	FINLINE RCODE XFLAPI setPrefix(
 		IF_Db *					pDb,
 		const FLMUNICODE *	puzPrefix)
 	{
 		return setPrefix( TRUE, pDb, (void *)puzPrefix);
 	}
 
-	FINLINE RCODE FLMAPI setPrefix(
+	FINLINE RCODE XFLAPI setPrefix(
 		IF_Db *					pDb,
 		const char *			pszPrefix)
 	{
 		return setPrefix( FALSE, pDb, (void *)pszPrefix);
 	}
 
-	RCODE FLMAPI setPrefixId(
+	RCODE XFLAPI setPrefixId(
 		IF_Db *					pDb,
 		FLMUINT					uiPrefixId);
 
-	FINLINE RCODE FLMAPI getNamespaceURI(
+	FINLINE RCODE XFLAPI getNamespaceURI(
 		IF_Db *					pDb,
 		FLMUNICODE *			puzNamespaceURIBuffer,
 		FLMUINT					uiBufferSize,
@@ -6418,7 +6418,7 @@ public:
 			(void *)puzNamespaceURIBuffer, uiBufferSize, puiCharsReturned);
 	}
 
-	FINLINE RCODE FLMAPI getNamespaceURI(
+	FINLINE RCODE XFLAPI getNamespaceURI(
 		IF_Db *				pDb,
 		char *				pszNamespaceURIBuffer,
 		FLMUINT				uiBufferSize,
@@ -6428,7 +6428,7 @@ public:
 			(void *)pszNamespaceURIBuffer, uiBufferSize, puiCharsReturned);
 	}
 
-	FINLINE RCODE FLMAPI getLocalName(
+	FINLINE RCODE XFLAPI getLocalName(
 		IF_Db *				pDb,
 		FLMUNICODE *		puzLocalNameBuffer,
 		FLMUINT				uiBufferSize,
@@ -6438,7 +6438,7 @@ public:
 			uiBufferSize, puiCharsReturned));
 	}
 
-	FINLINE RCODE FLMAPI getLocalName(
+	FINLINE RCODE XFLAPI getLocalName(
 		IF_Db *				pDb,
 		char *				pszLocalNameBuffer,
 		FLMUINT				uiBufferSize,
@@ -6448,19 +6448,19 @@ public:
 			puiCharsReturned));
 	}
 
-	RCODE FLMAPI getQualifiedName(
+	RCODE XFLAPI getQualifiedName(
 		IF_Db *				pDb,
 		FLMUNICODE *		puzQualifiedNameBuffer,
 		FLMUINT				uiBufferSize,
 		FLMUINT *			puiCharsReturned);
 
-	RCODE FLMAPI getQualifiedName(
+	RCODE XFLAPI getQualifiedName(
 		IF_Db *				pDb,
 		char *				pszQualifiedNameBuffer,
 		FLMUINT				uiBufferSize,
 		FLMUINT *			puiCharsReturned);
 
-	FINLINE RCODE FLMAPI getCollection(
+	FINLINE RCODE XFLAPI getCollection(
 		IF_Db *,				// pDb,
 		FLMUINT *			puiCollection)
 	{
@@ -6468,24 +6468,24 @@ public:
 		return( NE_XFLM_OK);
 	}
 
-	RCODE FLMAPI createAnnotation(
+	RCODE XFLAPI createAnnotation(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppAnnotation,
 		FLMUINT64 *			pui64NodeId = NULL);
 
-	RCODE FLMAPI getAnnotation(
+	RCODE XFLAPI getAnnotation(
 		IF_Db *				pDb,
 		IF_DOMNode **		ppAnnotation);
 
-	RCODE FLMAPI getAnnotationId(
+	RCODE XFLAPI getAnnotationId(
 		IF_Db *				pDb,
 		FLMUINT64 *			pui64AnnotationId);
 		
-	RCODE FLMAPI hasAnnotation(
+	RCODE XFLAPI hasAnnotation(
 		IF_Db *				pDb,
 		FLMBOOL *			pbHasAnnotation);
 		
-	FINLINE RCODE FLMAPI getIStream(
+	FINLINE RCODE XFLAPI getIStream(
 		IF_Db *				pDb,
 		IF_PosIStream **	ppIStream,
 		FLMUINT *			puiDataType = NULL,
@@ -6495,7 +6495,7 @@ public:
 			puiDataType, puiDataLength));
 	}
 
-	FINLINE RCODE FLMAPI getTextIStream(
+	FINLINE RCODE XFLAPI getTextIStream(
 		IF_Db *				pDb,
 		IF_PosIStream **	ppIStream,
 		FLMUINT *			puiNumChars = NULL)
@@ -6503,14 +6503,14 @@ public:
 		return( getTextIStream( (F_Db *)pDb, NULL, ppIStream, puiNumChars));
 	}
 
-	FLMUINT FLMAPI compareNode(
+	FLMUINT XFLAPI compareNode(
 		IF_DOMNode *			pNode,
 		IF_Db *					pDb1,
 		IF_Db *					pDb2,
 		char *					pszErrBuff,
 		FLMUINT					uiErrBuffLen);
 		
-	RCODE FLMAPI isDataLocalToNode(
+	RCODE XFLAPI isDataLocalToNode(
 		IF_Db *					pDb,
 		FLMBOOL *				pbDataIsLocal);
 		
@@ -6526,7 +6526,7 @@ public:
 		return( FALSE);
 	}
 	
-	RCODE FLMAPI setTextFastPath(
+	RCODE XFLAPI setTextFastPath(
 		F_Db *				pDb,
 		const void *		pvValue,
 		FLMUINT				uiNumBytesInBuffer,
@@ -8040,32 +8040,32 @@ public:
 		m_uiNumCollections = 0;
 	}
 	
-	FINLINE FLMUINT FLMAPI getNumCollections( void)
+	FINLINE FLMUINT XFLAPI getNumCollections( void)
 	{
 		return( m_uiNumCollections);
 	}
 
-	FINLINE FLMUINT FLMAPI getNumIndexes( void)
+	FINLINE FLMUINT XFLAPI getNumIndexes( void)
 	{
 		return( m_uiNumIndexes);
 	}
 
-	FINLINE FLMUINT FLMAPI getNumLogicalFiles( void)
+	FINLINE FLMUINT XFLAPI getNumLogicalFiles( void)
 	{
 		return( m_uiNumLogicalFiles);
 	}
 
-	FINLINE FLMUINT64 FLMAPI getFileSize( void)
+	FINLINE FLMUINT64 XFLAPI getFileSize( void)
 	{
 		return( m_ui64FileSize);
 	}
 
-	FINLINE XFLM_DB_HDR * FLMAPI getDbHdr( void)
+	FINLINE XFLM_DB_HDR * XFLAPI getDbHdr( void)
 	{
 		return( &m_dbHdr);
 	}
 
-	FINLINE void FLMAPI getAvailBlockStats(
+	FINLINE void XFLAPI getAvailBlockStats(
 		FLMUINT64 *		pui64BytesUsed,
 		FLMUINT *		puiBlockCount,
 		FLMINT32 *		pi32LastError,
@@ -8077,7 +8077,7 @@ public:
 		*puiNumErrors = m_AvailBlocks.uiNumErrors;
 	}
 
-	FINLINE void FLMAPI getLFHBlockStats(
+	FINLINE void XFLAPI getLFHBlockStats(
 		FLMUINT64 *		pui64BytesUsed,
 		FLMUINT *		puiBlockCount,
 		FLMINT32 *		pi32LastError,
@@ -8089,14 +8089,14 @@ public:
 		*puiNumErrors = m_LFHBlocks.uiNumErrors;
 	}
 
-	void FLMAPI getBTreeInfo(
+	void XFLAPI getBTreeInfo(
 		FLMUINT			uiNthLogicalFile,
 		FLMUINT *		puiLfNum,
 		eLFileType *	peLfType,
 		FLMUINT *		puiRootBlkAddress,
 		FLMUINT *		puiNumLevels);
 
-	void FLMAPI getBTreeBlockStats(
+	void XFLAPI getBTreeBlockStats(
 		FLMUINT			uiNthLogicalFile,
 		FLMUINT			uiLevel,
 		FLMUINT64 *		pui64KeyCount,
@@ -8461,7 +8461,7 @@ FINLINE RCODE F_NodeCacheMgr::makeWriteCopy(
 /****************************************************************************
 Desc:
 *****************************************************************************/
-class FLMEXP F_SuperFileClient : public IF_SuperFileClient
+class XFLEXP F_SuperFileClient : public IF_SuperFileClient
 {
 public:
 
@@ -8474,21 +8474,21 @@ public:
 		const char *			pszDataDir,
 		FLMUINT					uiMaxFileSize);
 	
-	FLMUINT FLMAPI getFileNumber(
+	FLMUINT XFLAPI getFileNumber(
 		FLMUINT					uiBlockAddr);
 		
-	FLMUINT FLMAPI getFileOffset(
+	FLMUINT XFLAPI getFileOffset(
 		FLMUINT					uiBlockAddr);
 		
-	FLMUINT FLMAPI getBlockAddress(
+	FLMUINT XFLAPI getBlockAddress(
 		FLMUINT					uiFileNumber,
 		FLMUINT					uiFileOffset);
 
-	RCODE FLMAPI getFilePath(
+	RCODE XFLAPI getFilePath(
 		FLMUINT					uiFileNumber,
 		char *					pszPath);
 		
-	FLMUINT64 FLMAPI getMaxFileSize( void);
+	FLMUINT64 XFLAPI getMaxFileSize( void);
 		
 	static void bldSuperFileExtension(
 		FLMUINT					uiFileNum,

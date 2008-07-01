@@ -452,7 +452,7 @@ F_ArgSet::~F_ArgSet()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_ArgSet::setup(
+RCODE FTKAPI F_ArgSet::setup(
 	IF_PrintfClient *						pPrintfClient)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -2036,7 +2036,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_ArgSet::argIsPresent( 
+FLMBOOL FTKAPI F_ArgSet::argIsPresent( 
 	const char *				pszIdentifier)
 {
 	return( getArg( pszIdentifier)->isPresent());
@@ -2045,7 +2045,7 @@ FLMBOOL FLMAPI F_ArgSet::argIsPresent(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_ArgSet::getValueCount( 
+FLMUINT FTKAPI F_ArgSet::getValueCount( 
 	const char *				pszIdentifier)
 {
 	return( getArg( pszIdentifier)->getValueCount());
@@ -2054,7 +2054,7 @@ FLMUINT FLMAPI F_ArgSet::getValueCount(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_ArgSet::getUINT( 
+FLMUINT FTKAPI F_ArgSet::getUINT( 
 	const char *				pszIdentifier,
 	FLMUINT						uiIndex)
 {
@@ -2064,7 +2064,7 @@ FLMUINT FLMAPI F_ArgSet::getUINT(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_ArgSet::getINT( 
+FLMINT FTKAPI F_ArgSet::getINT( 
 	const char *				pszIdentifier,
 	FLMUINT						uiIndex)
 {
@@ -2074,7 +2074,7 @@ FLMINT FLMAPI F_ArgSet::getINT(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_ArgSet::getBOOL(
+FLMBOOL FTKAPI F_ArgSet::getBOOL(
 	const char *				pszIdentifier,
 	FLMUINT						uiIndex)
 {
@@ -2084,7 +2084,7 @@ FLMBOOL FLMAPI F_ArgSet::getBOOL(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-const char * FLMAPI F_ArgSet::getString(
+const char * FTKAPI F_ArgSet::getString(
 	const char *			pszIdentifier,
 	FLMUINT					uiIndex)
 {
@@ -2094,7 +2094,7 @@ const char * FLMAPI F_ArgSet::getString(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_ArgSet::getString( 
+void FTKAPI F_ArgSet::getString( 
 	const char *			pszIdentifier,
 	char *					pszDestination,
 	FLMUINT					uiDestinationBufferSize,

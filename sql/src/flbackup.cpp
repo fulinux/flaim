@@ -86,10 +86,10 @@ private:
 
 	RCODE _setup( void);
 
-	static RCODE FLMAPI readThread(
+	static RCODE SQFAPI readThread(
 		IF_Thread *			pThread);
 
-	static RCODE FLMAPI writeThread(
+	static RCODE SQFAPI writeThread(
 		IF_Thread *			pThread);
 
 	// Data
@@ -2495,7 +2495,7 @@ Exit:
 /****************************************************************************
 Desc: This thread writes data in the background
 ****************************************************************************/
-RCODE FLMAPI F_BackerStream::writeThread(
+RCODE SQFAPI F_BackerStream::writeThread(
 	IF_Thread *			pThread)
 {
 	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();

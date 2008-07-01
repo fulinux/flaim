@@ -326,7 +326,7 @@ Exit:
 /****************************************************************************
 Desc:	Close a file
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::closeFile( void)
+RCODE FTKAPI F_FileHdl::closeFile( void)
 {
 	if( m_bFlushRequired)
 	{
@@ -366,7 +366,7 @@ RCODE FLMAPI F_FileHdl::closeFile( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::flush( void)
+RCODE FTKAPI F_FileHdl::flush( void)
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -756,7 +756,7 @@ Exit:
 /****************************************************************************
 Desc:	Return the size of the file
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::size(
+RCODE FTKAPI F_FileHdl::size(
 	FLMUINT64 *		pui64Size)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -778,7 +778,7 @@ Exit:
 /****************************************************************************
 Desc: Truncate the file to the indicated size
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::truncateFile(
+RCODE FTKAPI F_FileHdl::truncateFile(
 	FLMUINT64			ui64NewSize)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -1004,7 +1004,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::lock( void)
+RCODE FTKAPI F_FileHdl::lock( void)
 {
 	RCODE				rc = NE_FLM_OK;
 
@@ -1022,7 +1022,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::unlock( void)
+RCODE FTKAPI F_FileHdl::unlock( void)
 {
 	RCODE				rc = NE_FLM_OK;
 
@@ -1040,7 +1040,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_yieldCPU( void)
+void FTKAPI f_yieldCPU( void)
 {
 	SleepEx( 0, true);
 }
@@ -1048,7 +1048,7 @@ void FLMAPI f_yieldCPU( void)
 /**********************************************************************
 Desc:
 **********************************************************************/
-RCODE FLMAPI f_chdir(
+RCODE FTKAPI f_chdir(
 	const char *		pszDir)
 {
 	RCODE		rc = NE_FLM_OK;
@@ -1067,7 +1067,7 @@ Exit:
 /**********************************************************************
 Desc:
 **********************************************************************/
-RCODE FLMAPI f_getcwd(
+RCODE FTKAPI f_getcwd(
 	char *			pszDir)
 {
 	RCODE		rc = NE_FLM_OK;

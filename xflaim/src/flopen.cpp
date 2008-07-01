@@ -30,7 +30,7 @@
 FSTATIC void flmFreeCPInfo(
 	CP_INFO **	ppCPInfoRV);
 
-FSTATIC RCODE FLMAPI flmCPThread(
+FSTATIC RCODE XFLAPI flmCPThread(
 	IF_Thread *		pThread);
 	
 /***************************************************************************
@@ -1854,7 +1854,7 @@ Desc: This routine functions as a thread.  It monitors open files and
 		frees up files which have been closed longer than the maximum
 		close time.
 ****************************************************************************/
-FSTATIC RCODE FLMAPI flmCPThread(
+FSTATIC RCODE XFLAPI flmCPThread(
 	IF_Thread *		pThread)
 {
 	CP_INFO *			pCPInfo = (CP_INFO *)pThread->getParm1();

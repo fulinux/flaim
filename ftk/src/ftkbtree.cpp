@@ -271,23 +271,23 @@ public:
 	RCODE setup(
 		FLMUINT					uiBlockSize);
 	
-	FLMUINT FLMAPI getBlockSize( void);
+	FLMUINT FTKAPI getBlockSize( void);
 	
-	RCODE FLMAPI getBlock(
+	RCODE FTKAPI getBlock(
 		FLMUINT32				ui32BlockAddr,
 		IF_Block **				ppBlock,
 		FLMBYTE **				ppucBlock);
 		
-	RCODE FLMAPI createBlock(
+	RCODE FTKAPI createBlock(
 		IF_Block **				ppBlock,
 		FLMBYTE **				ppucBlock,
 		FLMUINT32 *				pui32BlockAddr);
 	
-	RCODE FLMAPI freeBlock(
+	RCODE FTKAPI freeBlock(
 		IF_Block **				ppBlock,
 		FLMBYTE **				ppucBlock);
 	
-	RCODE FLMAPI prepareForUpdate(
+	RCODE FTKAPI prepareForUpdate(
 		IF_Block **				ppBlock,
 		FLMBYTE **				ppucBlock);
 		
@@ -313,34 +313,34 @@ public:
 	
 	virtual ~F_BTree( void);
 
-	RCODE FLMAPI btCreate(
+	RCODE FTKAPI btCreate(
 		FLMUINT16					ui16BtreeId,
 		FLMBOOL						bCounts,
 		FLMBOOL						bData,
 		FLMUINT32 *					pui32RootBlockAddr,
 		IF_ResultSetCompare *	pCompare = NULL);
 
-	RCODE FLMAPI btOpen(
+	RCODE FTKAPI btOpen(
 		FLMUINT32					ui32RootBlockAddr,
 		FLMBOOL						bCounts,
 		FLMBOOL						bData,
 		IF_ResultSetCompare *	pCompare = NULL);
 
-	void FLMAPI btClose( void);
+	void FTKAPI btClose( void);
 
-	RCODE FLMAPI btDeleteTree(
+	RCODE FTKAPI btDeleteTree(
 		IF_DeleteStatus *			ifpDeleteStatus);
 
-	RCODE FLMAPI btGetBlockChains(
+	RCODE FTKAPI btGetBlockChains(
 		FLMUINT *					puiBlockChains,
 		FLMUINT *					puiNumLevels);
 
-	RCODE FLMAPI btRemoveEntry(
+	RCODE FTKAPI btRemoveEntry(
 		const FLMBYTE *			pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT						uiKeyLen);
 
-	RCODE FLMAPI btInsertEntry(
+	RCODE FTKAPI btInsertEntry(
 		const FLMBYTE *			pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT						uiKeyLen,
@@ -351,7 +351,7 @@ public:
 		FLMUINT32 *					pui32BlockAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE FLMAPI btReplaceEntry(
+	RCODE FTKAPI btReplaceEntry(
 		const FLMBYTE *			pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT						uiKeyLen,
@@ -363,7 +363,7 @@ public:
 		FLMUINT32 *					pui32BlockAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE FLMAPI btLocateEntry(
+	RCODE FTKAPI btLocateEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -373,14 +373,14 @@ public:
 		FLMUINT32 *					pui32BlockAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE FLMAPI btGetEntry(
+	RCODE FTKAPI btGetEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyLen,
 		FLMBYTE *					pucData,
 		FLMUINT						uiDataBufSize,
 		FLMUINT *					puiDataLen);
 
-	RCODE FLMAPI btNextEntry(
+	RCODE FTKAPI btNextEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -388,7 +388,7 @@ public:
 		FLMUINT32 *					pui32BlockAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE FLMAPI btPrevEntry(
+	RCODE FTKAPI btPrevEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -396,7 +396,7 @@ public:
 		FLMUINT32 *					pui32BlockAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE FLMAPI btFirstEntry(
+	RCODE FTKAPI btFirstEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -404,7 +404,7 @@ public:
 		FLMUINT32 *					pui32BlockAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE FLMAPI btLastEntry(
+	RCODE FTKAPI btLastEntry(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen,
@@ -412,43 +412,43 @@ public:
 		FLMUINT32 *					pui32BlockAddr = NULL,
 		FLMUINT *					puiOffsetIndex = NULL);
 
-	RCODE FLMAPI btSetReadPosition(
+	RCODE FTKAPI btSetReadPosition(
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyLen,
 		FLMUINT						uiPosition);
 
-	RCODE FLMAPI btGetReadPosition(
+	RCODE FTKAPI btGetReadPosition(
 		FLMUINT *					puiPosition);
 
-	RCODE FLMAPI btPositionTo(
+	RCODE FTKAPI btPositionTo(
 		FLMUINT						uiPosition,
 		FLMBYTE *					pucKey,
 		FLMUINT						uiKeyBufSize,
 		FLMUINT *					puiKeyLen);
 
-	RCODE FLMAPI btGetPosition(
+	RCODE FTKAPI btGetPosition(
 		FLMUINT *					puiPosition);
 
-//	RCODE FLMAPI btComputeCounts(
+//	RCODE FTKAPI btComputeCounts(
 //		IF_BTree *					pUntilBtree,
 //		FLMUINT *					puiBlockCount,
 //		FLMUINT *					puiKeyCount,
 //		FLMBOOL *					pbTotalsEstimated,
 //		FLMUINT						uiAvgBlockFullness);
 
-	RCODE FLMAPI btRewind( void);
+	RCODE FTKAPI btRewind( void);
 
-	FINLINE FLMBOOL FLMAPI btHasCounts( void)
+	FINLINE FLMBOOL FTKAPI btHasCounts( void)
 	{
 		return( m_bCounts);
 	}
 
-	FINLINE FLMBOOL FLMAPI btHasData( void)
+	FINLINE FLMBOOL FTKAPI btHasData( void)
 	{
 		return( m_bTreeHoldsData);
 	}
 
-	FINLINE void FLMAPI btResetBtree( void)
+	FINLINE void FTKAPI btResetBtree( void)
 	{
 		releaseBlocks( TRUE);
 		m_bSetupForRead = FALSE;
@@ -469,7 +469,7 @@ public:
 		m_uiSearchLevel = F_BTREE_MAX_LEVELS;
 	}
 
-	FLMUINT32 FLMAPI getRootBlockAddr( void)
+	FLMUINT32 FTKAPI getRootBlockAddr( void)
 	{
 		return( m_ui32RootBlockAddr);
 	}
@@ -12730,7 +12730,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_BlockMgr::getBlockSize( void)
+FLMUINT FTKAPI F_BlockMgr::getBlockSize( void)
 {
 	return( m_uiBlockSize);
 }
@@ -12738,7 +12738,7 @@ FLMUINT FLMAPI F_BlockMgr::getBlockSize( void)
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_BlockMgr::getBlock(
+RCODE FTKAPI F_BlockMgr::getBlock(
 	FLMUINT32				ui32BlockAddr,
 	IF_Block **				ppBlock,
 	FLMBYTE **				ppucBlock)
@@ -12771,7 +12771,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_BlockMgr::createBlock(
+RCODE FTKAPI F_BlockMgr::createBlock(
 	IF_Block **				ppBlock,
 	FLMBYTE **				ppucBlock,
 	FLMUINT32 *				pui32BlockAddr)
@@ -12821,7 +12821,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_BlockMgr::freeBlock(
+RCODE FTKAPI F_BlockMgr::freeBlock(
 	IF_Block **,//		ppBlock,
 	FLMBYTE **)	//	ppucBlock)
 {
@@ -12836,7 +12836,7 @@ RCODE FLMAPI F_BlockMgr::freeBlock(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_BlockMgr::prepareForUpdate(
+RCODE FTKAPI F_BlockMgr::prepareForUpdate(
 	IF_Block **,		// ppBlock,
 	FLMBYTE **)			// ppucBlock)
 {
@@ -12870,7 +12870,7 @@ void F_BlockMgr::freeAllBlocks( void)
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmAllocBlockMgr(
+RCODE FTKAPI FlmAllocBlockMgr(
 	FLMUINT				uiBlockSize,
 	IF_BlockMgr **		ppBlockMgr)
 {
@@ -12904,7 +12904,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmAllocBTree(
+RCODE FTKAPI FlmAllocBTree(
 	IF_BlockMgr *		pBlockMgr,
 	IF_BTree **			ppBTree)
 {

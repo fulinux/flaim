@@ -195,21 +195,21 @@ public:
 
 	virtual ~F_SlabManager();
 
-	RCODE FLMAPI setup(
+	RCODE FTKAPI setup(
 		FLMUINT 				uiPreallocSize);
 		
-	RCODE FLMAPI allocSlab(
+	RCODE FTKAPI allocSlab(
 		void **				ppSlab);
 		
-	void FLMAPI freeSlab(
+	void FTKAPI freeSlab(
 		void **				ppSlab);
 		
-	RCODE FLMAPI resize(
+	RCODE FTKAPI resize(
 		FLMUINT 				uiNumBytes,
 		FLMBOOL				bPreallocate,
 		FLMUINT *			puiActualSize = NULL);
 
-	void FLMAPI incrementTotalBytesAllocated(
+	void FTKAPI incrementTotalBytesAllocated(
 		FLMUINT				uiCount)
 	{
 		f_assertMutexNotLocked( m_hMutex);
@@ -219,7 +219,7 @@ public:
 		f_mutexUnlock( m_hMutex);
 	}
 
-	void FLMAPI decrementTotalBytesAllocated(
+	void FTKAPI decrementTotalBytesAllocated(
 		FLMUINT				uiCount)
 	{
 		f_assertMutexNotLocked( m_hMutex);
@@ -230,22 +230,22 @@ public:
 		f_mutexUnlock( m_hMutex);
 	}
 
-	FLMUINT FLMAPI getSlabSize( void)
+	FLMUINT FTKAPI getSlabSize( void)
 	{
 		return( m_uiSlabSize);
 	}
 
-	FLMUINT FLMAPI getTotalSlabs( void)
+	FLMUINT FTKAPI getTotalSlabs( void)
 	{
 		return( m_uiTotalSlabs);
 	}
 	
-	FLMUINT FLMAPI totalBytesAllocated( void)
+	FLMUINT FTKAPI totalBytesAllocated( void)
 	{
 		return( m_uiTotalBytesAllocated);
 	}
 
-	FLMUINT FLMAPI getTotalSlabBytesAllocated( void)
+	FLMUINT FTKAPI getTotalSlabBytesAllocated( void)
 	{
 		FLMUINT		uiTotalSlabBytes;
 
@@ -256,7 +256,7 @@ public:
 		return( uiTotalSlabBytes);
 	}
 
-	FLMUINT FLMAPI availSlabs( void)
+	FLMUINT FTKAPI availSlabs( void)
 	{
 		return( m_uiAvailSlabs);
 	}
@@ -278,12 +278,12 @@ private:
 		void *				pNext;
 	} SLABHEADER;
 
-	static FLMINT FLMAPI slabAddrCompareFunc(
+	static FLMINT FTKAPI slabAddrCompareFunc(
 		void *				pvBuffer,
 		FLMUINT				uiPos1,
 		FLMUINT				uiPos2);
 
-	static void FLMAPI slabAddrSwapFunc(
+	static void FTKAPI slabAddrSwapFunc(
 		void *				pvBuffer,
 		FLMUINT				uiPos1,
 		FLMUINT				uiPos2);
@@ -360,7 +360,7 @@ public:
 
 	virtual ~F_FixedAlloc();
 
-	RCODE FLMAPI setup(
+	RCODE FTKAPI setup(
 		FLMBOOL					bMultiThreaded,
 		IF_SlabManager *		pSlabManager,
 		IF_Relocator *			pDefaultRelocator,
@@ -368,28 +368,28 @@ public:
 		FLM_SLAB_USAGE *		pUsageStats,
 		FLMUINT *				puiTotalBytesAllocated);
 
-	void * FLMAPI allocCell(
+	void * FTKAPI allocCell(
 		IF_Relocator *			pRelocator,
 		void *					pvInitialData = NULL,
 		FLMUINT					uiDataSize = 0);
 
-	void * FLMAPI allocCell(
+	void * FTKAPI allocCell(
 		IF_Relocator *			pRelocator,
 		F_ALLOC_INIT_FUNC		fnAllocInit);
 	
-	void FLMAPI freeCell( 
+	void FTKAPI freeCell( 
 		void *					ptr);
 
-	void FLMAPI freeUnused( void);
+	void FTKAPI freeUnused( void);
 
-	void FLMAPI freeAll( void);
+	void FTKAPI freeAll( void);
 
-	FLMUINT FLMAPI getCellSize( void)
+	FLMUINT FTKAPI getCellSize( void)
 	{
 		return( m_uiCellSize);
 	}
 	
-	void FLMAPI defragmentMemory( void);
+	void FTKAPI defragmentMemory( void);
 	
 private:
 
@@ -416,7 +416,7 @@ private:
 	void testForLeaks( void);
 #endif
 
-	static FLMINT FLMAPI slabAddrCompareFunc(
+	static FLMINT FTKAPI slabAddrCompareFunc(
 		void *					pvBuffer,
 		FLMUINT					uiPos1,
 		FLMUINT					uiPos2)
@@ -434,7 +434,7 @@ private:
 		return( 1);
 	}
 
-	static void FLMAPI slabAddrSwapFunc(
+	static void FTKAPI slabAddrSwapFunc(
 		void *					pvBuffer,
 		FLMUINT					uiPos1,
 		FLMUINT					uiPos2)
@@ -487,14 +487,14 @@ public:
 
 	virtual ~F_BufferAlloc();
 
-	RCODE FLMAPI setup(
+	RCODE FTKAPI setup(
 		FLMBOOL					bMultiThreaded,
 		IF_SlabManager *		pSlabManager,
 		IF_Relocator *			pDefaultRelocator,
 		FLM_SLAB_USAGE *		pUsageStats,
 		FLMUINT *				puiTotalBytesAllocated);
 
-	RCODE FLMAPI allocBuf(
+	RCODE FTKAPI allocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiSize,
 		void *					pvInitialData,
@@ -502,14 +502,14 @@ public:
 		FLMBYTE **				ppucBuffer,
 		FLMBOOL *				pbAllocatedOnHeap = NULL);
 
-	RCODE FLMAPI allocBuf(
+	RCODE FTKAPI allocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiSize,
 		F_ALLOC_INIT_FUNC		fnAllocInit,
 		FLMBYTE **				ppucBuffer,
 		FLMBOOL *				pbAllocatedOnHeap = NULL);
 			
-	RCODE FLMAPI reallocBuf(
+	RCODE FTKAPI reallocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiOldSize,
 		FLMUINT					uiNewSize,
@@ -518,20 +518,20 @@ public:
 		FLMBYTE **				ppucBuffer,
 		FLMBOOL *				pbAllocatedOnHeap = NULL);
 
-	void FLMAPI freeBuf(
+	void FTKAPI freeBuf(
 		FLMUINT					uiSize,
 		FLMBYTE **				ppucBuffer);
 
-	FLMUINT FLMAPI getTrueSize(
+	FLMUINT FTKAPI getTrueSize(
 		FLMUINT					uiSize,
 		FLMBYTE *				pucBuffer);
 
-	FLMUINT FLMAPI getMaxCellSize( void)
+	FLMUINT FTKAPI getMaxCellSize( void)
 	{
 		return( MAX_CELL_SIZE);
 	}
 		
-	void FLMAPI defragmentMemory( void);
+	void FTKAPI defragmentMemory( void);
 	
 private:
 
@@ -563,7 +563,7 @@ public:
 		cleanup();
 	}
 
-	RCODE FLMAPI setup(
+	RCODE FTKAPI setup(
 		FLMBOOL					bMultiThreaded,
 		IF_SlabManager *		pSlabManager,
 		IF_Relocator *			pDefaultRelocator,
@@ -571,28 +571,28 @@ public:
 		FLM_SLAB_USAGE *		pUsageStats,
 		FLMUINT *				puiTotalBytesAllocated);
 
-	RCODE FLMAPI allocBuf(
+	RCODE FTKAPI allocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiSize,
 		FLMBYTE **				ppucBuffer);
 
-	RCODE FLMAPI allocBuf(
+	RCODE FTKAPI allocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiSize,
 		F_ALLOC_INIT_FUNC		fnAllocInit,
 		FLMBYTE **				ppucBuffer);
 		
-	RCODE FLMAPI reallocBuf(
+	RCODE FTKAPI reallocBuf(
 		IF_Relocator *			pRelocator,
 		FLMUINT					uiNewSize,
 		FLMBYTE **				ppucBuffer);
 
-	void FLMAPI freeBuf(
+	void FTKAPI freeBuf(
 		FLMBYTE **				ppucBuffer);
 
-	void FLMAPI defragmentMemory( void);
+	void FTKAPI defragmentMemory( void);
 
-	FLMUINT FLMAPI getTrueSize(
+	FLMUINT FTKAPI getTrueSize(
 		FLMBYTE *				pucBuffer);
 
 private:
@@ -742,7 +742,7 @@ private:
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FLMAPI FlmAllocSlabManager(
+RCODE FTKAPI FlmAllocSlabManager(
 	IF_SlabManager **			ppSlabManager)
 {
 	if( (*ppSlabManager = f_new F_SlabManager) == NULL)
@@ -756,7 +756,7 @@ RCODE FLMAPI FlmAllocSlabManager(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FLMAPI FlmAllocFixedAllocator(
+RCODE FTKAPI FlmAllocFixedAllocator(
 	IF_FixedAlloc **			ppFixedAllocator)
 {
 	if( (*ppFixedAllocator = f_new F_FixedAlloc) == NULL)
@@ -770,7 +770,7 @@ RCODE FLMAPI FlmAllocFixedAllocator(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FLMAPI FlmAllocBufferAllocator(
+RCODE FTKAPI FlmAllocBufferAllocator(
 	IF_BufferAlloc **			ppBufferAllocator)
 {
 	if( (*ppBufferAllocator = f_new F_BufferAlloc) == NULL)
@@ -784,7 +784,7 @@ RCODE FLMAPI FlmAllocBufferAllocator(
 /****************************************************************************
 Desc:	
 ****************************************************************************/
-RCODE FLMAPI FlmAllocMultiAllocator(
+RCODE FTKAPI FlmAllocMultiAllocator(
 	IF_MultiAlloc **			ppMultiAllocator)
 {
 	if( (*ppMultiAllocator = f_new F_MultiAlloc) == NULL)
@@ -1569,7 +1569,7 @@ void f_memoryCleanup( void)
 /********************************************************************
 Desc: Allocate Memory.
 *********************************************************************/
-RCODE FLMAPI f_allocImp(
+RCODE FTKAPI f_allocImp(
 	FLMUINT			uiSize,
 	void **			ppvPtr,
 	FLMBOOL			bAllocFromNewOp,
@@ -1615,7 +1615,7 @@ Exit:
 /********************************************************************
 Desc: Allocate and initialize memory.
 *********************************************************************/
-RCODE FLMAPI f_callocImp(
+RCODE FTKAPI f_callocImp(
 	FLMUINT			uiSize,
 	void **			ppvPtr,
 	const char *	pszFileName,
@@ -1658,7 +1658,7 @@ Exit:
 /********************************************************************
 Desc: Reallocate memory.
 *********************************************************************/
-RCODE FLMAPI f_reallocImp(
+RCODE FTKAPI f_reallocImp(
 	FLMUINT			uiSize,
 	void **			ppvPtr,
 	const char *	pszFileName,
@@ -1745,7 +1745,7 @@ Exit:
 /********************************************************************
 Desc: Reallocate memory, and initialize the new part.
 *********************************************************************/
-RCODE FLMAPI f_recallocImp(
+RCODE FTKAPI f_recallocImp(
 	FLMUINT			uiSize,
 	void **			ppvPtr,
 	const char *	pszFileName,
@@ -1839,7 +1839,7 @@ Exit:
 /********************************************************************
 Desc: Free previously allocated memory.
 *********************************************************************/
-void FLMAPI f_freeImp(
+void FTKAPI f_freeImp(
 	void **	ppvPtr,
 	FLMBOOL	bFreeFromDeleteOp)
 {
@@ -1951,7 +1951,7 @@ Note:	If the number of bytes is more than the what is left in the
 		current block then a new block will be allocated and the lbkl element
 		of the PMS will be updated.
 ****************************************************************************/
-RCODE FLMAPI F_Pool::poolAlloc(
+RCODE FTKAPI F_Pool::poolAlloc(
 	FLMUINT		uiSize,
 	void **		ppvPtr)
 {
@@ -2045,7 +2045,7 @@ Exit:
 /****************************************************************************
 Desc:	Allocates a block of memory from a memory pool.
 ****************************************************************************/
-RCODE FLMAPI F_Pool::poolCalloc(
+RCODE FTKAPI F_Pool::poolCalloc(
   	FLMUINT		uiSize,
 	void **		ppvPtr)
 {
@@ -2062,7 +2062,7 @@ RCODE FLMAPI F_Pool::poolCalloc(
 Desc : Releases all memory allocated to a pool.
 Note : All memory allocated to the pool is returned to the operating system.
 *****************************************************************************/
-void FLMAPI F_Pool::poolFree( void)
+void FTKAPI F_Pool::poolFree( void)
 {
 	PoolMemoryBlock *	pBlock = m_pLastBlock;
 	PoolMemoryBlock *	pPrevBlock;
@@ -2091,7 +2091,7 @@ Desc:		Resets memory blocks allocated to a pool.
 Note:		Will reset the free space in the first memory block, and if
 			any extra blocks exist they will be freed (destroyed).
 *****************************************************************************/
-void FLMAPI F_Pool::poolReset(
+void FTKAPI F_Pool::poolReset(
 	void *		pvMark,
 	FLMBOOL		bReduceFirstBlock)
 {
@@ -2243,7 +2243,7 @@ F_SlabManager::~F_SlabManager()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_SlabManager::setup(
+RCODE FTKAPI F_SlabManager::setup(
 	FLMUINT 				uiPreallocSize)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -2301,7 +2301,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_SlabManager::resize(
+RCODE FTKAPI F_SlabManager::resize(
 	FLMUINT 			uiNumBytes,
 	FLMBOOL			bPreallocate,
 	FLMUINT *		puiActualSize)
@@ -2431,7 +2431,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_SlabManager::allocSlab(
+RCODE FTKAPI F_SlabManager::allocSlab(
 	void **				ppSlab)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -2495,7 +2495,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_SlabManager::freeSlab(
+void FTKAPI F_SlabManager::freeSlab(
 	void **				ppSlab)
 {
 	f_assert( ppSlab && *ppSlab);
@@ -2631,7 +2631,7 @@ void F_SlabManager::releaseSlabToSystem(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_SlabManager::slabAddrCompareFunc(
+FLMINT FTKAPI F_SlabManager::slabAddrCompareFunc(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -2652,7 +2652,7 @@ FLMINT FLMAPI F_SlabManager::slabAddrCompareFunc(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_SlabManager::slabAddrSwapFunc(
+void FTKAPI F_SlabManager::slabAddrSwapFunc(
 	void *		pvBuffer,
 	FLMUINT		uiPos1,
 	FLMUINT		uiPos2)
@@ -2888,7 +2888,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void * FLMAPI F_FixedAlloc::allocCell(
+void * FTKAPI F_FixedAlloc::allocCell(
 	IF_Relocator *		pRelocator,
 	void *				pvInitialData,
 	FLMUINT				uiDataSize)
@@ -2932,7 +2932,7 @@ Exit:
 /****************************************************************************
 Desc:	Public method to free a cell of memory back to the system. 
 ****************************************************************************/
-void * FLMAPI F_FixedAlloc::allocCell(
+void * FTKAPI F_FixedAlloc::allocCell(
 	IF_Relocator *				pRelocator,
 	F_ALLOC_INIT_FUNC			fnAllocInit)
 {
@@ -3117,7 +3117,7 @@ Exit:
 /****************************************************************************
 Desc:	Public method to free a cell of memory back to the system. 
 ****************************************************************************/
-void FLMAPI F_FixedAlloc::freeCell( 
+void FTKAPI F_FixedAlloc::freeCell( 
 	void *		ptr)
 {
 	if( m_hMutex != F_MUTEX_NULL)
@@ -3440,7 +3440,7 @@ void F_FixedAlloc::freeSlab(
 /****************************************************************************
 Desc:	Public method to free all the memory in the system.  
 ****************************************************************************/
-void FLMAPI F_FixedAlloc::freeAll( void)
+void FTKAPI F_FixedAlloc::freeAll( void)
 {
 	FIXEDSLAB *		pFreeMe;
 
@@ -3672,7 +3672,7 @@ Exit:
 /****************************************************************************
 Desc:		
 ****************************************************************************/ 
-void FLMAPI F_FixedAlloc::freeUnused( void)
+void FTKAPI F_FixedAlloc::freeUnused( void)
 {
 	FIXEDSLAB *		pSlab;
 
@@ -3893,7 +3893,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE FLMAPI F_BufferAlloc::allocBuf(
+RCODE FTKAPI F_BufferAlloc::allocBuf(
 	IF_Relocator *		pRelocator,
 	FLMUINT				uiSize,
 	void *				pvInitialData,
@@ -3961,7 +3961,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE FLMAPI F_BufferAlloc::allocBuf(
+RCODE FTKAPI F_BufferAlloc::allocBuf(
 	IF_Relocator *			pRelocator,
 	FLMUINT					uiSize,
 	F_ALLOC_INIT_FUNC		fnAllocInit,
@@ -4028,7 +4028,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE FLMAPI F_BufferAlloc::reallocBuf(
+RCODE FTKAPI F_BufferAlloc::reallocBuf(
 	IF_Relocator *			pRelocator,
 	FLMUINT					uiOldSize,
 	FLMUINT					uiNewSize,
@@ -4511,7 +4511,7 @@ void F_MultiAlloc::cleanup( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE FLMAPI F_MultiAlloc::allocBuf(
+RCODE FTKAPI F_MultiAlloc::allocBuf(
 	IF_Relocator *		pRelocator,
 	FLMUINT				uiSize,
 	FLMBYTE **			ppucBuffer)
@@ -4550,7 +4550,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE FLMAPI F_MultiAlloc::allocBuf(
+RCODE FTKAPI F_MultiAlloc::allocBuf(
 	IF_Relocator *			pRelocator,
 	FLMUINT					uiSize,
 	F_ALLOC_INIT_FUNC		fnAllocInit,
@@ -4590,7 +4590,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-RCODE FLMAPI F_MultiAlloc::reallocBuf(
+RCODE FTKAPI F_MultiAlloc::reallocBuf(
 	IF_Relocator *		pRelocator,
 	FLMUINT				uiNewSize,
 	FLMBYTE **			ppucBuffer)
@@ -4649,7 +4649,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-void FLMAPI F_MultiAlloc::freeBuf(
+void FTKAPI F_MultiAlloc::freeBuf(
 	FLMBYTE **				ppucBuffer)
 {
 	if( ppucBuffer && *ppucBuffer)
@@ -4673,7 +4673,7 @@ void FLMAPI F_MultiAlloc::freeBuf(
 /****************************************************************************
 Desc:
 ****************************************************************************/ 
-FLMUINT FLMAPI F_MultiAlloc::getTrueSize(
+FLMUINT FTKAPI F_MultiAlloc::getTrueSize(
 	FLMBYTE *				pucBuffer)
 {
 	FLMUINT			uiSize;
@@ -4775,7 +4775,7 @@ IF_FixedAlloc * F_MultiAlloc::getAllocator(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_allocAlignedBufferImp(
+RCODE FTKAPI f_allocAlignedBufferImp(
 	FLMUINT			uiMinSize,
 	void **			ppvAlloc)
 {
@@ -4859,7 +4859,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_freeAlignedBufferImp(
+void FTKAPI f_freeAlignedBufferImp(
 	void **			ppvAlloc)
 {
 	if( *ppvAlloc)
@@ -4895,7 +4895,7 @@ void FLMAPI f_freeAlignedBufferImp(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_canGetMemoryInfo( void)
+FLMBOOL FTKAPI f_canGetMemoryInfo( void)
 {
 	if( RC_OK( f_getMemoryInfo( NULL, NULL)))
 	{
@@ -4908,7 +4908,7 @@ FLMBOOL FLMAPI f_canGetMemoryInfo( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_getMemoryInfo(
+RCODE FTKAPI f_getMemoryInfo(
 	FLMUINT64 *		pui64TotalPhysMem,
 	FLMUINT64 *		pui64AvailPhysMem)
 {

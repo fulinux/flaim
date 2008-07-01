@@ -129,7 +129,7 @@ F_DirHdl::~F_DirHdl()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-const char * FLMAPI F_DirHdl::currentItemName( void)
+const char * FTKAPI F_DirHdl::currentItemName( void)
 {
 	const char *	pszName = NULL;
 	
@@ -171,7 +171,7 @@ const char * FLMAPI F_DirHdl::currentItemName( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FINLINE void FLMAPI F_DirHdl::currentItemPath(
+FINLINE void FTKAPI F_DirHdl::currentItemPath(
 	char *		pszPath)
 {
 	if( RC_OK( m_rc))
@@ -188,7 +188,7 @@ FINLINE void FLMAPI F_DirHdl::currentItemPath(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_DirHdl::currentItemIsDir( void)
+FLMBOOL FTKAPI F_DirHdl::currentItemIsDir( void)
 {
 #if defined( FLM_WIN) || defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
 
@@ -217,7 +217,7 @@ FLMBOOL FLMAPI F_DirHdl::currentItemIsDir( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT64 FLMAPI F_DirHdl::currentItemSize( void)
+FLMUINT64 FTKAPI F_DirHdl::currentItemSize( void)
 {
 	FLMUINT64	ui64Size = 0;
 
@@ -242,7 +242,7 @@ FLMUINT64 FLMAPI F_DirHdl::currentItemSize( void)
 Desc:	Get the next item in a directory
 ****************************************************************************/
 #if defined( FLM_WIN) || defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
-RCODE FLMAPI F_DirHdl::next( void)
+RCODE FTKAPI F_DirHdl::next( void)
 {
 	char					szFoundPath[ F_PATH_MAX_SIZE];
 	char					szDummyPath[ F_PATH_MAX_SIZE];
@@ -306,7 +306,7 @@ Exit:
 Desc:	Get the next item in a directory
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_DirHdl::next( void)
+RCODE FTKAPI F_DirHdl::next( void)
 {
 	LONG					lError = 0;
 	IF_FileSystem *	pFileSystem = f_getFileSysPtr();
@@ -353,7 +353,7 @@ Exit:
 Desc:	Open a directory
 ****************************************************************************/
 #ifndef FLM_RING_ZERO_NLM
-RCODE FLMAPI F_DirHdl::openDir(
+RCODE FTKAPI F_DirHdl::openDir(
 	const char *	pszDirName,
 	const char *	pszPattern)
 {
@@ -405,7 +405,7 @@ Notes:
 				'Connecting to remote servers' is not supported by this code.
 ****************************************************************************/
 #ifdef FLM_RING_ZERO_NLM
-RCODE FLMAPI F_DirHdl::openDir(
+RCODE FTKAPI F_DirHdl::openDir(
 	const char *	pszDirName,
 	const char *	pszPattern)
 {
@@ -477,7 +477,7 @@ Exit:
 Desc:	Create a directory (and parent directories if necessary).
 ****************************************************************************/
 #if defined( FLM_WIN) || defined( FLM_UNIX) || defined( FLM_LIBC_NLM)
-RCODE FLMAPI F_DirHdl::createDir(
+RCODE FTKAPI F_DirHdl::createDir(
 	const char *	pszDirPath)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -557,7 +557,7 @@ Exit:
 Desc:
 ****************************************************************************/
 #if defined( FLM_RING_ZERO_NLM)
-RCODE FLMAPI F_DirHdl::createDir(
+RCODE FTKAPI F_DirHdl::createDir(
 	const char *	pszDirPath)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -601,7 +601,7 @@ Exit:
 Desc:		Remove a directory
 Notes:	The directory must be empty.
 ****************************************************************************/
-RCODE FLMAPI F_DirHdl::removeDir(
+RCODE FTKAPI F_DirHdl::removeDir(
 	const char *	pszDirName)
 {
 #if defined( FLM_WIN)

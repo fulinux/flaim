@@ -71,7 +71,7 @@ public:
 		}
 	}
 
-	RCODE FLMAPI write(
+	RCODE XFLAPI write(
 		const void *		pvBuffer,
 		FLMUINT				uiBytesToWrite,
 		FLMUINT *			puiBytesWritten = NULL);
@@ -79,7 +79,7 @@ public:
 	RCODE write(
 		IF_PosIStream *	pIStream);
 
-	FINLINE RCODE FLMAPI closeStream( void)
+	FINLINE RCODE XFLAPI closeStream( void)
 	{
 		if( m_pRfl)
 		{
@@ -7289,7 +7289,7 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
-RCODE FLMAPI F_RflOStream::write(
+RCODE XFLAPI F_RflOStream::write(
 	const void *	pvBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
@@ -9128,7 +9128,7 @@ Exit:
 /****************************************************************************
 Desc:	Returns the name of an RFL file given its number
 ****************************************************************************/
-void FLMAPI F_Db::getRflFileName(
+void XFLAPI F_Db::getRflFileName(
 	FLMUINT		uiFileNum,
 	FLMBOOL		bBaseOnly,
 	char *		pszFileName,

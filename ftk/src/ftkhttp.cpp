@@ -30,7 +30,7 @@ Desc:
 ****************************************************************************/
 class F_HTTPKeyCompare : public IF_ResultSetCompare
 {
-	RCODE FLMAPI compare(
+	RCODE FTKAPI compare(
 		const void *			pvData1,
 		FLMUINT					uiLength1,
 		const void *			pvData2,
@@ -85,50 +85,50 @@ public:
 		resetHeader();
 	}
 	
-	RCODE FLMAPI readRequestHeader(
+	RCODE FTKAPI readRequestHeader(
 		IF_IStream *				pIStream);
 	
-	RCODE FLMAPI readResponseHeader(
+	RCODE FTKAPI readResponseHeader(
 		IF_IStream *				pIStream);
 		
-	RCODE FLMAPI writeRequestHeader(
+	RCODE FTKAPI writeRequestHeader(
 		IF_OStream *				pOStream);
 		
-	RCODE FLMAPI writeResponseHeader(
+	RCODE FTKAPI writeResponseHeader(
 		IF_OStream *				pOStream);
 		
-	RCODE FLMAPI getHeaderValue(
+	RCODE FTKAPI getHeaderValue(
 		const char *				pszTag,
 		F_DynaBuf *					pBuffer);
 		
-	RCODE FLMAPI setHeaderValue(
+	RCODE FTKAPI setHeaderValue(
 		const char *				pszTag,
 		const char *				pszValue);
 		
-	RCODE FLMAPI getHeaderValue(
+	RCODE FTKAPI getHeaderValue(
 		const char *				pszTag,
 		FLMUINT *					puiValue);
 		
-	RCODE FLMAPI setHeaderValue(
+	RCODE FTKAPI setHeaderValue(
 		const char *				pszTag,
 		FLMUINT 						uiValue);
 		
-	RCODE FLMAPI setMethod(
+	RCODE FTKAPI setMethod(
 		eHttpMethod					httpMethod);
 		
 	eHttpMethod getMethod( void);
 		
-	FLMUINT FLMAPI getStatusCode( void);
+	FLMUINT FTKAPI getStatusCode( void);
 	
-	RCODE FLMAPI setStatusCode(
+	RCODE FTKAPI setStatusCode(
 		FLMUINT						uiStatusCode);
 	
-	RCODE FLMAPI setRequestURI(
+	RCODE FTKAPI setRequestURI(
 		const char *				pszRequestURI);
 		
-	const char * FLMAPI getRequestURI( void);
+	const char * FTKAPI getRequestURI( void);
 		
-	void FLMAPI resetHeader( void);
+	void FTKAPI resetHeader( void);
 	
 private:
 
@@ -151,7 +151,7 @@ private:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmAllocHTTPHeader( 
+RCODE FTKAPI FlmAllocHTTPHeader( 
 	IF_HTTPHeader **			ppHTTPHeader)
 {
 	if( (*ppHTTPHeader = f_new F_HTTPHeader) == NULL)
@@ -248,7 +248,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::readResponseHeader(
+RCODE FTKAPI F_HTTPHeader::readResponseHeader(
 	IF_IStream *		pIStream)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -363,7 +363,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::readRequestHeader(
+RCODE FTKAPI F_HTTPHeader::readRequestHeader(
 	IF_IStream *		pIStream)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -480,7 +480,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::getHeaderValue(
+RCODE FTKAPI F_HTTPHeader::getHeaderValue(
 	const char *				pszTag,
 	F_DynaBuf *					pBuffer)
 {
@@ -525,7 +525,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::setHeaderValue(
+RCODE FTKAPI F_HTTPHeader::setHeaderValue(
 	const char *				pszTag,
 	const char *				pszValue)
 {
@@ -572,7 +572,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::getHeaderValue(
+RCODE FTKAPI F_HTTPHeader::getHeaderValue(
 	const char *				pszTag,
 	FLMUINT *					puiValue)
 {
@@ -594,7 +594,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::setHeaderValue(
+RCODE FTKAPI F_HTTPHeader::setHeaderValue(
 	const char *				pszTag,
 	FLMUINT 						uiValue)
 {
@@ -616,7 +616,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_HTTPHeader::getStatusCode( void)
+FLMUINT FTKAPI F_HTTPHeader::getStatusCode( void)
 {
 	return( m_uiStatusCode);
 }
@@ -624,7 +624,7 @@ FLMUINT FLMAPI F_HTTPHeader::getStatusCode( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::setStatusCode(
+RCODE FTKAPI F_HTTPHeader::setStatusCode(
 	FLMUINT						uiStatusCode)
 {
 	m_uiStatusCode = uiStatusCode;
@@ -634,7 +634,7 @@ RCODE FLMAPI F_HTTPHeader::setStatusCode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::setMethod(
+RCODE FTKAPI F_HTTPHeader::setMethod(
 	eHttpMethod					httpMethod)
 {
 	m_httpMethod = httpMethod;
@@ -652,7 +652,7 @@ eHttpMethod F_HTTPHeader::getMethod( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_HTTPHeader::resetHeader( void)
+void FTKAPI F_HTTPHeader::resetHeader( void)
 {
 	if( m_pResultSet)
 	{
@@ -674,7 +674,7 @@ void FLMAPI F_HTTPHeader::resetHeader( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::setRequestURI(
+RCODE FTKAPI F_HTTPHeader::setRequestURI(
 	const char *	pszRequestURI)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -700,7 +700,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::writeRequestHeader(
+RCODE FTKAPI F_HTTPHeader::writeRequestHeader(
 	IF_OStream *				pOStream)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -750,7 +750,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_HTTPHeader::writeResponseHeader(
+RCODE FTKAPI F_HTTPHeader::writeResponseHeader(
 	IF_OStream *				pOStream)
 {
 	RCODE			rc = NE_FLM_OK;
@@ -849,7 +849,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-const char * FLMAPI FlmGetHTTPStatusString( 
+const char * FTKAPI FlmGetHTTPStatusString( 
 	FLMUINT				uiStatusCode)
 {
 	const char *		pszStatusCode;

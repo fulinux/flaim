@@ -2199,7 +2199,7 @@ const unsigned char UnicodeProperties[ 32768] =
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_isWhitespace(
+FLMBOOL FTKAPI f_isWhitespace(
 	FLMUNICODE		uzChar)
 {
 	return( f_getXmlObjPtr()->isWhitespace( uzChar));
@@ -2210,7 +2210,7 @@ Desc:  	Unsigned word to NATIVE value - null terminate the native string
 Return:	char pointer to the NULL byte in the native string
 Notes: 	Radix not defined because it is not needed
 ****************************************************************************/
-char * FLMAPI f_uwtoa(
+char * FTKAPI f_uwtoa(
 	FLMUINT16	value,
 	char *		ptr)
 {
@@ -2231,7 +2231,7 @@ Return:	UDWORD value of what is being pointed to
 Notes: 	This algorithm is NOT standard, assumes UNSIGNED char arithmetic
 				so (20 - 30) should be 245 and NOT -10.
 ****************************************************************************/
-FLMUINT FLMAPI f_atoud(
+FLMUINT FTKAPI f_atoud(
 	const char *  	pszBuf,
 	FLMBOOL			bAllowUnprefixedHex)
 {
@@ -2300,7 +2300,7 @@ Return:	FLMUINT64 value of what is being pointed to
 Notes: 	This algorithm is NOT standard, assumes UNSIGNED char arithmetic
 			so (20 - 30) should be 245 and NOT -10.
 ****************************************************************************/
-FLMUINT64 FLMAPI f_atou64(
+FLMUINT64 FTKAPI f_atou64(
 	const char *  	pszBuf)
 {
 	FLMUINT64	ui64Value;
@@ -2361,7 +2361,7 @@ Desc:  	Unsigned double (4 byte) number to native value & null terminate
 Return:	char pointer to the NULL byte in the native string
 Notes: 	Radix not defined.
 ****************************************************************************/
-char * FLMAPI f_udtoa(
+char * FTKAPI f_udtoa(
 	FLMUINT		value,
 	char *		ptr)
 {
@@ -2380,7 +2380,7 @@ Desc:  	Word to native value - null terminate the native string
 Return:	char pointer to the NULL byte in the native string
 Notes: 	Radix not defined because it is not needed
 ****************************************************************************/
-char * FLMAPI f_wtoa(
+char * FTKAPI f_wtoa(
 	FLMINT16		value,
 	char *		ptr)
 {
@@ -2401,7 +2401,7 @@ char * FLMAPI f_wtoa(
 Desc:  	Double (4 byte) number to native value - null terminate the string
 Return:	char pointer to the NULL byte in the native string
 ****************************************************************************/
-char * FLMAPI f_dtoa(
+char * FTKAPI f_dtoa(
 	FLMINT		value,
 	char *		ptr)
 {
@@ -2421,7 +2421,7 @@ char * FLMAPI f_dtoa(
 /*****************************************************************************
 Desc:	Convert unsigned 64 bit value to ASCII.
 *****************************************************************************/
-char * FLMAPI f_ui64toa(
+char * FTKAPI f_ui64toa(
 	FLMUINT64	ui64Value,
 	char *		pszAscii)
 {
@@ -2454,7 +2454,7 @@ char * FLMAPI f_ui64toa(
 /*****************************************************************************
 Desc:	Convert signed 64 bit value to ASCII.
 *****************************************************************************/
-char * FLMAPI f_i64toa(
+char * FTKAPI f_i64toa(
 	FLMINT64	i64Value,
 	char *	pszAscii)
 {
@@ -2469,7 +2469,7 @@ char * FLMAPI f_i64toa(
 /****************************************************************************
 Desc:	Ascii to integer
 ****************************************************************************/
-FLMINT FLMAPI f_atoi(
+FLMINT FTKAPI f_atoi(
 	const char *	pszStr)
 {
 	return( f_atod( pszStr));
@@ -2478,7 +2478,7 @@ FLMINT FLMAPI f_atoi(
 /****************************************************************************
 Desc:	native to long
 ****************************************************************************/
-FLMINT FLMAPI f_atol(
+FLMINT FTKAPI f_atol(
 	const char *	pszStr)
 {
 	return( f_atod( pszStr));
@@ -2491,7 +2491,7 @@ Return:	DWORD value of what is being pointed to
 Notes: 	This algorithm is NOT standard! Assumes UNSIGNED char arithmetic
 			so (20 - 30) should be 245 and NOT -10.
 ****************************************************************************/
-FLMINT FLMAPI f_atod(
+FLMINT FTKAPI f_atod(
 	const char *	pszBuf)
 {
 	FLMINT		iValue;
@@ -2514,7 +2514,7 @@ FLMINT FLMAPI f_atod(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_atobool( 
+FLMBOOL FTKAPI f_atobool( 
 	const char *		pszStr,
 	FLMBOOL *			pbValidFormat)
 {
@@ -2604,7 +2604,7 @@ FINLINE FLMUINT maxDecimalSize(
 /****************************************************************************
 Desc: Returns the length of a unicode string
 ****************************************************************************/
-FLMUINT FLMAPI f_unilen(
+FLMUINT FTKAPI f_unilen(
 	const FLMUNICODE *	puzStr)
 {
 	FLMUINT		uiLen = 0;
@@ -2628,7 +2628,7 @@ Exit:
 /****************************************************************************
 Desc: Copies a unicode string
 ****************************************************************************/
-FLMUNICODE * FLMAPI f_unicpy(
+FLMUNICODE * FTKAPI f_unicpy(
 	FLMUNICODE *			puzDestStr,
 	const FLMUNICODE *	puzSrcStr)
 {
@@ -2647,7 +2647,7 @@ FLMUNICODE * FLMAPI f_unicpy(
 /****************************************************************************
 Desc: A rather trivial unicode monocase function.
 ****************************************************************************/
-FLMUNICODE FLMAPI f_uniToLower(
+FLMUNICODE FTKAPI f_uniToLower(
 	FLMUNICODE		uChar)
 {
 	static const FLMUNICODE basicAlpha[ 0x600] =
@@ -4732,7 +4732,7 @@ FLMUNICODE FLMAPI f_uniToLower(
 /****************************************************************************
 Desc: Compares two Unicode strings
 ****************************************************************************/
-FLMINT FLMAPI f_unicmp(
+FLMINT FTKAPI f_unicmp(
 	const FLMUNICODE *	puzStr1,
 	const FLMUNICODE *	puzStr2)
 {
@@ -4748,7 +4748,7 @@ FLMINT FLMAPI f_unicmp(
 /****************************************************************************
 Desc: Performs a case-insensitive comparision of two Unicode strings
 ****************************************************************************/
-FLMINT FLMAPI f_uniicmp(
+FLMINT FTKAPI f_uniicmp(
 	const FLMUNICODE *	puzStr1,
 	const FLMUNICODE *	puzStr2)
 {
@@ -4764,7 +4764,7 @@ FLMINT FLMAPI f_uniicmp(
 /****************************************************************************
 Desc: Compares two strings, one Unicode and one native
 ****************************************************************************/
-FLMINT FLMAPI f_uninativecmp(
+FLMINT FTKAPI f_uninativecmp(
 	const FLMUNICODE *	puzStr1,
 	const char *			pszStr2)
 {
@@ -4780,7 +4780,7 @@ FLMINT FLMAPI f_uninativecmp(
 /****************************************************************************
 Desc: Compares two strings, one Unicode and one native
 ****************************************************************************/
-FLMINT FLMAPI f_uninativencmp(
+FLMINT FTKAPI f_uninativencmp(
 	const FLMUNICODE *	puzStr1,
 	const char *			pszStr2,
 	FLMUINT					uiCount)
@@ -4804,7 +4804,7 @@ FLMINT FLMAPI f_uninativencmp(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_uniIsUpper(
+FLMBOOL FTKAPI f_uniIsUpper(
 	FLMUNICODE	uzChar)
 {
 	FLMBOOL	bRV;
@@ -4828,7 +4828,7 @@ FLMBOOL FLMAPI f_uniIsUpper(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_uniIsLower(
+FLMBOOL FTKAPI f_uniIsLower(
 	FLMUNICODE	uzChar)
 {
 	FLMBOOL	bRV;
@@ -4852,7 +4852,7 @@ FLMBOOL FLMAPI f_uniIsLower(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_uniIsAlpha(
+FLMBOOL FTKAPI f_uniIsAlpha(
 	FLMUNICODE	uzChar)
 {
 	FLMBOOL	bRV;
@@ -4876,7 +4876,7 @@ FLMBOOL FLMAPI f_uniIsAlpha(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI f_uniIsDecimalDigit(
+FLMBOOL FTKAPI f_uniIsDecimalDigit(
 	FLMUNICODE	uzChar)
 {
 	FLMBOOL	bRV;
@@ -4900,7 +4900,7 @@ FLMBOOL FLMAPI f_uniIsDecimalDigit(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE	FLMAPI f_nextUCS2Char(
+RCODE	FTKAPI f_nextUCS2Char(
 	const FLMBYTE **		ppszUTF8,
 	const FLMBYTE *		pszEndOfUTF8String,
 	FLMUNICODE *			puzChar)
@@ -4911,7 +4911,7 @@ RCODE	FLMAPI f_nextUCS2Char(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_numUCS2Chars(
+RCODE FTKAPI f_numUCS2Chars(
 	const FLMBYTE *	pszUTF8,
 	FLMUINT *			puiNumChars)
 {
@@ -4943,7 +4943,7 @@ Exit:
 /****************************************************************************
 Desc:	Reads the next character from the storage buffer
 ****************************************************************************/
-RCODE FLMAPI f_getCharFromUTF8Buf(
+RCODE FTKAPI f_getCharFromUTF8Buf(
 	const FLMBYTE **		ppucBuf,
 	const FLMBYTE *		pucEnd,
 	FLMUNICODE *			puChar)
@@ -4999,7 +4999,7 @@ RCODE FLMAPI f_getCharFromUTF8Buf(
 /****************************************************************************
 Desc: 	Convert a Unicode character to UTF-8
 *****************************************************************************/
-RCODE FLMAPI f_uni2UTF8(
+RCODE FTKAPI f_uni2UTF8(
 	FLMUNICODE		uChar,
 	FLMBYTE *		pucBuf,
 	FLMUINT *		puiBufSize)
@@ -5055,7 +5055,7 @@ Desc:		Reads the next UTF-8 character from a UTF-8 buffer
 Notes:	This routine assumes that the destination buffer can hold at least
 			three bytes
 ****************************************************************************/
-RCODE FLMAPI f_getUTF8CharFromUTF8Buf(
+RCODE FTKAPI f_getUTF8CharFromUTF8Buf(
 	FLMBYTE **		ppucBuf,
 	FLMBYTE *		pucEnd,
 	FLMBYTE *		pucDestBuf,
@@ -5111,7 +5111,7 @@ RCODE FLMAPI f_getUTF8CharFromUTF8Buf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_getUTF8Length(
+RCODE FTKAPI f_getUTF8Length(
 	const FLMBYTE *	pucBuf,
 	FLMUINT				uiBufLen,
 	FLMUINT *			puiBytes,
@@ -5178,7 +5178,7 @@ Exit:
 /****************************************************************************
 Desc:	Reads the next UTF-8 character from the stream
 ****************************************************************************/
-RCODE FLMAPI f_readUTF8CharAsUnicode(
+RCODE FTKAPI f_readUTF8CharAsUnicode(
 	IF_IStream *	pIStream,
 	FLMUNICODE *	puChar)
 {
@@ -5252,7 +5252,7 @@ Exit:
 Desc:		Format text removing leading and trailing spaces.  Treat
 			underscores as spaces.  As options, remove all spaces and dashes.
 ****************************************************************************/
-RCODE FLMAPI f_formatUTF8Text(
+RCODE FTKAPI f_formatUTF8Text(
 	IF_PosIStream *	pIStream,
 	FLMBOOL				bAllowEscapes,
 	FLMUINT				uiCompareRules,
@@ -5554,7 +5554,7 @@ Notes:	Lawrence Philips' Metaphone Algorithm is an algorithm which returns
 			than returning the character representation of the encoded word,
 			this routine returns a 16-bit numeric representation.
 ****************************************************************************/
-RCODE FLMAPI f_getNextMetaphone(
+RCODE FTKAPI f_getNextMetaphone(
 	IF_IStream *	pIStream,
 	FLMUINT *		puiMetaphone,
 	FLMUINT *		puiAltMetaphone)
@@ -7323,7 +7323,7 @@ Exit:
 Desc:
 Notes:	pucBuf must be able to contain at least 3 bytes
 ******************************************************************************/
-RCODE FLMAPI f_readUTF8CharAsUTF8(
+RCODE FTKAPI f_readUTF8CharAsUTF8(
 	IF_IStream *	pIStream,
 	FLMBYTE *		pucBuf,
 	FLMUINT *		puiLen)
@@ -7415,7 +7415,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_compareUnicodeStrings(
+RCODE FTKAPI f_compareUnicodeStrings(
 	const FLMUNICODE *	puzLString,
 	FLMUINT					uiLStrBytes,
 	FLMBOOL					bLeftWild,
@@ -7471,7 +7471,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_compareUTF8Strings(
+RCODE FTKAPI f_compareUTF8Strings(
 	const FLMBYTE *		pucLString,
 	FLMUINT					uiLStrBytes,
 	FLMBOOL					bLeftWild,
@@ -7528,7 +7528,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_compareUTF8Streams(
+RCODE FTKAPI f_compareUTF8Streams(
 	IF_PosIStream *			pLStream,
 	FLMBOOL						bLeftWild,
 	IF_PosIStream *			pRStream,
@@ -7568,7 +7568,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_compareUnicodeStreams(
+RCODE FTKAPI f_compareUnicodeStreams(
 	IF_PosIStream *			pLStream,
 	FLMBOOL						bLeftWild,
 	IF_PosIStream *			pRStream,
@@ -7608,7 +7608,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_utf8IsSubStr(
+RCODE FTKAPI f_utf8IsSubStr(
 	const FLMBYTE *	pszString,
 	const FLMBYTE *	pszSubString,
 	FLMUINT				uiCompareRules,
@@ -7652,7 +7652,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_strdup(
+RCODE FTKAPI f_strdup(
 	const char *		pszSrc,
 	char **				ppszDup)
 {

@@ -61,7 +61,7 @@ public:
 		}
 	}
 
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar,
 		FLMUINT			uiCount)
 	{
@@ -91,7 +91,7 @@ public:
 		return( iBytesOutput);
 	}
 
-	FINLINE FLMINT FLMAPI outputChar(
+	FINLINE FLMINT FTKAPI outputChar(
 		char				cChar)
 	{
 		m_szLogBuf[ m_uiCharOffset++] = cChar;
@@ -104,7 +104,7 @@ public:
 		return( 1);
 	}
 		
-	FINLINE FLMINT FLMAPI outputStr(
+	FINLINE FLMINT FTKAPI outputStr(
 		const char *	pszStr,
 		FLMUINT			uiLen)
 	{
@@ -135,7 +135,7 @@ public:
 		return( iBytesOutput);
 	}
 		
-	FLMINT FLMAPI colorFormatter(
+	FLMINT FTKAPI colorFormatter(
 		char				cFormatChar,
 		eColorType		eColor,
 		FLMUINT			uiFlags);
@@ -154,7 +154,7 @@ private:
 /****************************************************************************
 Desc:	Main entry point for printf functionality.
 ****************************************************************************/
-void FLMAPI f_logPrintf(
+void FTKAPI f_logPrintf(
 	IF_LogMessageClient *	pLogMessage,
 	const char *				pszFormatStr, ...)
 {
@@ -169,7 +169,7 @@ void FLMAPI f_logPrintf(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_logPrintf(
+void FTKAPI f_logPrintf(
 	eLogMessageSeverity		msgSeverity,
 	const char *				pszFormatStr, ...)
 {
@@ -191,7 +191,7 @@ void FLMAPI f_logPrintf(
 /****************************************************************************
 Desc:	Printf routine that accepts a va_list argument
 ****************************************************************************/
-void FLMAPI f_logVPrintf(
+void FTKAPI f_logVPrintf(
 	IF_LogMessageClient *	pLogMessage,
 	const char *				pszFormatStr,
 	f_va_list *					args)
@@ -205,7 +205,7 @@ void FLMAPI f_logVPrintf(
 Desc:	Returns an IF_LogMessageClient object if logging is enabled for the
 		specified message type
 ****************************************************************************/
-IF_LogMessageClient * FLMAPI f_beginLogMessage(
+IF_LogMessageClient * FTKAPI f_beginLogMessage(
 	FLMUINT						uiMsgType,
 	eLogMessageSeverity		eMsgSeverity)
 {
@@ -232,7 +232,7 @@ Exit:
 /****************************************************************************
 Desc:		Logs information about an error
 ****************************************************************************/
-void FLMAPI f_logError(
+void FTKAPI f_logError(
 	RCODE				rc,
 	const char *	pszDoing,
 	const char *	pszFileName,
@@ -261,7 +261,7 @@ void FLMAPI f_logError(
 /****************************************************************************
 Desc:	Ends a logging message
 ****************************************************************************/
-void FLMAPI f_endLogMessage(
+void FTKAPI f_endLogMessage(
 	IF_LogMessageClient **		ppLogMessage)
 {
 	if( *ppLogMessage)
@@ -315,7 +315,7 @@ void f_loggerShutdown( void)
 /****************************************************************************
 Desc:	Set the toolkit logger client
 ****************************************************************************/
-FTKEXPC void FLMAPI f_setLoggerClient(
+void FTKAPI f_setLoggerClient(
 	IF_LoggerClient *	pLogger)
 {
 	f_mutexLock( gv_hLoggerMutex);
@@ -349,7 +349,7 @@ void F_LogPrintfClient::flushLogBuffer( void)
 /****************************************************************************
 Desc:		Change colors - may only push or pop a color on to the color stack.
 ****************************************************************************/
-FLMINT FLMAPI F_LogPrintfClient::colorFormatter(
+FLMINT FTKAPI F_LogPrintfClient::colorFormatter(
 	char			cFormatChar,
 	eColorType	eColor,
 	FLMUINT		uiFlags)

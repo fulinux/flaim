@@ -2384,7 +2384,7 @@ Exit:
 /****************************************************************************
 Desc:	Increment use count on this object.
 ****************************************************************************/
-FLMINT FLMAPI F_NameTable::AddRef( void)
+FLMINT XFLAPI F_NameTable::AddRef( void)
 {
 	return( f_atomicInc( &m_refCnt));
 }
@@ -2392,7 +2392,7 @@ FLMINT FLMAPI F_NameTable::AddRef( void)
 /****************************************************************************
 Desc:	Decrement the use count and delete if use count goes to zero.
 ****************************************************************************/
-FLMINT FLMAPI F_NameTable::Release( void)
+FLMINT XFLAPI F_NameTable::Release( void)
 {
 	FLMINT		iRefCnt;
 
@@ -2462,7 +2462,7 @@ Exit:
 /****************************************************************************
 Desc:	Get the name for a dictionary item.
 ****************************************************************************/
-RCODE FLMAPI F_Db::getDictionaryName(
+RCODE XFLAPI F_Db::getDictionaryName(
 	FLMUINT					uiDictType,
 	FLMUINT					uiDictNumber,
 	char *					pszName,
@@ -2513,7 +2513,7 @@ Exit:
 /****************************************************************************
 Desc:	Get the name for a dictionary item.
 ****************************************************************************/
-RCODE FLMAPI F_Db::getDictionaryName(
+RCODE XFLAPI F_Db::getDictionaryName(
 	FLMUINT					uiDictType,
 	FLMUINT					uiDictNumber,
 	FLMUNICODE *			puzName,

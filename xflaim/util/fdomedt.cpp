@@ -556,18 +556,18 @@ public:
 		}
 	}
 
-	RCODE FLMAPI queryStatus(
+	RCODE XFLAPI queryStatus(
 		XFLM_OPT_INFO *	pOptInfo);
 
-	RCODE FLMAPI newSource(
+	RCODE XFLAPI newSource(
 		XFLM_OPT_INFO *	pOptInfo);
 
-	RCODE FLMAPI resultSetStatus(
+	RCODE XFLAPI resultSetStatus(
 		FLMUINT64	ui64TotalDocsRead,
 		FLMUINT64	ui64TotalDocsPassed,
 		FLMBOOL		bCanRetrieveDocs);
 		
-	RCODE FLMAPI resultSetComplete(
+	RCODE XFLAPI resultSetComplete(
 		FLMUINT64	ui64TotalDocsRead,
 		FLMUINT64	ui64TotalDocsPassed);
 		
@@ -598,17 +598,17 @@ public:
 		FLMUINT64			ui64TotalDocsPassed,
 		FLMBOOL				bCanRetrieveDocs);
 
-	FINLINE FLMINT FLMAPI getRefCount( void)
+	FINLINE FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_QueryStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT FLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_QueryStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT FLMAPI Release( void)
+	virtual FINLINE FLMINT XFLAPI Release( void)
 	{
 		return( IF_QueryStatus::Release());
 	}
@@ -1083,7 +1083,7 @@ Exit:
 /****************************************************************************
 Desc:	Query status callback
 *****************************************************************************/
-RCODE FLMAPI EditQueryStatus::resultSetStatus(
+RCODE XFLAPI EditQueryStatus::resultSetStatus(
 	FLMUINT64	ui64TotalDocsRead,
 	FLMUINT64	ui64TotalDocsPassed,
 	FLMBOOL		bCanRetrieveDocs)
@@ -1111,7 +1111,7 @@ Exit:
 /****************************************************************************
 Desc:	Query status callback
 *****************************************************************************/
-RCODE FLMAPI EditQueryStatus::resultSetComplete(
+RCODE XFLAPI EditQueryStatus::resultSetComplete(
 	FLMUINT64	ui64TotalDocsRead,
 	FLMUINT64	ui64TotalDocsPassed)
 {

@@ -83,7 +83,7 @@ static FLMUINT f_timeLeapYearsSince1970(
 /****************************************************************************
 Desc:	Gets the number of seconds since 1980 or 1970.
 ****************************************************************************/
-void FLMAPI f_timeGetSeconds(
+void FTKAPI f_timeGetSeconds(
 	FLMUINT	*		puiSeconds)
 {
 #if defined( FLM_WIN)
@@ -101,7 +101,7 @@ void FLMAPI f_timeGetSeconds(
 Desc:		Gets the time stamp from the system clock.
 Notes:
 ****************************************************************************/
-void FLMAPI f_timeGetTimeStamp(
+void FTKAPI f_timeGetTimeStamp(
 	F_TMSTAMP *		pTimeStamp)
 {
 #if defined( FLM_WIN)
@@ -147,7 +147,7 @@ void FLMAPI f_timeGetTimeStamp(
 /****************************************************************************
 Desc:		Returns the local time bias in seconds
 ****************************************************************************/
-FLMINT FLMAPI f_timeGetLocalOffset( void)
+FLMINT FTKAPI f_timeGetLocalOffset( void)
 {
 	FLMINT		iOffset = 0;
 
@@ -234,7 +234,7 @@ static FLMUINT  f_timeLeapYearsSince1970(
 Desc:		Convert from seconds to the F_TMSTAMP structure.
 Notes:
 ****************************************************************************/
-void FLMAPI f_timeSecondsToDate(
+void FTKAPI f_timeSecondsToDate(
 	FLMUINT 			uiSeconds,
 	F_TMSTAMP *		date)
 {
@@ -286,7 +286,7 @@ void FLMAPI f_timeSecondsToDate(
 /****************************************************************************
 Desc:		Convert a time stamp to the number of seconds.
 ****************************************************************************/
-void FLMAPI f_timeDateToSeconds(
+void FTKAPI f_timeDateToSeconds(
 	F_TMSTAMP *		pTimeStamp,
 	FLMUINT *		puiSeconds)
 {
@@ -332,7 +332,7 @@ Ret:	-1 if date1 is less than date2
 		 1 if date1 is greater than date2
 Notes:
 ****************************************************************************/
-FLMINT FLMAPI f_timeCompareTimeStamps(
+FLMINT FTKAPI f_timeCompareTimeStamps(
 	F_TMSTAMP *		pTimeStamp1,
 	F_TMSTAMP *		pTimeStamp2,
 	FLMUINT			flag)
@@ -392,7 +392,7 @@ unsigned f_timeGetMilliTime()
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI FLM_GET_TIMER( void)
+FLMUINT FTKAPI FLM_GET_TIMER( void)
 {
 #if defined( FLM_WIN)
 	return( (FLMUINT)GetTickCount());
@@ -406,7 +406,7 @@ FLMUINT FLMAPI FLM_GET_TIMER( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI FLM_ELAPSED_TIME(
+FLMUINT FTKAPI FLM_ELAPSED_TIME(
 	FLMUINT			uiLaterTime,
 	FLMUINT			uiEarlierTime)
 {
@@ -422,7 +422,7 @@ FLMUINT FLMAPI FLM_ELAPSED_TIME(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI FLM_SECS_TO_TIMER_UNITS( 
+FLMUINT FTKAPI FLM_SECS_TO_TIMER_UNITS( 
 	FLMUINT			uiSeconds)
 {
 #ifndef FLM_RING_ZERO_NLM
@@ -438,7 +438,7 @@ FLMUINT FLMAPI FLM_SECS_TO_TIMER_UNITS(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI FLM_TIMER_UNITS_TO_SECS( 
+FLMUINT FTKAPI FLM_TIMER_UNITS_TO_SECS( 
 	FLMUINT			uiTU)
 {
 #ifndef FLM_RING_ZERO_NLM
@@ -455,7 +455,7 @@ FLMUINT FLMAPI FLM_TIMER_UNITS_TO_SECS(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI FLM_TIMER_UNITS_TO_MILLI( 
+FLMUINT FTKAPI FLM_TIMER_UNITS_TO_MILLI( 
 	FLMUINT			uiTU)
 {
 #ifndef FLM_RING_ZERO_NLM
@@ -472,7 +472,7 @@ FLMUINT FLMAPI FLM_TIMER_UNITS_TO_MILLI(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI FLM_MILLI_TO_TIMER_UNITS( 
+FLMUINT FTKAPI FLM_MILLI_TO_TIMER_UNITS( 
 	FLMUINT			uiMilliSeconds)
 {
 #ifndef FLM_RING_ZERO_NLM
@@ -598,7 +598,7 @@ Adj_6:
 /****************************************************************************
 Desc: Calculate the elapsed time, including milliseconds.
 ****************************************************************************/
-void FLMAPI f_addElapsedTime(
+void FTKAPI f_addElapsedTime(
 	F_TMSTAMP *	pStartTime,
 	FLMUINT64 *	pui64ElapMilli)
 {

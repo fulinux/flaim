@@ -84,10 +84,10 @@ private:
 
 	RCODE _setup( void);
 
-	static RCODE FLMAPI readThread(
+	static RCODE XFLAPI readThread(
 		IF_Thread *			pThread);
 
-	static RCODE FLMAPI writeThread(
+	static RCODE XFLAPI writeThread(
 		IF_Thread *			pThread);
 
 	FLMBOOL					m_bSetup;
@@ -2445,7 +2445,7 @@ Exit:
 /****************************************************************************
 Desc: This thread reads data in the background
 ****************************************************************************/
-RCODE FLMAPI F_BackerStream::readThread(
+RCODE XFLAPI F_BackerStream::readThread(
 	IF_Thread *			pThread)
 {
 	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();
@@ -2484,7 +2484,7 @@ Exit:
 /****************************************************************************
 Desc: This thread writes data in the background
 ****************************************************************************/
-RCODE FLMAPI F_BackerStream::writeThread(
+RCODE XFLAPI F_BackerStream::writeThread(
 	IF_Thread *			pThread)
 {
 	F_BackerStream *	pBackerStream = (F_BackerStream *)pThread->getParm1();

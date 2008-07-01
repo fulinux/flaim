@@ -38,6 +38,29 @@
 
 #include <flaimtk.h>
 
+// platform-specific API definitions for SQF* macros
+#if defined( FLM_WIN)
+   #if defined( SQF_STATIC_LINK)
+      #define SQFEXP
+   #else
+      #if defined( SQF_SOURCE)
+         #define SQFEXP                __declspec(dllexport)
+      #else
+         #define SQFEXP                __declspec(dllimport)
+      #endif
+   #endif
+	#define SQFAPI     						__stdcall
+#elif defined( FLM_NLM)
+   #define SQFEXP
+	#define SQFAPI     						__stdcall
+#elif defined( FLM_UNIX)
+   #define SQFEXP
+	#define SQFAPI
+#else
+	#error Platform not supported
+#endif
+#define SQFXPC							      extern "C" SQFEXP
+	
 // Forward declarations
 
 class F_Db;

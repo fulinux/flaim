@@ -60,24 +60,24 @@ public:
 		}
 	}
 	
-	FLMINT FLMAPI AddRef( void)
+	FLMINT FTKAPI AddRef( void)
 	{
 		return( f_atomicInc( &m_refCnt));
 	}
 
-	FLMINT FLMAPI Release( void);
+	FLMINT FTKAPI Release( void);
 	
-	FINLINE const void * FLMAPI getKey( void)
+	FINLINE const void * FTKAPI getKey( void)
 	{
 		return( m_pucKey);
 	}
 	
-	FINLINE FLMUINT FLMAPI getKeyLength( void)
+	FINLINE FLMUINT FTKAPI getKeyLength( void)
 	{
 		return( m_uiKeyLen);
 	}
 	
-	FINLINE FLMUINT FLMAPI getObjectType( void)
+	FINLINE FLMUINT FTKAPI getObjectType( void)
 	{
 		return( 0);
 	}
@@ -107,7 +107,7 @@ public:
 		FLMUINT					uiMaxCachedFiles,
 		FLMUINT					uiIdleTimeoutSecs);
 		
-	FINLINE RCODE FLMAPI openFile(
+	FINLINE RCODE FTKAPI openFile(
 		const char *			pszFileName,
 		FLMUINT					uiIoFlags,
 		IF_FileHdl **			ppFile)
@@ -115,7 +115,7 @@ public:
 		return( openOrCreate( pszFileName, uiIoFlags, FALSE, ppFile));
 	}
 	
-	FINLINE RCODE FLMAPI createFile(
+	FINLINE RCODE FTKAPI createFile(
 		const char *			pszFileName,
 		FLMUINT					uiIoFlags,
 		IF_FileHdl **			ppFile)
@@ -123,15 +123,15 @@ public:
 		return( openOrCreate( pszFileName, uiIoFlags, TRUE, ppFile));
 	}
 
-	void FLMAPI closeUnusedFiles(
+	void FTKAPI closeUnusedFiles(
 		FLMUINT					uiUnusedTime);
 	
-	FLMUINT FLMAPI getOpenThreshold( void)
+	FLMUINT FTKAPI getOpenThreshold( void)
 	{
 		return( m_pAvailList->getMaxObjects());
 	}
 	
-	RCODE FLMAPI setOpenThreshold(
+	RCODE FTKAPI setOpenThreshold(
 		FLMUINT					uiMaxOpenFiles);
 			
 private:
@@ -142,7 +142,7 @@ private:
 		FLMBOOL					bCreate,
 		IF_FileHdl **			ppFile);
 		
-	static RCODE FLMAPI timeoutThread(
+	static RCODE FTKAPI timeoutThread(
 		IF_Thread *				pThread);
 	
 	IF_Thread *					m_pTimeoutThread;
@@ -386,7 +386,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmGetFileSystem(
+RCODE FTKAPI FlmGetFileSystem(
 	IF_FileSystem **		ppFileSystem)
 {
 	*ppFileSystem = f_getFileSysPtr();
@@ -446,7 +446,7 @@ RCODE F_FileSystem::setup( void)
 /****************************************************************************
 Desc:    Create a file, return a file handle to created file.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::createFile(
+RCODE FTKAPI F_FileSystem::createFile(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags,
 	IF_FileHdl **	ppFileHdl)
@@ -480,7 +480,7 @@ Exit:
 /****************************************************************************
 Desc:	Create a unique file, return a file handle to created file.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::createUniqueFile(
+RCODE FTKAPI F_FileSystem::createUniqueFile(
 	char *			pszPath,
 	const char *	pszFileExtension,
 	FLMUINT			uiIoFlags,
@@ -516,7 +516,7 @@ Exit:
 /****************************************************************************
 Desc: Open a file, return a file handle to opened file.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::openFile(
+RCODE FTKAPI F_FileSystem::openFile(
 	const char *	pszFileName,
 	FLMUINT			uiIoFlags,
 	IF_FileHdl **	ppFileHdl)
@@ -550,7 +550,7 @@ Exit:
 /****************************************************************************
 Desc:    Open a directory, return a file handle to opened directory.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::openDir(
+RCODE FTKAPI F_FileSystem::openDir(
 	const char *	pszDirName,
 	const char *	pszPattern,
 	IF_DirHdl **	ppDirHdl)
@@ -584,7 +584,7 @@ Exit:
 /****************************************************************************
 Desc:    Create a directory.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::createDir(
+RCODE FTKAPI F_FileSystem::createDir(
 	const char *	pszDirName)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -612,7 +612,7 @@ Exit:
 /****************************************************************************
 Desc: Remove a directory
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::removeDir(
+RCODE FTKAPI F_FileSystem::removeDir(
 	const char *	pszDirName,
 	FLMBOOL			bClear)
 {
@@ -719,7 +719,7 @@ RCODE F_FileSystem::removeEmptyDir(
 /****************************************************************************
 Desc:	Determine if a file or directory exists.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::doesFileExist(
+RCODE FTKAPI F_FileSystem::doesFileExist(
 	const char *	pszPath)
 {
 #if defined( FLM_WIN)
@@ -760,7 +760,7 @@ NLM Notes:
 	We have opted to call a higher level function, GetEntryFromPathStringBase,
 	which calls the lower level functions for us.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::getFileTimeStamp(
+RCODE FTKAPI F_FileSystem::getFileTimeStamp(
 	const char *	pszPath,
 	FLMUINT *		puiTimeStamp)
 {
@@ -929,7 +929,7 @@ Exit:
 /****************************************************************************
 Desc: Determine if a path is a directory.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::getFileSize(
+RCODE FTKAPI F_FileSystem::getFileSize(
 	const char *			pszFileName,
 	FLMUINT64 *				pui64FileSize)
 {
@@ -960,7 +960,7 @@ Exit:
 /****************************************************************************
 Desc: Determine if a path is a directory.
 ****************************************************************************/
-FLMBOOL FLMAPI F_FileSystem::isDir(
+FLMBOOL FTKAPI F_FileSystem::isDir(
 	const char *		pszDirName)
 {
 #if defined( FLM_WIN)
@@ -1016,7 +1016,7 @@ FLMBOOL FLMAPI F_FileSystem::isDir(
 /****************************************************************************
 Desc:    Delete a file or directory
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::deleteFile(
+RCODE FTKAPI F_FileSystem::deleteFile(
 	const char *		pszFileName)
 {
 #if defined( FLM_WIN)
@@ -1063,7 +1063,7 @@ RCODE FLMAPI F_FileSystem::deleteFile(
 /****************************************************************************
 Desc:	Copy a file.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::copyFile(
+RCODE FTKAPI F_FileSystem::copyFile(
 	const char *	pszSrcFileName,
 	const char *	pszDestFileName,
 	FLMBOOL			bOverwrite,
@@ -1151,7 +1151,7 @@ Exit:
 /****************************************************************************
 Desc:	Do a partial copy from one file into another file.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::copyPartialFile(
+RCODE FTKAPI F_FileSystem::copyPartialFile(
 	IF_FileHdl *	pSrcFileHdl,
 	FLMUINT64		ui64SrcOffset,
 	FLMUINT64		ui64SrcSize,
@@ -1266,7 +1266,7 @@ Exit:
 /****************************************************************************
 Desc: Rename a file.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::renameFile(
+RCODE FTKAPI F_FileSystem::renameFile(
 	const char *		pszFileName,
 	const char *		pszNewFileName)
 {
@@ -1364,7 +1364,7 @@ RCODE FLMAPI F_FileSystem::renameFile(
 /****************************************************************************
 Desc: Get the sector size (not supported on all platforms).
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::getSectorSize(
+RCODE FTKAPI F_FileSystem::getSectorSize(
 	const char *	pszFileName,
 	FLMUINT *		puiSectorSize)
 {
@@ -1462,7 +1462,7 @@ Exit:
 /****************************************************************************
 Desc: Set the Read-Only Attribute (not supported on all platforms).
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::setReadOnly(
+RCODE FTKAPI F_FileSystem::setReadOnly(
 	const char *	pszFileName,
 	FLMBOOL			bReadOnly)
 {
@@ -1532,7 +1532,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMBOOL FLMAPI F_FileSystem::canDoAsync( void)
+FLMBOOL FTKAPI F_FileSystem::canDoAsync( void)
 {
 	return( m_bCanDoAsync);
 }
@@ -1613,7 +1613,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_filecpy(
+RCODE FTKAPI f_filecpy(
 	const char *	pszSourceFile,
 	const char *	pszData)
 {
@@ -1657,7 +1657,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_filecat(
+RCODE FTKAPI f_filecat(
 	const char *	pszSourceFile,
 	const char *	pszData)
 {
@@ -1746,7 +1746,7 @@ Example:
 			pDirPath  = "\system"
 			pFileName "autoexec.ncf"
 ****************************************************************************/
-void FLMAPI F_FileSystem::pathParse(
+void FTKAPI F_FileSystem::pathParse(
 	const char *		pszInputPath,
 	char *				pszServer,
 	char *				pszVolume,
@@ -1879,7 +1879,7 @@ Desc:		This function will strip off the filename or trailing
 Notes:	This function handles drive based, UNC, Netware, and UNIX type
 			paths.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::pathReduce(
+RCODE FTKAPI F_FileSystem::pathReduce(
 	const char *	pszPath,
 	char *			pszDir,
 	char * 			pszPathComponent)
@@ -1986,7 +1986,7 @@ In:     *path     = pointer to an IO_PATH
 	     *string   = pointer to a NULL terminated string
 	     *end_ptr  = pointer to the end of the IO_PATH which is being built.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::pathAppend(
+RCODE FTKAPI F_FileSystem::pathAppend(
 	char *			pszPath,
 	const char *	pszPathComponent)
 {
@@ -2044,7 +2044,7 @@ In:	pszPath - the path to convert.
 		pszStorageString - a pointer to a string that is atleast 
 		F_PATH_MAX_SIZE in size
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::pathToStorageString(
+RCODE FTKAPI F_FileSystem::pathToStorageString(
 	const char *	pszPath,
 	char *			pszStorageString)
 {
@@ -2161,7 +2161,7 @@ In\Out:	puiTime		-> a modified time stamp which is used as the base
 								counter.
 Notes:	The counter on the collision is 0-9, a-z.
 ****************************************************************************/
-void FLMAPI F_FileSystem::pathCreateUniqueName(
+void FTKAPI F_FileSystem::pathCreateUniqueName(
 	FLMUINT *		puiTime,
 	char *			pszFileName,
 	const char *	pszFileExt,
@@ -2217,7 +2217,7 @@ void FLMAPI F_FileSystem::pathCreateUniqueName(
 /****************************************************************************
 Desc:		Compares the current file against a pattern template
 ****************************************************************************/
-FLMBOOL FLMAPI F_FileSystem::doesFileMatch(
+FLMBOOL FTKAPI F_FileSystem::doesFileMatch(
 	const char *	pszFileName,
 	const char *	pszTemplate)
 {
@@ -2280,7 +2280,7 @@ FLMBOOL FLMAPI F_FileSystem::doesFileMatch(
 /****************************************************************************
 Desc:
 *****************************************************************************/
-RCODE FLMAPI F_FileSystem::deleteMultiFileStream(
+RCODE FTKAPI F_FileSystem::deleteMultiFileStream(
 	const char *			pszDirectory,
 	const char *			pszBaseName)
 {
@@ -2315,7 +2315,7 @@ Desc: This routine obtains exclusive access to a database by creating
 		is open.  When the database is finally closed, it deletes the .lck
 		file.  This is only used for 3.x databases.
 ****************************************************************************/
-RCODE FLMAPI F_FileSystem::createLockFile(
+RCODE FTKAPI F_FileSystem::createLockFile(
 	const char *		pszPath,
 	IF_FileHdl **		ppLockFileHdl)
 {
@@ -2383,7 +2383,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_filetobuf(
+RCODE FTKAPI f_filetobuf(
 	const char *		pszSourceFile,
 	char **				ppszBuffer)
 {
@@ -2445,7 +2445,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_pathReduce(
+RCODE FTKAPI f_pathReduce(
 	const char *			pszSourcePath,
 	char *					pszDestPath,
 	char *					pszString)
@@ -2457,7 +2457,7 @@ RCODE FLMAPI f_pathReduce(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI f_pathAppend(
+RCODE FTKAPI f_pathAppend(
 	char *					pszPath,
 	const char *			pszPathComponent)
 {
@@ -2533,7 +2533,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdlCache::setOpenThreshold(
+RCODE FTKAPI F_FileHdlCache::setOpenThreshold(
 	FLMUINT					uiMaxOpenFiles)
 {
 	return( m_pAvailList->setMaxObjects( uiMaxOpenFiles));
@@ -2617,7 +2617,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_FileHdlCache::closeUnusedFiles(
+void FTKAPI F_FileHdlCache::closeUnusedFiles(
 	FLMUINT			uiUnusedTime)
 {
 	if( !uiUnusedTime)
@@ -2666,7 +2666,7 @@ RCODE F_FileHdlCache::timeoutThread(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_CachedFileHdl::Release( void)
+FLMINT FTKAPI F_CachedFileHdl::Release( void)
 {
 	FLMINT					iRefCnt = f_atomicDec( &m_refCnt);
 	F_FileHdlCache *		pFileHdlCache = m_pFileHdlCache;
@@ -2705,7 +2705,7 @@ FLMINT FLMAPI F_CachedFileHdl::Release( void)
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_FileSystem::allocFileHandleCache(
+RCODE FTKAPI F_FileSystem::allocFileHandleCache(
 	FLMUINT						uiMaxCachedFiles,
 	FLMUINT						uiIdleTimeoutSecs,
 	IF_FileHdlCache **		ppFileHdlCache)
@@ -2741,7 +2741,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI F_FileSystem::allocIOBuffer(
+RCODE FTKAPI F_FileSystem::allocIOBuffer(
 	FLMUINT				uiMinSize,
 	IF_IOBuffer **		ppIOBuffer)
 {
@@ -2997,7 +2997,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMINT FLMAPI F_FileAsyncClient::Release(
+FLMINT FTKAPI F_FileAsyncClient::Release(
 	FLMBOOL		bOkToReuse)
 {
 	FLMINT		iRefCnt;
@@ -3157,7 +3157,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileAsyncClient::waitToComplete( void)
+RCODE FTKAPI F_FileAsyncClient::waitToComplete( void)
 {
 	RCODE			completionRc = NE_FLM_OK;
 
@@ -3238,7 +3238,7 @@ RCODE FLMAPI F_FileAsyncClient::waitToComplete( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_FileAsyncClient::notifyComplete(
+void FTKAPI F_FileAsyncClient::notifyComplete(
 	RCODE				completionRc,
 	FLMUINT			uiBytesDone)
 {
@@ -3287,7 +3287,7 @@ void FLMAPI F_FileAsyncClient::notifyComplete(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMUINT FLMAPI F_FileAsyncClient::getElapsedTime( void)
+FLMUINT FTKAPI F_FileAsyncClient::getElapsedTime( void)
 {
 	return( FLM_TIMER_UNITS_TO_MILLI( 
 		FLM_ELAPSED_TIME( m_uiEndTime, m_uiStartTime)));
@@ -3296,7 +3296,7 @@ FLMUINT FLMAPI F_FileAsyncClient::getElapsedTime( void)
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileAsyncClient::getCompletionCode( void)
+RCODE FTKAPI F_FileAsyncClient::getCompletionCode( void)
 {
 	return( m_completionRc);
 }
@@ -3736,7 +3736,7 @@ Exit:
 /****************************************************************************
 Desc:	Sets current position of file.
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::seek(
+RCODE FTKAPI F_FileHdl::seek(
 	FLMUINT64			ui64Offset,
 	FLMINT				iWhence,
 	FLMUINT64 *			pui64NewOffset)
@@ -3786,7 +3786,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::tell(
+RCODE FTKAPI F_FileHdl::tell(
 	FLMUINT64 *		pui64Offset)
 {
 	*pui64Offset = m_ui64CurrentPos;
@@ -3796,7 +3796,7 @@ RCODE FLMAPI F_FileHdl::tell(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::read(
+RCODE FTKAPI F_FileHdl::read(
 	FLMUINT64			ui64Offset,
 	FLMUINT				uiLength,
 	void *				pvBuffer,
@@ -3817,7 +3817,7 @@ RCODE FLMAPI F_FileHdl::read(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::read(
+RCODE FTKAPI F_FileHdl::read(
 	FLMUINT64		ui64ReadOffset,
 	FLMUINT			uiBytesToRead,
 	IF_IOBuffer *	pIOBuffer)
@@ -3829,7 +3829,7 @@ RCODE FLMAPI F_FileHdl::read(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::write(
+RCODE FTKAPI F_FileHdl::write(
 	FLMUINT64		ui64WriteOffset,
 	FLMUINT			uiBytesToWrite,
 	const void *	pvBuffer,
@@ -3850,7 +3850,7 @@ RCODE FLMAPI F_FileHdl::write(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI F_FileHdl::write(
+RCODE FTKAPI F_FileHdl::write(
 	FLMUINT64			ui64WriteOffset,
 	FLMUINT				uiBytesToWrite,
 	IF_IOBuffer *		pIOBuffer)

@@ -57,10 +57,10 @@ public:
 	{
 	}
 
-	RCODE FLMAPI reportRebuild(
+	RCODE XFLAPI reportRebuild(
 		XFLM_REBUILD_INFO *	pRebuild);
 	
-	RCODE FLMAPI reportRebuildErr(
+	RCODE XFLAPI reportRebuildErr(
 		XFLM_CORRUPT_INFO *		pCorruptInfo);
 
 private:

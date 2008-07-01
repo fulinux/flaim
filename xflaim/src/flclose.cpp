@@ -132,7 +132,7 @@ F_Db::~F_Db()
 /****************************************************************************
 Desc:	Wait for a specific database to close
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::waitToClose(
+RCODE XFLAPI F_DbSystem::waitToClose(
 	const char *		pszDbPath)
 {
 	RCODE					rc = NE_XFLM_OK;

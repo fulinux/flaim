@@ -425,7 +425,7 @@ void F_XML::setCharFlag(
 /****************************************************************************
 Desc: Builds a character lookup table
 ****************************************************************************/
-RCODE FLMAPI F_XML::setup( void)
+RCODE FTKAPI F_XML::setup( void)
 {
 	RCODE			rc = NE_FLM_OK;
 	FLMUINT		uiLoop;
@@ -455,7 +455,7 @@ Exit:
 /****************************************************************************
 Desc: Returns TRUE if the character is a valid XML PubID character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isPubidChar(
+FLMBOOL FTKAPI F_XML::isPubidChar(
 	FLMUNICODE		uChar)
 {
 	if( uChar == FLM_UNICODE_SPACE ||
@@ -492,7 +492,7 @@ FLMBOOL FLMAPI F_XML::isPubidChar(
 /****************************************************************************
 Desc:		Returns TRUE if the character is a single or double quote character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isQuoteChar(
+FLMBOOL FTKAPI F_XML::isQuoteChar(
 	FLMUNICODE		uChar)
 {
 	if( uChar == FLM_UNICODE_QUOTE || uChar == FLM_UNICODE_APOS)
@@ -506,7 +506,7 @@ FLMBOOL FLMAPI F_XML::isQuoteChar(
 /****************************************************************************
 Desc:		Returns TRUE if the character is a whitespace character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isWhitespace(
+FLMBOOL FTKAPI F_XML::isWhitespace(
 	FLMUNICODE		uChar)
 {
 	if( (m_pCharTable[ uChar].ucFlags & FLM_XML_WHITESPACE) != 0)
@@ -520,7 +520,7 @@ FLMBOOL FLMAPI F_XML::isWhitespace(
 /****************************************************************************
 Desc:		Returns TRUE if the character is an extender character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isExtender(
+FLMBOOL FTKAPI F_XML::isExtender(
 	FLMUNICODE		uChar)
 {
 	if( (m_pCharTable[ uChar].ucFlags & FLM_XML_EXTENDER) != 0)
@@ -534,7 +534,7 @@ FLMBOOL FLMAPI F_XML::isExtender(
 /****************************************************************************
 Desc:		Returns TRUE if the character is a combining character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isCombiningChar(
+FLMBOOL FTKAPI F_XML::isCombiningChar(
 	FLMUNICODE		uChar)
 {
 	if( (m_pCharTable[ uChar].ucFlags & FLM_XML_COMBINING_CHAR) != 0)
@@ -548,7 +548,7 @@ FLMBOOL FLMAPI F_XML::isCombiningChar(
 /****************************************************************************
 Desc:		Returns TRUE if the character is a valid XML naming character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isNCNameChar(
+FLMBOOL FTKAPI F_XML::isNCNameChar(
 	FLMUNICODE		uChar)
 {
 	if( isLetter( uChar) ||
@@ -567,7 +567,7 @@ FLMBOOL FLMAPI F_XML::isNCNameChar(
 /****************************************************************************
 Desc:		Returns TRUE if the character is a valid XML naming character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isNameChar(
+FLMBOOL FTKAPI F_XML::isNameChar(
 	FLMUNICODE		uChar)
 {
 	if( isNCNameChar( uChar) ||
@@ -582,7 +582,7 @@ FLMBOOL FLMAPI F_XML::isNameChar(
 /****************************************************************************
 Desc:		Returns TRUE if the character is an ideographic character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isIdeographic(
+FLMBOOL FTKAPI F_XML::isIdeographic(
 	FLMUNICODE		uChar)
 {
 	if( (m_pCharTable[ uChar].ucFlags & FLM_XML_IDEOGRAPHIC) != 0)
@@ -596,7 +596,7 @@ FLMBOOL FLMAPI F_XML::isIdeographic(
 /****************************************************************************
 Desc:		Returns TRUE if the character is a base character
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isBaseChar(
+FLMBOOL FTKAPI F_XML::isBaseChar(
 	FLMUNICODE		uChar)
 {
 	if( (m_pCharTable[ uChar].ucFlags & FLM_XML_BASE_CHAR) != 0)
@@ -610,7 +610,7 @@ FLMBOOL FLMAPI F_XML::isBaseChar(
 /****************************************************************************
 Desc:		Returns TRUE if the character is a digit
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isDigit(
+FLMBOOL FTKAPI F_XML::isDigit(
 	FLMUNICODE		uChar)
 {
 	if( (m_pCharTable[ uChar].ucFlags & FLM_XML_DIGIT) != 0)
@@ -624,7 +624,7 @@ FLMBOOL FLMAPI F_XML::isDigit(
 /****************************************************************************
 Desc:		Returns TRUE if the character is a letter
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isLetter(
+FLMBOOL FTKAPI F_XML::isLetter(
 	FLMUNICODE		uChar)
 {
 	if( isBaseChar( uChar) || isIdeographic( uChar))
@@ -638,7 +638,7 @@ FLMBOOL FLMAPI F_XML::isLetter(
 /****************************************************************************
 Desc: 	Returns TRUE if the name is a valid XML name
 ****************************************************************************/
-FLMBOOL FLMAPI F_XML::isNameValid(
+FLMBOOL FTKAPI F_XML::isNameValid(
 	FLMUNICODE *	puzName,
 	FLMBYTE *		pszName)
 {

@@ -42,7 +42,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="0"
 				AdditionalIncludeDirectories="..\..\..\..\ftk\src,..\..\..\src"
-				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;FLM_DEBUG;FLM_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;FLM_DEBUG;XFL_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
 				StringPooling="true"
 				MinimalRebuild="false"
 				BasicRuntimeChecks="3"
@@ -64,9 +64,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib imagehlp.lib rpcrt4.lib advapi32.lib msvcrtd.lib msvcprtd.lib flaimtk_static.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrtd.lib msvcprtd.lib $(FTKLIB_STATIC_DEBUG) $(NOINHERIT)"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\..\..\ftk\win32\ftk\Debug"
+				AdditionalLibraryDirectories=""
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -122,7 +122,7 @@
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
 				AdditionalIncludeDirectories="..\..\..\..\ftk\src,..\..\..\src"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;FLM_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;XFL_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
 				StringPooling="true"
 				MinimalRebuild="false"
 				RuntimeLibrary="2"
@@ -144,9 +144,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib imagehlp.lib rpcrt4.lib advapi32.lib msvcrt.lib msvcprt.lib flaimtk_static.lib $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrt.lib msvcprt.lib $(FTKLIB_STATIC_RELEASE) $(NOINHERIT)"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\..\..\ftk\win32\ftk\Release"
+				AdditionalLibraryDirectories=""
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"

@@ -54,11 +54,11 @@ public:
 		}
 	}
 
-	RCODE	FLMAPI bind(
+	RCODE	FTKAPI bind(
 		FLMUINT					uiBindPort,
 		FLMBYTE *				pucBindAddr = NULL);
 
-	RCODE FLMAPI connectClient(
+	RCODE FTKAPI connectClient(
 		IF_TCPIOStream **	ppClientStream,
 		FLMUINT				uiTimeout = 3);
 		
@@ -83,76 +83,76 @@ public:
 	
 	virtual ~F_TCPIOStream( void);
 
-	RCODE FLMAPI openStream(
+	RCODE FTKAPI openStream(
 		const char *	pucHostAddress,
 		FLMUINT			uiPort,
 		FLMUINT			uiFlags,
 		FLMUINT			uiConnectTimeout);
 
-	RCODE FLMAPI openStream(
+	RCODE FTKAPI openStream(
 		int				iSocket,
 		FLMUINT			uiFlags);
 		
-	RCODE FLMAPI read(
+	RCODE FTKAPI read(
 		void *			pvBuffer,
 		FLMUINT			uiBytesToRead,
 		FLMUINT *		puiBytesRead);
 		
-	RCODE FLMAPI write(
+	RCODE FTKAPI write(
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite,
 		FLMUINT *		puiBytesWritten);
 
-	FINLINE RCODE FLMAPI socketPeekWrite(
+	FINLINE RCODE FTKAPI socketPeekWrite(
 		FLMUINT		uiTimeOut)
 	{
 		return( f_socketPeek( m_iSocket, uiTimeOut, FALSE));
 	}
 
-	FINLINE RCODE FLMAPI f_socketPeekRead( 
+	FINLINE RCODE FTKAPI f_socketPeekRead( 
 		FLMUINT		uiTimeOut)
 	{
 		return( f_socketPeek( m_iSocket, uiTimeOut, TRUE));
 	};
 
-	FINLINE const char * FLMAPI getLocalHostName( void)
+	FINLINE const char * FTKAPI getLocalHostName( void)
 	{
 		getLocalInfo();
 		return( (const char *)m_pszName);
 	};
 
-	FINLINE const char * FLMAPI getLocalHostAddress( void)
+	FINLINE const char * FTKAPI getLocalHostAddress( void)
 	{
 		getLocalInfo();
 		return( (const char *)m_pszIp);
 	};
 
-	FINLINE const char * FLMAPI getPeerHostName( void)
+	FINLINE const char * FTKAPI getPeerHostName( void)
 	{
 		getRemoteInfo();
 		return( (const char *)m_pszPeerName);
 	};
 
-	FINLINE const char * FLMAPI getPeerHostAddress( void)
+	FINLINE const char * FTKAPI getPeerHostAddress( void)
 	{
 		getRemoteInfo();
 		return( (const char *)m_pszPeerIp);
 	};
 
-	RCODE FLMAPI readNoWait(
+	RCODE FTKAPI readNoWait(
 		void *			pvBuffer,
 		FLMUINT			uiCount,
 		FLMUINT *		puiReadRead);
 
-	RCODE FLMAPI readAll(
+	RCODE FTKAPI readAll(
 		void *			pvBuffer,
 		FLMUINT			uiCount,
 		FLMUINT *		puiBytesRead);
 
-	void FLMAPI setIOTimeout(
+	void FTKAPI setIOTimeout(
 		FLMUINT			uiSeconds);
 
-	RCODE FLMAPI closeStream( void);
+	RCODE FTKAPI closeStream( void);
 
 private:
 
@@ -197,24 +197,24 @@ public:
 		closeStream();
 	}
 	
-	RCODE FLMAPI openStream(
+	RCODE FTKAPI openStream(
 		const char *			pszHost,
 		FLMUINT					uiPort = 443,
 		FLMUINT					uiFlags = 0);
 	
-	RCODE FLMAPI read(
+	RCODE FTKAPI read(
 		void *					pvBuffer,
 		FLMUINT					uiBytesToRead,
 		FLMUINT *				puiBytesRead = NULL);
 		
-	RCODE FLMAPI write(
+	RCODE FTKAPI write(
 		const void *			pvBuffer,
 		FLMUINT					uiBytesToWrite,
 		FLMUINT *				puiBytesWritten = NULL);
 		
-	const char * FLMAPI getPeerCertificateText( void);
+	const char * FTKAPI getPeerCertificateText( void);
 		
-	RCODE FLMAPI closeStream( void);
+	RCODE FTKAPI closeStream( void);
 	
 private:
 
@@ -379,7 +379,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmOpenTCPIOStream(
+RCODE FTKAPI FlmOpenTCPIOStream(
 	const char *			pszHost,
 	FLMUINT					uiPort,
 	FLMUINT					uiFlags,
@@ -417,7 +417,7 @@ Exit:
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmAllocSSLIOStream( 
+RCODE FTKAPI FlmAllocSSLIOStream( 
 	IF_IOStream **			ppIOStream)
 {
 #ifdef FLM_OPENSSL
@@ -440,7 +440,7 @@ RCODE FLMAPI FlmAllocSSLIOStream(
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmOpenSSLIOStream(
+RCODE FTKAPI FlmOpenSSLIOStream(
 	const char *			pszHost,
 	FLMUINT					uiPort,
 	FLMUINT					uiFlags,
@@ -822,7 +822,7 @@ RCODE F_TCPIOStream::getRemoteInfo( void)
 /********************************************************************
 Desc:
 *********************************************************************/
-RCODE FLMAPI F_TCPIOStream::write(
+RCODE FTKAPI F_TCPIOStream::write(
 	const void *	pucBuffer,
 	FLMUINT			uiBytesToWrite,
 	FLMUINT *		puiBytesWritten)
@@ -918,7 +918,7 @@ Exit:
 /********************************************************************
 Desc:
 *********************************************************************/
-RCODE FLMAPI F_TCPIOStream::read(
+RCODE FTKAPI F_TCPIOStream::read(
 	void *		pucBuffer,
    FLMUINT		uiBytesToWrite,
 	FLMUINT *	puiBytesRead)
@@ -1086,7 +1086,7 @@ Exit:
 /********************************************************************
 Desc: Closes any open connections
 *********************************************************************/
-RCODE FLMAPI F_TCPIOStream::closeStream( void)
+RCODE FTKAPI F_TCPIOStream::closeStream( void)
 {
 	if( m_iSocket == INVALID_SOCKET)
 	{
@@ -1104,7 +1104,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI F_TCPIOStream::setIOTimeout(
+void FTKAPI F_TCPIOStream::setIOTimeout(
 	FLMUINT			uiSeconds)
 {
 	m_uiIOTimeout = uiSeconds;
@@ -1114,7 +1114,7 @@ void FLMAPI F_TCPIOStream::setIOTimeout(
 Desc:
 ****************************************************************************/
 #ifdef FLM_OPENSSL
-RCODE FLMAPI F_SSLIOStream::openStream(
+RCODE FTKAPI F_SSLIOStream::openStream(
 	const char *			pszHost,
 	FLMUINT					uiPort,
 	FLMUINT					uiFlags)
@@ -1273,7 +1273,7 @@ Exit:
 Desc:
 ****************************************************************************/
 #ifdef FLM_OPENSSL
-RCODE FLMAPI F_SSLIOStream::read(
+RCODE FTKAPI F_SSLIOStream::read(
 	void *					pvBuffer,
 	FLMUINT					uiBytesToRead,
 	FLMUINT *				puiBytesRead)
@@ -1316,7 +1316,7 @@ Exit:
 Desc:
 ****************************************************************************/
 #ifdef FLM_OPENSSL
-RCODE FLMAPI F_SSLIOStream::write(
+RCODE FTKAPI F_SSLIOStream::write(
 	const void *			pvBuffer,
 	FLMUINT					uiBytesToWrite,
 	FLMUINT *				puiBytesWritten)
@@ -1351,7 +1351,7 @@ Exit:
 Desc:
 ****************************************************************************/
 #ifdef FLM_OPENSSL
-RCODE FLMAPI F_SSLIOStream::closeStream( void)
+RCODE FTKAPI F_SSLIOStream::closeStream( void)
 {
 	if( m_pBio)
 	{
@@ -1387,7 +1387,7 @@ RCODE FLMAPI F_SSLIOStream::closeStream( void)
 Desc:
 ******************************************************************************/
 #ifdef FLM_OPENSSL
-const char * FLMAPI F_SSLIOStream::getPeerCertificateText( void)
+const char * FTKAPI F_SSLIOStream::getPeerCertificateText( void)
 {
 	return( m_pszPeerCertText);
 }
@@ -1474,7 +1474,7 @@ void f_closeSocket(
 /*****************************************************************************
 Desc:
 ******************************************************************************/
-RCODE FLMAPI FlmOpenTCPListener(
+RCODE FTKAPI FlmOpenTCPListener(
 	FLMBYTE *					pucBindAddr,
 	FLMUINT						uiBindPort,
 	IF_TCPListener **			ppListener)

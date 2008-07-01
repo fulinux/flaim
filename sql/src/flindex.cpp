@@ -25,7 +25,7 @@
 
 #include "flaimsys.h"
 
-FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
+FSTATIC RCODE SQFAPI flmBackgroundIndexBuildThrd(
 	IF_Thread *		pThread);
 	
 /****************************************************************************
@@ -940,7 +940,7 @@ Desc:		Thread that will build an index in the background.
 			Caller will create a pDb to use.  This pDb must be
 			freed at the conclusion of the routine.
 ****************************************************************************/
-FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
+FSTATIC RCODE SQFAPI flmBackgroundIndexBuildThrd(
 	IF_Thread *		pThread)
 {
 	RCODE				rc = NE_SFLM_OK;

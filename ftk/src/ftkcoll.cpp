@@ -5103,7 +5103,7 @@ FINLINE FLMUINT16 flmGetNextCharState(
 Desc:		Convert a Unicode character to its WP equivalent
 Ret:		Returns TRUE if the character could be converted
 ****************************************************************************/
-FLMBOOL FLMAPI f_unicodeToWP(
+FLMBOOL FTKAPI f_unicodeToWP(
 	FLMUNICODE			uUniChar,		// Unicode character to convert
 	FLMUINT16 *			pui16WPChar)	// Returns 0 or WPChar converted.
 {
@@ -5134,7 +5134,7 @@ Desc:		Convert a Unicode character to its WP equivalent using the
 			depricated FLAIM conversion rules
 Ret:		Returns TRUE if the character could be converted
 ****************************************************************************/
-FLMBOOL FLMAPI f_depricatedUnicodeToWP(
+FLMBOOL FTKAPI f_depricatedUnicodeToWP(
 	FLMUNICODE			uUniChar,		// Unicode character to convert
 	FLMUINT16 *			pui16WPChar)	// Returns 0 or WPChar converted.
 {
@@ -5163,7 +5163,7 @@ FLMBOOL FLMAPI f_depricatedUnicodeToWP(
 /****************************************************************************
 Desc:		Convert a WP character to its Unicode equivalent
 ****************************************************************************/
-RCODE FLMAPI f_wpToUnicode(
+RCODE FTKAPI f_wpToUnicode(
 	FLMUINT16			ui16WPChar,
 	FLMUNICODE *		puUniChar)
 {
@@ -5427,7 +5427,7 @@ Exit:
 /****************************************************************************
 Desc:	Converts a character to upper case (if possible)
 ****************************************************************************/
-FLMUINT16 FLMAPI f_wpUpper(
+FLMUINT16 FTKAPI f_wpUpper(
 	FLMUINT16	ui16WpChar)
 {
 	if( ui16WpChar < 256)
@@ -5508,7 +5508,7 @@ FLMUINT16 FLMAPI f_wpUpper(
 /****************************************************************************
 Desc:	Checks to see if WP character is upper case
 ****************************************************************************/
-FLMBOOL FLMAPI f_wpIsUpper(
+FLMBOOL FTKAPI f_wpIsUpper(
 	FLMUINT16	ui16WpChar)
 {
 	FLMBYTE	ucChar;
@@ -5546,7 +5546,7 @@ FLMBOOL FLMAPI f_wpIsUpper(
 /****************************************************************************
 Desc:	Converts a character to lower case (if possible)
 ****************************************************************************/
-FLMUINT16 FLMAPI f_wpLower(
+FLMUINT16 FTKAPI f_wpLower(
 	FLMUINT16	ui16WpChar)
 {
 	if( ui16WpChar < 256)
@@ -5625,7 +5625,7 @@ FLMUINT16 FLMAPI f_wpLower(
 /****************************************************************************
 Desc:	Break a WP character into a base and a diacritical char.
 ****************************************************************************/
-FLMBOOL FLMAPI f_breakWPChar(
+FLMBOOL FTKAPI f_breakWPChar(
 	FLMUINT16		ui16WpChar,
 	FLMUINT16 *		pui16BaseChar,
 	FLMUINT16 *		pui16DiacriticChar)
@@ -5682,7 +5682,7 @@ Ret: 	TRUE - if not found
 Notes: ascii characters with diacriticals are in multi-national if anywhere;
 		 all other base chars with diacritics are found in their own sets.
 ****************************************************************************/
-FLMBOOL FLMAPI f_combineWPChar(
+FLMBOOL FTKAPI f_combineWPChar(
 	FLMUINT16 *		pui16WpChar,
 	FLMUINT16		ui16BaseChar,
 	FLMINT16			ui16DiacriticChar)
@@ -5742,7 +5742,7 @@ FLMBOOL FLMAPI f_combineWPChar(
 Desc:	Find the collating value of a WP character
 ret:	Collating value (COLS0 is high value - undefined WP char)
 ***********************************************************************/
-FLMUINT16 FLMAPI f_wpGetCollationImp(
+FLMUINT16 FTKAPI f_wpGetCollationImp(
 	FLMUINT16		ui16WpChar,
 	FLMUINT			uiLanguage)
 {
@@ -5836,7 +5836,7 @@ Return:	0 = nothing changes
 			second character value if 1 character sorts as 2,
 			*pui16WpChar changes to first character in sequence
 ****************************************************************************/
-RCODE FLMAPI f_wpCheckDoubleCollation(
+RCODE FTKAPI f_wpCheckDoubleCollation(
 	IF_PosIStream *	pIStream,
 	FLMBOOL				bUnicodeStream,
 	FLMBOOL				bAllowTwoIntoOne,
@@ -6082,7 +6082,7 @@ Return:	0 = nothing changes.  Otherwise, *pui16WpChar is the first
 			characters and treat as one (i.e, change the collation on the
 			outside to one more than the collation of the first character).
 ****************************************************************************/
-FLMUINT16 FLMAPI f_wpCheckDoubleCollation(
+FLMUINT16 FTKAPI f_wpCheckDoubleCollation(
 	FLMUINT16 *			pui16WpChar,
 	FLMBOOL *			pbTwoIntoOne,
 	const FLMBYTE **	ppucInputStr,
@@ -6530,7 +6530,7 @@ Desc:		Convert a zenkaku (double wide) char to a hankaku (single wide) char
 Ret:		Hankaku char or 0 if a conversion doesn't exist
 Notes:	Taken from CHAR.ASM -  zen2han_f routine
 ****************************************************************************/
-FLMUINT16 FLMAPI f_wpZenToHankaku(
+FLMUINT16 FTKAPI f_wpZenToHankaku(
 	FLMUINT16	ui16WpChar,
 	FLMUINT16 * pui16DakutenOrHandakuten)
 {
@@ -6683,7 +6683,7 @@ Ret:		0 = no conversion
 Notes:	Taken from char.asm - han2zen()
 			From8ToZen could be taken out and placed in code.
 ****************************************************************************/
-FLMUINT16 FLMAPI f_wpHanToZenkaku(
+FLMUINT16 FTKAPI f_wpHanToZenkaku(
 	FLMUINT16	ui16WpChar,
 	FLMUINT16	ui16NextWpChar,
 	FLMUINT16 *	pui16Zenkaku)
@@ -6873,7 +6873,7 @@ FLMUINT16 FLMAPI f_wpHanToZenkaku(
 /****************************************************************************
 Desc:		Converts a 2-byte language code into its corresponding language ID
 ****************************************************************************/
-FLMUINT FLMAPI f_languageToNum(
+FLMUINT FTKAPI f_languageToNum(
 	const char *	pszLanguage)
 {
 	FLMBYTE		ucFirstChar  = (FLMBYTE)(*pszLanguage);
@@ -6898,7 +6898,7 @@ FLMUINT FLMAPI f_languageToNum(
 /****************************************************************************
 Desc:		Converts a language ID to its corresponding 2-byte language code
 ****************************************************************************/
-void FLMAPI f_languageToStr(
+void FTKAPI f_languageToStr(
 	FLMINT		iLangNum,
 	char *		pszLanguage)
 {
@@ -7470,7 +7470,7 @@ Exit:
 /***************************************************************************
 Desc:  	Compare two entire strings.
 ****************************************************************************/
-RCODE FLMAPI f_compareCollStreams(
+RCODE FTKAPI f_compareCollStreams(
 	IF_CollIStream *	pLStream,
 	IF_CollIStream *	pRStream,
 	FLMBOOL				bOpIsMatch,
@@ -7734,7 +7734,7 @@ Exit:
 /***************************************************************************
 Desc:
 ****************************************************************************/
-FLMUNICODE FLMAPI f_convertChar(
+FLMUNICODE FTKAPI f_convertChar(
 	FLMUNICODE		uzChar,
 	FLMUINT			uiCompareRules)
 {
@@ -7980,7 +7980,7 @@ Out:	 	WP characters that have been modified to their original case
 Ret:		Number of bytes used in the lower/upper buffer
 Notes:	Only WP to lower case conversion is done here for each bit NOT set.
 ***************************************************************************/
-FLMUINT FLMAPI f_wpToMixed(
+FLMUINT FTKAPI f_wpToMixed(
 	FLMBYTE *			pucWPStr,			// Existing WP string to modify
 	FLMUINT				uiWPStrLen,			// Length of the WP string in bytes
 	const FLMBYTE *	pucLowUpBitStr,	// Lower/upper case bit string
@@ -8056,7 +8056,7 @@ VISIT:	If the string is EXACTLY the length of the truncation
 			The code didn't match the design intent.  Fix next major
 			version.
 ****************************************************************************/
-RCODE FLMAPI flmUTF8ToColText(
+RCODE FTKAPI flmUTF8ToColText(
 	IF_PosIStream *	pIStream,
 	FLMBYTE *			pucCollatedStr,		// Returns collated string
 	FLMUINT *			puiCollatedStrLen,	// Returns total collated string length
@@ -8732,7 +8732,7 @@ Exit:
 /*****************************************************************************
 Desc:		Convert a collated string to a WP word string
 *****************************************************************************/
-RCODE FLMAPI f_colStr2WPStr(
+RCODE FTKAPI f_colStr2WPStr(
 	const FLMBYTE *	pucColStr,			  	// Points to the collated string
 	FLMUINT				uiColStrLen,		  	// Length of the collated string
 	FLMBYTE *			pucWPStr,			  	// Output string to build - WP word string
@@ -8998,7 +8998,7 @@ Exit:
 /****************************************************************************
 Desc:  	Convert a text string to a collated string.
 ****************************************************************************/
-RCODE FLMAPI f_asiaUTF8ToColText(
+RCODE FTKAPI f_asiaUTF8ToColText(
 	IF_PosIStream *	pIStream,
 	FLMBYTE *			pucColStr,			// Output collated string
 	FLMUINT *			puiColStrLen,		// Collated string length return value
@@ -9319,7 +9319,7 @@ Notes:	For each bit in the sub-collation section:
 	110 - align to next byte & take word value as extended character
 
 ****************************************************************************/
-RCODE FLMAPI f_asiaParseSubCol(
+RCODE FTKAPI f_asiaParseSubCol(
 	FLMBYTE *			pucWPStr,
 	FLMUINT *			puiWPStrLen,
 	FLMUINT				uiMaxWPBytes,
@@ -9731,7 +9731,7 @@ Exit:
 Desc:		Get the original string from an asian collation string
 Ret:		Length of the word string in bytes
 ****************************************************************************/
-RCODE FLMAPI f_asiaColStr2WPStr(
+RCODE FTKAPI f_asiaColStr2WPStr(
 	const FLMBYTE *	pucColStr,			  	// Points to the collated string
 	FLMUINT				uiColStrLen,		  	// Length of the collated string
 	FLMBYTE *			pucWPStr,			  	// Output string to build - WP word string
@@ -10107,7 +10107,7 @@ Exit:
 /**************************************************************************
 Desc:
 ***************************************************************************/
-void FLMAPI F_CollIStream::getCurrPosition(
+void FTKAPI F_CollIStream::getCurrPosition(
 	F_CollStreamPos *		pPos)
 {
 	pPos->uNextChar = m_uNextChar;

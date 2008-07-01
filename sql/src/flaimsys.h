@@ -1205,17 +1205,17 @@ public:
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite);
 
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT SQFAPI getRefCount( void)
 	{
 		return( IF_BackupClient::getRefCount());
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT SQFAPI AddRef( void)
 	{
 		return( IF_BackupClient::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT SQFAPI Release( void)
 	{
 		return( IF_BackupClient::Release());
 	}
@@ -1261,17 +1261,17 @@ public:
 
 	RCODE abortFile( void);
 
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT SQFAPI getRefCount( void)
 	{
 		return( IF_RestoreClient::getRefCount());
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT SQFAPI AddRef( void)
 	{
 		return( IF_RestoreClient::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT SQFAPI Release( void)
 	{
 		return( IF_RestoreClient::Release());
 	}
@@ -1480,17 +1480,17 @@ public:
 		return( NE_SFLM_OK);
 	}
 
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT SQFAPI getRefCount( void)
 	{
 		return( IF_RestoreStatus::getRefCount());
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT SQFAPI AddRef( void)
 	{
 		return( IF_RestoreStatus::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT SQFAPI Release( void)
 	{
 		return( IF_RestoreStatus::Release());
 	}
@@ -2734,7 +2734,7 @@ public:
 	{
 	}
 
-	FINLINE RCODE FLMAPI compare(
+	FINLINE RCODE SQFAPI compare(
 		const void *	pvKey1,
 		FLMUINT			uiKeyLen1,
 		const void *	pvKey2,
@@ -2773,17 +2773,17 @@ public:
 		m_pOldRow = pOldRow;
 	}
 	
-	virtual FLMINT FLMAPI getRefCount( void)
+	virtual FLMINT SQFAPI getRefCount( void)
 	{
 		return( IF_ResultSetCompare::getRefCount());
 	}
 
-	virtual FLMINT FLMAPI AddRef( void)
+	virtual FLMINT SQFAPI AddRef( void)
 	{
 		return( IF_ResultSetCompare::AddRef());
 	}
 
-	virtual FLMINT FLMAPI Release( void)
+	virtual FLMINT SQFAPI Release( void)
 	{
 		return( IF_ResultSetCompare::Release());
 	}
@@ -2955,9 +2955,9 @@ public:
 	{
 	}
 
-	virtual FLMINT FLMAPI AddRef( void);
+	virtual FLMINT SQFAPI AddRef( void);
 
-	virtual FLMINT FLMAPI Release( void);
+	virtual FLMINT SQFAPI Release( void);
 
 	RCODE init( void);
 
@@ -3349,10 +3349,10 @@ private:
 		const char *			pszDestRflDir,
 		IF_DbCopyStatus *		ifpStatus);
 
-	static RCODE FLMAPI monitorThrd(
+	static RCODE SQFAPI monitorThrd(
 		IF_Thread *		pThread);
 		
-	static RCODE FLMAPI cacheCleanupThrd(
+	static RCODE SQFAPI cacheCleanupThrd(
 		IF_Thread *		pThread);
 
 	static void checkNotUsedObjects( void);
@@ -3487,36 +3487,36 @@ public:
 		FLMUINT32		ui32BlkAddr = 0,
 		FLMUINT			uiOffsetIndex = 0);
 
-	FINLINE FLMUINT64 FLMAPI totalSize( void)
+	FINLINE FLMUINT64 SQFAPI totalSize( void)
 	{
 		return( m_uiStreamSize);
 	}
 
-	FINLINE FLMUINT64 FLMAPI remainingSize( void)
+	FINLINE FLMUINT64 SQFAPI remainingSize( void)
 	{
 		return( m_uiStreamSize - (m_uiBufferStartOffset + m_uiBufferOffset));
 	}
 
-	FINLINE RCODE FLMAPI closeStream( void)
+	FINLINE RCODE SQFAPI closeStream( void)
 	{
 		reset();
 		return( NE_SFLM_OK);
 	}
 
-	RCODE FLMAPI positionTo(
+	RCODE SQFAPI positionTo(
 		FLMUINT64		ui64Position);
 
-	FINLINE FLMUINT64 FLMAPI getCurrPosition( void)
+	FINLINE FLMUINT64 SQFAPI getCurrPosition( void)
 	{
 		return( m_uiBufferStartOffset + m_uiBufferOffset);
 	}
 
-	RCODE FLMAPI read(
+	RCODE SQFAPI read(
 		void *			pvBuffer,
 		FLMUINT			uiBytesToRead,
 		FLMUINT *		puiBytesRead);
 
-	FLMINT FLMAPI Release( void);
+	FLMINT SQFAPI Release( void);
 	
 	FINLINE FLMUINT32 getBlkAddr( void)
 	{
@@ -4403,7 +4403,7 @@ FINLINE RCODE F_RowCacheMgr::makeWriteCopy(
 /****************************************************************************
 Desc:
 *****************************************************************************/
-class FLMEXP F_SuperFileClient : public IF_SuperFileClient
+class SQFEXP F_SuperFileClient : public IF_SuperFileClient
 {
 public:
 
@@ -4415,21 +4415,21 @@ public:
 		const char *			pszCFileName,
 		const char *			pszDataDir);
 	
-	FLMUINT FLMAPI getFileNumber(
+	FLMUINT SQFAPI getFileNumber(
 		FLMUINT					uiBlockAddr);
 		
-	FLMUINT FLMAPI getFileOffset(
+	FLMUINT SQFAPI getFileOffset(
 		FLMUINT					uiBlockAddr);
 		
-	FLMUINT FLMAPI getBlockAddress(
+	FLMUINT SQFAPI getBlockAddress(
 		FLMUINT					uiFileNumber,
 		FLMUINT					uiFileOffset);
 			
-	RCODE FLMAPI getFilePath(
+	RCODE SQFAPI getFilePath(
 		FLMUINT					uiFileNumber,
 		char *					pszPath);
 		
-	FLMUINT64 FLMAPI getMaxFileSize( void);
+	FLMUINT64 SQFAPI getMaxFileSize( void);
 
 	static void bldSuperFileExtension(
 		FLMUINT					uiFileNum,

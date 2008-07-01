@@ -348,7 +348,7 @@ public:
 
 	virtual ~F_ResultSet();
 
-	RCODE FLMAPI setupResultSet(
+	RCODE FTKAPI setupResultSet(
 		const char *				pszPath,
 		IF_ResultSetCompare *	pCompare,
 		FLMUINT						uiEntrySize,
@@ -356,7 +356,7 @@ public:
 		FLMBOOL						bEntriesInOrder = FALSE,
 		const char *				pszInputFileName = NULL);	
 
-	FINLINE FLMUINT64 FLMAPI getTotalEntries( void)
+	FINLINE FLMUINT64 FTKAPI getTotalEntries( void)
 	{
 		F_ResultSetBlk	*	pBlk = m_pFirstRSBlk;
 		FLMUINT64			ui64TotalEntries = 0;
@@ -369,47 +369,47 @@ public:
 		return( ui64TotalEntries);
 	}
 
-	RCODE FLMAPI addEntry(
+	RCODE FTKAPI addEntry(
 		const void *	pvEntry,
 		FLMUINT			uiEntryLength = 0);
 
-	RCODE FLMAPI finalizeResultSet(
+	RCODE FTKAPI finalizeResultSet(
 		IF_ResultSetSortStatus *	pSortStatus = NULL,
 		FLMUINT64 *						pui64TotalEntries = NULL);
 
-	RCODE FLMAPI getFirst(
+	RCODE FTKAPI getFirst(
 		void *			pvEntryBuffer,
 		FLMUINT			uiBufferLength = 0,
 		FLMUINT *		puiEntryLength = NULL);
 
-	RCODE FLMAPI getNext(
+	RCODE FTKAPI getNext(
 		void *			pvEntryBuffer,
 		FLMUINT			uiBufferLength = 0,
 		FLMUINT *		puiEntryLength = NULL);
 
-	RCODE FLMAPI getLast(
+	RCODE FTKAPI getLast(
 		void *			pvEntryBuffer,
 		FLMUINT			uiBufferLength = 0,
 		FLMUINT *		puiEntryLength = NULL);
 
-	RCODE FLMAPI getPrev(
+	RCODE FTKAPI getPrev(
 		void *			pvEntryBuffer,
 		FLMUINT			uiBufferLength = 0,
 		FLMUINT *		puiEntryLength = NULL);
 
-	RCODE FLMAPI getCurrent(
+	RCODE FTKAPI getCurrent(
 		void *			pvEntryBuffer,
 		FLMUINT			uiBufferLength = 0,
 		FLMUINT *		puiEntryLength = NULL);
 
-	FINLINE RCODE FLMAPI modifyCurrent(
+	FINLINE RCODE FTKAPI modifyCurrent(
 		const void *	pvEntry,
 		FLMUINT			uiEntryLength = 0)
 	{
 		return( m_pCurRSBlk->modifyEntry( (FLMBYTE *)pvEntry, uiEntryLength));
 	}
 
-	FINLINE RCODE FLMAPI findMatch(
+	FINLINE RCODE FTKAPI findMatch(
 		const void *	pvMatchEntry,
 		void *			pvFoundEntry)
 	{
@@ -417,26 +417,26 @@ public:
 								pvFoundEntry, NULL));
 	}
 
-	RCODE FLMAPI findMatch(
+	RCODE FTKAPI findMatch(
 		const void *	pvMatchEntry,
 		FLMUINT			uiMatchEntryLength,
 		void *			pvFoundEntry,
 		FLMUINT *		puiFoundEntryLength);
 		
-	FINLINE FLMUINT64 FLMAPI getPosition( void)
+	FINLINE FLMUINT64 FTKAPI getPosition( void)
 	{
 		return( (!m_pCurRSBlk
 								? RS_POSITION_NOT_SET
 								: m_pCurRSBlk->getPosition()));
 	}
 
-	RCODE FLMAPI setPosition(
+	RCODE FTKAPI setPosition(
 		FLMUINT64		ui64Position);
 
-	RCODE FLMAPI resetResultSet(
+	RCODE FTKAPI resetResultSet(
 		FLMBOOL			bDelete = TRUE);
 
-	RCODE FLMAPI flushToFile( void);
+	RCODE FTKAPI flushToFile( void);
 
 private:
 
@@ -539,26 +539,26 @@ public:
 	RCODE setupResultSet(
 		IF_ResultSetCompare *	pCompare);
 
-	RCODE FLMAPI addEntry(
+	RCODE FTKAPI addEntry(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyLength,
 		FLMBYTE *	pucEntry,
 		FLMUINT		uiEntryLength);
 
-	RCODE FLMAPI modifyEntry(
+	RCODE FTKAPI modifyEntry(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyLength,
 		FLMBYTE *	pucEntry,
 		FLMUINT		uiEntryLength);
 
-	RCODE FLMAPI getCurrent(
+	RCODE FTKAPI getCurrent(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyLength,
 		FLMBYTE *	pucEntry,
 		FLMUINT		uiEntryLength,
 		FLMUINT *	puiReturnLength);
 
-	RCODE FLMAPI getNext(
+	RCODE FTKAPI getNext(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyBufLen,
 		FLMUINT *	puiKeylen,
@@ -566,7 +566,7 @@ public:
 		FLMUINT		uiBufferLength,
 		FLMUINT *	puiReturnLength);
 
-	RCODE FLMAPI getPrev(
+	RCODE FTKAPI getPrev(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyBufLen,
 		FLMUINT *	puiKeylen,
@@ -574,7 +574,7 @@ public:
 		FLMUINT		uiBufferLength,
 		FLMUINT *	puiReturnLength);
 
-	RCODE FLMAPI getFirst(
+	RCODE FTKAPI getFirst(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyBufLen,
 		FLMUINT *	puiKeylen,
@@ -582,7 +582,7 @@ public:
 		FLMUINT		uiBufferLength,
 		FLMUINT *	puiReturnLength);
 
-	RCODE FLMAPI getLast(
+	RCODE FTKAPI getLast(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyBufLen,
 		FLMUINT *	puiKeylen,
@@ -590,14 +590,14 @@ public:
 		FLMUINT		uiBufferLength,
 		FLMUINT *	puiReturnLength);
 
-	RCODE FLMAPI findEntry(
+	RCODE FTKAPI findEntry(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyLen,
 		FLMBYTE *	pucBuffer,
 		FLMUINT		uiBufferLength,
 		FLMUINT *	puiReturnLength);
 
-	RCODE FLMAPI deleteEntry(
+	RCODE FTKAPI deleteEntry(
 		FLMBYTE *	pucKey,
 		FLMUINT		uiKeyLength);
 
@@ -723,7 +723,7 @@ F_ResultSet::~F_ResultSet()
 /*****************************************************************************
 Desc:	Reset the result set so it can be reused.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::resetResultSet(
+RCODE FTKAPI F_ResultSet::resetResultSet(
 	FLMBOOL		bDelete)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -818,7 +818,7 @@ Exit:
 Desc:	Setup the result set with all of the needed input values.
 		This method must only be called once.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::setupResultSet(
+RCODE FTKAPI F_ResultSet::setupResultSet(
 	const char *				pszDirPath,
 	IF_ResultSetCompare *	pCompare,
 	FLMUINT						uiEntrySize,
@@ -1117,7 +1117,7 @@ Exit:
 Desc:	Write the current block and close the file.  Call this function befor
 		calling resetResultSet so that it can be reused.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::flushToFile()
+RCODE FTKAPI F_ResultSet::flushToFile()
 {
 	RCODE		rc = NE_FLM_OK;
 
@@ -1146,7 +1146,7 @@ Notes:	Public method used by application and by the internal sort
 			and merge steps during finalize.  The user must never add an
 			entry that is larger than the block size.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::addEntry(
+RCODE FTKAPI F_ResultSet::addEntry(
 	const void *	pvEntry,
 	FLMUINT			uiEntryLength)				// If zero then entry is fixed length
 {
@@ -1251,7 +1251,7 @@ Exit:
 /*****************************************************************************
 Desc:	Done adding entries.  Sort all of the entries and perform a merge.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::finalizeResultSet(
+RCODE FTKAPI F_ResultSet::finalizeResultSet(
 	IF_ResultSetSortStatus *	pSortStatus,
 	FLMUINT64 *						pui64TotalEntries)
 {
@@ -1626,7 +1626,7 @@ Exit:
 /*****************************************************************************
 Desc:	Return the Current entry reference in the result set.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::getCurrent(
+RCODE FTKAPI F_ResultSet::getCurrent(
 	void *		pvBuffer,
 	FLMUINT		uiBufferLength,
 	FLMUINT *	puiReturnLength)
@@ -1652,7 +1652,7 @@ RCODE FLMAPI F_ResultSet::getCurrent(
 Desc:	Return the next reference in the result set.  If the result set
 		is not positioned then the first entry will be returned.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::getNext(
+RCODE FTKAPI F_ResultSet::getNext(
 	void *			pvBuffer,
 	FLMUINT			uiBufferLength,
 	FLMUINT *		puiReturnLength)
@@ -1712,7 +1712,7 @@ Exit:
 Desc:	Return the previous reference in the result set.  If the result set
 		is not positioned then the last entry will be returned.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::getPrev(
+RCODE FTKAPI F_ResultSet::getPrev(
 	void *			pvBuffer,
 	FLMUINT			uiBufferLength,
 	FLMUINT *		puiReturnLength)
@@ -1770,7 +1770,7 @@ Exit:
 /*****************************************************************************
 Desc:	Return the first reference in the result set.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::getFirst(
+RCODE FTKAPI F_ResultSet::getFirst(
 	void *			pvBuffer,
 	FLMUINT			uiBufferLength,
 	FLMUINT *		puiReturnLength)
@@ -1813,7 +1813,7 @@ Exit:
 /*****************************************************************************
 Desc:	Return the last reference in the result set.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::getLast(
+RCODE FTKAPI F_ResultSet::getLast(
 	void *			pvBuffer,
 	FLMUINT			uiBufferLength,
 	FLMUINT *		puiReturnLength)
@@ -1857,7 +1857,7 @@ Exit:
 Desc:	Find the matching entry in the result set using the compare routine.
 		This does a binary search on the list of blocks.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::findMatch(
+RCODE FTKAPI F_ResultSet::findMatch(
 	const void *	pvMatchEntry,			// Entry to match
 	FLMUINT			uiMatchEntryLength,	// Variable length of above entry
 	void *			pvFoundEntry,			// (out) Entry to return
@@ -2039,7 +2039,7 @@ Exit:
 /*****************************************************************************
 Desc:	Set the current entry position.
 *****************************************************************************/
-RCODE FLMAPI F_ResultSet::setPosition(
+RCODE FTKAPI F_ResultSet::setPosition(
 	FLMUINT64		ui64Position)
 {
 	RCODE					rc = NE_FLM_OK;
@@ -4151,7 +4151,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmAllocResultSet(
+RCODE FTKAPI FlmAllocResultSet(
 	IF_ResultSet **			ppResultSet)
 {
 	if( (*ppResultSet = f_new F_ResultSet) == NULL)
@@ -4165,7 +4165,7 @@ RCODE FLMAPI FlmAllocResultSet(
 /***************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI FlmAllocBTreeResultSet(
+RCODE FTKAPI FlmAllocBTreeResultSet(
 	IF_ResultSetCompare *	pCompare,
 	IF_BTreeResultSet **		ppBTreeResultSet)
 {

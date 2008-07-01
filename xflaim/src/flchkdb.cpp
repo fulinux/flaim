@@ -783,7 +783,7 @@ Exit:
 Desc:	Returns the next B-Tree information that was collected during the
 		database check.
 ****************************************************************************/
-void FLMAPI F_DbInfo::getBTreeInfo(
+void XFLAPI F_DbInfo::getBTreeInfo(
 	FLMUINT			uiNthLogicalFile,
 	FLMUINT *		puiLfNum,
 	eLFileType *	peLfType,
@@ -814,7 +814,7 @@ void FLMAPI F_DbInfo::getBTreeInfo(
 Desc:	Returns block information on the specified b-tree and level within
 		that b-tree.
 ****************************************************************************/
-void FLMAPI F_DbInfo::getBTreeBlockStats(
+void XFLAPI F_DbInfo::getBTreeBlockStats(
 	FLMUINT		uiNthLogicalFile,
 	FLMUINT		uiLevel,
 	FLMUINT64 *	pui64KeyCount,
@@ -865,7 +865,7 @@ Note:	The routine verifies the database by first reading through
 		verify the linked lists, we can keep ourselves from getting into
 		an infinite loop if there is a loop in the lists.
 ****************************************************************************/
-RCODE FLMAPI F_DbSystem::dbCheck(
+RCODE XFLAPI F_DbSystem::dbCheck(
 	const char *			pszDbFileName,
 		// [IN] Full path and file name of the database which
 		// is to be checked.  NULL can be passed as the value of

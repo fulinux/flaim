@@ -25,14 +25,14 @@
 
 #include "flaimsys.h"
 
-FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
+FSTATIC RCODE XFLAPI flmBackgroundIndexBuildThrd(
 	IF_Thread *		pThread);
 	
 /****************************************************************************
 Desc : Return the status of the index.
 Notes:
 ****************************************************************************/
-RCODE FLMAPI F_Db::indexStatus(
+RCODE XFLAPI F_Db::indexStatus(
 	FLMUINT					uiIndexNum,
 	XFLM_INDEX_STATUS *	pIndexStatus)
 {
@@ -133,7 +133,7 @@ Exit:
 Desc:	Return the number of the next index.  Pass in zero to get the
 		first index.
 ****************************************************************************/
-RCODE FLMAPI F_Db::indexGetNext(
+RCODE XFLAPI F_Db::indexGetNext(
 	FLMUINT *	puiIndexNum)
 {
 	RCODE		rc = NE_XFLM_OK;
@@ -1015,7 +1015,7 @@ Desc:		Thread that will build an index in the background.
 			Caller will create a pDb to use.  This pDb must be
 			freed at the conclusion of the routine.
 ****************************************************************************/
-FSTATIC RCODE FLMAPI flmBackgroundIndexBuildThrd(
+FSTATIC RCODE XFLAPI flmBackgroundIndexBuildThrd(
 	IF_Thread *		pThread)
 {
 	RCODE					rc = NE_XFLM_OK;
