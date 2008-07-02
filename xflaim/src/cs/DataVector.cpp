@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_Release(
+XFLXPC void XFLAPI xflaim_DataVector_Release(
 	IF_DataVector *	pDataVector)
 {
 	if (pDataVector)
@@ -40,7 +40,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_Release(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_setDocumentID(
+XFLXPC void XFLAPI xflaim_DataVector_setDocumentID(
 	IF_DataVector *	pDataVector,
 	FLMUINT64			ui64DocumentID)
 {
@@ -50,7 +50,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_setDocumentID(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setID(
+XFLXPC RCODE XFLAPI xflaim_DataVector_setID(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMUINT64			ui64ID)
@@ -61,7 +61,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setID(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setNameId(
+XFLXPC RCODE XFLAPI xflaim_DataVector_setNameId(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMUINT32			ui32NameId,
@@ -75,7 +75,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setNameId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setULong(
+XFLXPC RCODE XFLAPI xflaim_DataVector_setULong(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMUINT64			ui64Value)
@@ -86,7 +86,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setULong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setLong(
+XFLXPC RCODE XFLAPI xflaim_DataVector_setLong(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMINT64				i64Value)
@@ -97,7 +97,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setLong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setUInt(
+XFLXPC RCODE XFLAPI xflaim_DataVector_setUInt(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMUINT32			ui32Value)
@@ -108,7 +108,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setUInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setInt(
+XFLXPC RCODE XFLAPI xflaim_DataVector_setInt(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMINT32				i32Value)
@@ -119,7 +119,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setString(
+XFLXPC RCODE XFLAPI xflaim_DataVector_setString(
 	IF_DataVector *		pDataVector,
 	FLMUINT32				ui32ElementNumber,
 	const FLMUNICODE *	puzValue)
@@ -130,7 +130,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setString(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setBinary(
+XFLXPC RCODE XFLAPI xflaim_DataVector_setBinary(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	const void *		pvValue,
@@ -142,7 +142,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_setBinary(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_setRightTruncated(
+XFLXPC void XFLAPI xflaim_DataVector_setRightTruncated(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -152,7 +152,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_setRightTruncated(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_setLeftTruncated(
+XFLXPC void XFLAPI xflaim_DataVector_setLeftTruncated(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -162,7 +162,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_setLeftTruncated(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_clearRightTruncated(
+XFLXPC void XFLAPI xflaim_DataVector_clearRightTruncated(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -172,7 +172,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_clearRightTruncated(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_clearLeftTruncated(
+XFLXPC void XFLAPI xflaim_DataVector_clearLeftTruncated(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -182,7 +182,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_clearLeftTruncated(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isRightTruncated(
+XFLXPC FLMBOOL XFLAPI xflaim_DataVector_isRightTruncated(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -192,7 +192,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isRightTruncated(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isLeftTruncated(
+XFLXPC FLMBOOL XFLAPI xflaim_DataVector_isLeftTruncated(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -202,7 +202,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isLeftTruncated(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_DataVector_getDocumentID(
+XFLXPC FLMUINT64 XFLAPI xflaim_DataVector_getDocumentID(
 	IF_DataVector *	pDataVector)
 {
 	return( pDataVector->getDocumentID());
@@ -211,7 +211,7 @@ FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_DataVector_getDocumentID(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_DataVector_getID(
+XFLXPC FLMUINT64 XFLAPI xflaim_DataVector_getID(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -221,7 +221,7 @@ FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_DataVector_getID(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DataVector_getNameId(
+XFLXPC FLMUINT32 XFLAPI xflaim_DataVector_getNameId(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -231,7 +231,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DataVector_getNameId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isAttr(
+XFLXPC FLMBOOL XFLAPI xflaim_DataVector_isAttr(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -241,7 +241,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isAttr(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isDataComponent(
+XFLXPC FLMBOOL XFLAPI xflaim_DataVector_isDataComponent(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -251,7 +251,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isDataComponent(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isKeyComponent(
+XFLXPC FLMBOOL XFLAPI xflaim_DataVector_isKeyComponent(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -261,7 +261,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DataVector_isKeyComponent(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DataVector_getDataLength(
+XFLXPC FLMUINT32 XFLAPI xflaim_DataVector_getDataLength(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -271,7 +271,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DataVector_getDataLength(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DataVector_getDataType(
+XFLXPC FLMUINT32 XFLAPI xflaim_DataVector_getDataType(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber)
 {
@@ -281,7 +281,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DataVector_getDataType(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getULong(
+XFLXPC RCODE XFLAPI xflaim_DataVector_getULong(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMUINT64 *			pui64Value)
@@ -292,7 +292,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getULong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getLong(
+XFLXPC RCODE XFLAPI xflaim_DataVector_getLong(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMINT64 *			pi64Value)
@@ -303,7 +303,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getLong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getUInt(
+XFLXPC RCODE XFLAPI xflaim_DataVector_getUInt(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMUINT32 *			pui32Value)
@@ -319,7 +319,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getUInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getInt(
+XFLXPC RCODE XFLAPI xflaim_DataVector_getInt(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMINT32 *			pi32Value)
@@ -335,7 +335,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getString(
+XFLXPC RCODE XFLAPI xflaim_DataVector_getString(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMUNICODE **		ppuzValue)
@@ -346,7 +346,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getString(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_getBinary(
+XFLXPC RCODE XFLAPI xflaim_DataVector_getBinary(
 	IF_DataVector *	pDataVector,
 	FLMUINT32			ui32ElementNumber,
 	FLMUINT32			ui32Len,
@@ -370,7 +370,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_outputKey(
+XFLXPC RCODE XFLAPI xflaim_DataVector_outputKey(
 	IF_DataVector *	pDataVector,
 	IF_Db *				pDb,
 	FLMUINT32			ui32IndexNum,
@@ -397,7 +397,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_outputData(
+XFLXPC RCODE XFLAPI xflaim_DataVector_outputData(
 	IF_DataVector *	pDataVector,
 	IF_Db *				pDb,
 	FLMUINT32			ui32IndexNum,
@@ -423,7 +423,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_inputKey(
+XFLXPC RCODE XFLAPI xflaim_DataVector_inputKey(
 	IF_DataVector *	pDataVector,
 	IF_Db *				pDb,
 	FLMUINT32			ui32IndexNum,
@@ -437,7 +437,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_inputKey(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_inputData(
+XFLXPC RCODE XFLAPI xflaim_DataVector_inputData(
 	IF_DataVector *	pDataVector,
 	IF_Db *				pDb,
 	FLMUINT32			ui32IndexNum,
@@ -451,7 +451,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DataVector_inputData(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DataVector_reset(
+XFLXPC void XFLAPI xflaim_DataVector_reset(
 	IF_DataVector *	pDataVector)
 {
 	pDataVector->reset();

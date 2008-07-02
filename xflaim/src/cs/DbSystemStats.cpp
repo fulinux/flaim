@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystemStats_freeStats(
+XFLXPC void XFLAPI xflaim_DbSystemStats_freeStats(
 	IF_DbSystem *	pDbSystem,
 	XFLM_STATS *	pStats)
 {
@@ -42,7 +42,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystemStats_freeStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystemStats_getGeneralStats(
+XFLXPC void XFLAPI xflaim_DbSystemStats_getGeneralStats(
 	XFLM_STATS *	pStats,
 	FLMUINT32 *		pui32NumDatabases,
 	FLMUINT32 *		pui32StartTime,
@@ -76,7 +76,7 @@ typedef struct
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystemStats_getDbStats(
+XFLXPC RCODE XFLAPI xflaim_DbSystemStats_getDbStats(
 	XFLM_STATS *			pStats,
 	FLMUINT32				ui32DatabaseNum,
 	CS_XFLM_DB_STATS *	pCSDbStats)
@@ -125,7 +125,7 @@ typedef struct
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystemStats_getLFileStats(
+XFLXPC RCODE XFLAPI xflaim_DbSystemStats_getLFileStats(
 	XFLM_STATS *				pStats,
 	FLMUINT32					ui32DatabaseNum,
 	FLMUINT32					ui32LFileNum,

@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DOMNode_Release(
+XFLXPC void XFLAPI xflaim_DOMNode_Release(
 	IF_DOMNode *	pThisNode)
 {
 	if (pThisNode)
@@ -40,7 +40,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DOMNode_Release(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_createNode(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_createNode(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32NodeType,
@@ -55,7 +55,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_createNode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_createChildElement(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_createChildElement(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32ChildElementNameId,
@@ -70,7 +70,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_createChildElement(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_deleteNode(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_deleteNode(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb)
 {
@@ -80,7 +80,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_deleteNode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_deleteChildren(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_deleteChildren(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb)
 {
@@ -90,7 +90,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_deleteChildren(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DOMNode_getNodeType(
+XFLXPC FLMUINT32 XFLAPI xflaim_DOMNode_getNodeType(
 	IF_DOMNode *	pThisNode)
 {
 	return( (FLMUINT32)pThisNode->getNodeType());
@@ -99,7 +99,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DOMNode_getNodeType(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_isDataLocalToNode(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_isDataLocalToNode(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMBOOL *		pbLocal)
@@ -110,7 +110,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_isDataLocalToNode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_createAttribute(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_createAttribute(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -122,7 +122,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_createAttribute(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getFirstAttribute(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getFirstAttribute(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -133,7 +133,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getFirstAttribute(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLastAttribute(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getLastAttribute(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -144,7 +144,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLastAttribute(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttribute(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAttribute(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -156,7 +156,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttribute(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_deleteAttribute(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_deleteAttribute(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId)
@@ -167,7 +167,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_deleteAttribute(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasAttribute(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_hasAttribute(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -192,7 +192,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasAttribute(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasAttributes(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_hasAttributes(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMBOOL *		pbHasAttrs)
@@ -203,7 +203,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasAttributes(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasNextSibling(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_hasNextSibling(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMBOOL *		pbHasNextSibling)
@@ -214,7 +214,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasNextSibling(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasPreviousSibling(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_hasPreviousSibling(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMBOOL *		pbHasPreviousSibling)
@@ -225,7 +225,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasPreviousSibling(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasChildren(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_hasChildren(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMBOOL *		pbHasChildren)
@@ -236,7 +236,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasChildren(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_isNamespaceDecl(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_isNamespaceDecl(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMBOOL *		pbIsNamespaceDecl)
@@ -247,7 +247,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_isNamespaceDecl(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getParentId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getParentId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64ParentId)
@@ -258,7 +258,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getParentId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNodeId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getNodeId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64NodeId)
@@ -269,7 +269,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNodeId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDocumentId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getDocumentId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64DocumentId)
@@ -280,7 +280,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDocumentId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPrevSibId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getPrevSibId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64PrevSibId)
@@ -291,7 +291,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPrevSibId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNextSibId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getNextSibId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64NextSibId)
@@ -302,7 +302,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNextSibId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getFirstChildId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getFirstChildId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64FirstChildId)
@@ -313,7 +313,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getFirstChildId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLastChildId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getLastChildId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64LastChildId)
@@ -324,7 +324,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLastChildId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNameId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getNameId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32NameId)
@@ -340,7 +340,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNameId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setULong(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setULong(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64		ui64Value,
@@ -352,7 +352,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setULong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueULong(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setAttributeValueULong(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -366,7 +366,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueULong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setLong(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setLong(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMINT64			i64Value,
@@ -378,7 +378,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setLong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueLong(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setAttributeValueLong(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -392,7 +392,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueLong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setUInt(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setUInt(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32Value,
@@ -404,7 +404,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setUInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueUInt(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setAttributeValueUInt(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -418,7 +418,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueUInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setInt(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setInt(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMINT32			i32Value,
@@ -430,7 +430,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueInt(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setAttributeValueInt(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -444,7 +444,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setString(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setString(
 	IF_DOMNode *			pThisNode,
 	IF_Db *			pDb,
 	const FLMUNICODE *	puzValue,
@@ -458,7 +458,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setString(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueString(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setAttributeValueString(
 	IF_DOMNode *			pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32				ui32AttrNameId,
@@ -472,7 +472,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueString(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setBinary(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setBinary(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	const void *	pvValue,
@@ -487,7 +487,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setBinary(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueBinary(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setAttributeValueBinary(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -502,7 +502,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setAttributeValueBinary(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDataLength(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getDataLength(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32DataLength)
@@ -518,7 +518,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDataLength(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDataType(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getDataType(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32DataType)
@@ -534,7 +534,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDataType(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getULong(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getULong(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64Value)
@@ -545,7 +545,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getULong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueULong(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAttributeValueULong(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -570,7 +570,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueULong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLong(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getLong(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMINT64 *		pi64Value)
@@ -581,7 +581,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueLong(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAttributeValueLong(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -607,7 +607,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueLong(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getUInt(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getUInt(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32Value)
@@ -623,7 +623,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getUInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueUInt(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAttributeValueUInt(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -651,7 +651,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueUInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getInt(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getInt(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMINT32 *		pi32Value)
@@ -667,7 +667,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueInt(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAttributeValueInt(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -695,7 +695,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueInt(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getString(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getString(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32StartPos,
@@ -746,7 +746,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueString(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAttributeValueString(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -759,7 +759,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueString(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getStringLen(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getStringLen(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32NumChars)
@@ -775,7 +775,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getStringLen(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getBinary(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getBinary(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32StartPos,
@@ -789,7 +789,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getBinary(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueDataLength(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAttributeValueDataLength(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -807,7 +807,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueDataLength(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueBinary(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAttributeValueBinary(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32AttrNameId,
@@ -821,7 +821,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAttributeValueBinary(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDocumentNode(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getDocumentNode(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -832,7 +832,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDocumentNode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getParentNode(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getParentNode(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -843,7 +843,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getParentNode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getFirstChild(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getFirstChild(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -854,7 +854,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getFirstChild(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLastChild(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getLastChild(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -865,7 +865,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLastChild(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getChild(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getChild(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32NodeType,
@@ -877,7 +877,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getChild(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getChildElement(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getChildElement(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32ElementNameId,
@@ -889,7 +889,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getChildElement(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getSiblingElement(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getSiblingElement(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32ElementNameId,
@@ -903,7 +903,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getSiblingElement(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAncestorElement(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAncestorElement(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32ElementNameId,
@@ -915,7 +915,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAncestorElement(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDescendantElement(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getDescendantElement(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32ElementNameId,
@@ -927,7 +927,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getDescendantElement(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPreviousSibling(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getPreviousSibling(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -938,7 +938,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPreviousSibling(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNextSibling(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getNextSibling(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -949,7 +949,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNextSibling(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPreviousDocument(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getPreviousDocument(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -960,7 +960,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPreviousDocument(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNextDocument(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getNextDocument(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -971,7 +971,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNextDocument(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPrefixChars(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getPrefixChars(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *	pui32NumChars)
@@ -987,7 +987,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPrefixChars(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPrefix(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getPrefix(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32NumChars,
@@ -1002,7 +1002,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPrefix(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPrefixId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getPrefixId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32PrefixId)
@@ -1018,7 +1018,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getPrefixId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getEncDefId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getEncDefId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32EncDefId)
@@ -1034,7 +1034,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getEncDefId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setPrefix(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setPrefix(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	const FLMUNICODE *	puzPrefix)
@@ -1045,7 +1045,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setPrefix(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setPrefixId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setPrefixId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32PrefixId)
@@ -1056,7 +1056,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setPrefixId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNamespaceURIChars(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getNamespaceURIChars(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32NumChars)
@@ -1072,7 +1072,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNamespaceURIChars(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNamespaceURI(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getNamespaceURI(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32NumChars,
@@ -1087,7 +1087,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getNamespaceURI(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLocalNameChars(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getLocalNameChars(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32NumChars)
@@ -1103,7 +1103,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLocalNameChars(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLocalName(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getLocalName(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32NumChars,
@@ -1118,7 +1118,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getLocalName(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getQualifiedNameChars(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getQualifiedNameChars(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32NumChars)
@@ -1134,7 +1134,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getQualifiedNameChars(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getQualifiedName(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getQualifiedName(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32		ui32NumChars,
@@ -1149,7 +1149,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getQualifiedName(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getCollection(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getCollection(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32Collection)
@@ -1165,7 +1165,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getCollection(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_createAnnotation(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_createAnnotation(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -1176,7 +1176,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_createAnnotation(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAnnotation(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAnnotation(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -1187,7 +1187,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAnnotation(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAnnotationId(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getAnnotationId(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64AnnotationId)
@@ -1198,7 +1198,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getAnnotationId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasAnnotation(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_hasAnnotation(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMBOOL *		pbHasAnnotation)
@@ -1209,7 +1209,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_hasAnnotation(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getMetaValue(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_getMetaValue(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64 *		pui64Value)
@@ -1220,7 +1220,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_getMetaValue(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DOMNode_setMetaValue(
+XFLXPC RCODE XFLAPI xflaim_DOMNode_setMetaValue(
 	IF_DOMNode *	pThisNode,
 	IF_Db *			pDb,
 	FLMUINT64		ui64Value)

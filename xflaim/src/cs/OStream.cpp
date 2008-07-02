@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_OStream_Release(
+XFLXPC void XFLAPI xflaim_OStream_Release(
 	IF_OStream *	pOStream)
 {
 	if (pOStream)

@@ -58,7 +58,7 @@ FSTATIC void CS_copyImportStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Db_Release(
+XFLXPC void XFLAPI xflaim_Db_Release(
 	IF_Db *	pDb)
 {
 	if (pDb)
@@ -70,7 +70,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Db_Release(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transBegin(
+XFLXPC RCODE XFLAPI xflaim_Db_transBegin(
 	IF_Db *		pDb,
 	FLMUINT32	ui32TransType,
 	FLMUINT32	ui32MaxLockWait,
@@ -83,7 +83,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transBegin(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transBeginClone(
+XFLXPC RCODE XFLAPI xflaim_Db_transBeginClone(
 	IF_Db *	pDb,
 	IF_Db *	pDbToClone)
 {
@@ -93,7 +93,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transBeginClone(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transCommit(
+XFLXPC RCODE XFLAPI xflaim_Db_transCommit(
 	IF_Db *	pDb)
 {
 	return( pDb->transCommit());
@@ -102,7 +102,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transCommit(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transAbort(
+XFLXPC RCODE XFLAPI xflaim_Db_transAbort(
 	IF_Db *	pDb)
 {
 	return( pDb->transAbort());
@@ -111,7 +111,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_transAbort(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getTransType(
+XFLXPC FLMUINT32 XFLAPI xflaim_Db_getTransType(
 	IF_Db *	pDb)
 {
 	return( (FLMUINT32)pDb->getTransType());
@@ -120,7 +120,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getTransType(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_doCheckpoint(
+XFLXPC RCODE XFLAPI xflaim_Db_doCheckpoint(
 	IF_Db *		pDb,
 	FLMUINT32	ui32Timeout)
 {
@@ -130,7 +130,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_doCheckpoint(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_dbLock(
+XFLXPC RCODE XFLAPI xflaim_Db_dbLock(
 	IF_Db *		pDb,
 	FLMUINT32	ui32LockType,
 	FLMINT32		i32Priority,
@@ -143,7 +143,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_dbLock(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_dbUnlock(
+XFLXPC RCODE XFLAPI xflaim_Db_dbUnlock(
 	IF_Db *		pDb)
 {
 	return( pDb->dbUnlock());
@@ -152,7 +152,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_dbUnlock(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLockType(
+XFLXPC RCODE XFLAPI xflaim_Db_getLockType(
 	IF_Db *		pDb,
 	FLMUINT32 *	pui32LockType,
 	FLMBOOL *	pbImplicitLock)
@@ -168,7 +168,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLockType(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLockInfo(
+XFLXPC RCODE XFLAPI xflaim_Db_getLockInfo(
 	IF_Db *			pDb,
 	FLMINT32			i32Priority,
 	FLMUINT32 *		pui32LockType,
@@ -205,7 +205,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_indexSuspend(
+XFLXPC RCODE XFLAPI xflaim_Db_indexSuspend(
 	IF_Db *		pDb,
 	FLMUINT32	ui32Index)
 {
@@ -215,7 +215,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_indexSuspend(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_indexResume(
+XFLXPC RCODE XFLAPI xflaim_Db_indexResume(
 	IF_Db *		pDb,
 	FLMUINT32	ui32Index)
 {
@@ -225,7 +225,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_indexResume(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_indexGetNext(
+XFLXPC RCODE XFLAPI xflaim_Db_indexGetNext(
 	IF_Db *		pDb,
 	FLMUINT32 *	pui32Index)
 {
@@ -256,7 +256,7 @@ typedef struct
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_indexStatus(
+XFLXPC RCODE XFLAPI xflaim_Db_indexStatus(
 	IF_Db *						pDb,
 	FLMUINT32					ui32Index,
 	CS_XFLM_INDEX_STATUS *	pIndexStatus)
@@ -285,7 +285,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_reduceSize(
+XFLXPC RCODE XFLAPI xflaim_Db_reduceSize(
 	IF_Db *		pDb,
 	FLMUINT32	ui32Count,
 	FLMUINT32 *	pui32NumReduced)
@@ -301,7 +301,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_reduceSize(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_keyRetrieve(
+XFLXPC RCODE XFLAPI xflaim_Db_keyRetrieve(
 	IF_Db *				pDb,
 	FLMUINT32			ui32Index,
 	IF_DataVector *	pSearchKey,
@@ -315,7 +315,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_keyRetrieve(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createDocument(
+XFLXPC RCODE XFLAPI xflaim_Db_createDocument(
 	IF_Db *				pDb,
 	FLMUINT32			ui32Collection,
 	IF_DOMNode **		ppNode)
@@ -326,7 +326,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createDocument(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createRootElement(
+XFLXPC RCODE XFLAPI xflaim_Db_createRootElement(
 	IF_Db *				pDb,
 	FLMUINT32			ui32Collection,
 	FLMUINT32			ui32ElementNameId,
@@ -339,7 +339,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createRootElement(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getFirstDocument(
+XFLXPC RCODE XFLAPI xflaim_Db_getFirstDocument(
 	IF_Db *				pDb,
 	FLMUINT32			ui32Collection,
 	IF_DOMNode **		ppNode)
@@ -350,7 +350,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getFirstDocument(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLastDocument(
+XFLXPC RCODE XFLAPI xflaim_Db_getLastDocument(
 	IF_Db *				pDb,
 	FLMUINT32			ui32Collection,
 	IF_DOMNode **		ppNode)
@@ -361,7 +361,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLastDocument(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDocument(
+XFLXPC RCODE XFLAPI xflaim_Db_getDocument(
 	IF_Db *				pDb,
 	FLMUINT32			ui32Collection,
 	FLMUINT32			ui32RetrieveFlags,
@@ -375,7 +375,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDocument(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_documentDone(
+XFLXPC RCODE XFLAPI xflaim_Db_documentDone(
 	IF_Db *				pDb,
 	FLMUINT32			ui32Collection,
 	FLMUINT64			ui64DocumentId)
@@ -386,7 +386,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_documentDone(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_documentDone2(
+XFLXPC RCODE XFLAPI xflaim_Db_documentDone2(
 	IF_Db *			pDb,
 	IF_DOMNode *	pDocument)
 {
@@ -396,7 +396,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_documentDone2(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createElementDef(
+XFLXPC RCODE XFLAPI xflaim_Db_createElementDef(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzElementName,
@@ -415,7 +415,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createElementDef(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createUniqueElmDef(
+XFLXPC RCODE XFLAPI xflaim_Db_createUniqueElmDef(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzElementName,
@@ -433,7 +433,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createUniqueElmDef(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getElementNameId(
+XFLXPC RCODE XFLAPI xflaim_Db_getElementNameId(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzElementName,
@@ -450,7 +450,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getElementNameId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createAttributeDef(
+XFLXPC RCODE XFLAPI xflaim_Db_createAttributeDef(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzAttributeName,
@@ -469,7 +469,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createAttributeDef(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAttributeNameId(
+XFLXPC RCODE XFLAPI xflaim_Db_getAttributeNameId(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzNamespaceURI,
 	const FLMUNICODE *	puzAttributeName,
@@ -486,7 +486,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAttributeNameId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createPrefixDef(
+XFLXPC RCODE XFLAPI xflaim_Db_createPrefixDef(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzPrefixName,
 	FLMUINT32 *				pui32NameId)
@@ -502,7 +502,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createPrefixDef(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getPrefixId(
+XFLXPC RCODE XFLAPI xflaim_Db_getPrefixId(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzPrefixName,
 	FLMUINT32 *				pui32NameId)
@@ -518,7 +518,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getPrefixId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createEncDef(
+XFLXPC RCODE XFLAPI xflaim_Db_createEncDef(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzEncName,
 	const FLMUNICODE *	puzEncType,
@@ -536,7 +536,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createEncDef(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getEncDefId(
+XFLXPC RCODE XFLAPI xflaim_Db_getEncDefId(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzEncName,
 	FLMUINT32 *				pui32NameId)
@@ -552,7 +552,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getEncDefId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createCollectionDef(
+XFLXPC RCODE XFLAPI xflaim_Db_createCollectionDef(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzCollectionName,
 	FLMUINT32				ui32EncDefId,
@@ -569,7 +569,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_createCollectionDef(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getCollectionNumber(
+XFLXPC RCODE XFLAPI xflaim_Db_getCollectionNumber(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzCollectionName,
 	FLMUINT32 *				pui32NameId)
@@ -585,7 +585,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getCollectionNumber(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getIndexNumber(
+XFLXPC RCODE XFLAPI xflaim_Db_getIndexNumber(
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzIndexName,
 	FLMUINT32 *				pui32NameId)
@@ -601,7 +601,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getIndexNumber(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDictionaryDef(
+XFLXPC RCODE XFLAPI xflaim_Db_getDictionaryDef(
 	IF_Db *			pDb,
 	FLMUINT32		ui32DictType,
 	FLMUINT32		ui32DictNumber,
@@ -693,7 +693,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDictionaryName(
+XFLXPC RCODE XFLAPI xflaim_Db_getDictionaryName(
 	IF_Db *			pDb,
 	FLMUINT32		ui32DictType,
 	FLMUINT32		ui32DictNumber,
@@ -706,7 +706,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDictionaryName(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getElementNamespace(
+XFLXPC RCODE XFLAPI xflaim_Db_getElementNamespace(
 	IF_Db *			pDb,
 	FLMUINT32		ui32DictNumber,
 	FLMUNICODE **	ppuzName)
@@ -718,7 +718,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getElementNamespace(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAttributeNamespace(
+XFLXPC RCODE XFLAPI xflaim_Db_getAttributeNamespace(
 	IF_Db *			pDb,
 	FLMUINT32		ui32DictNumber,
 	FLMUNICODE **	ppuzName)
@@ -730,7 +730,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAttributeNamespace(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getNode(
+XFLXPC RCODE XFLAPI xflaim_Db_getNode(
 	IF_Db *			pDb,
 	FLMUINT32		ui32Collection,
 	FLMUINT64		ui64NodeId,
@@ -742,7 +742,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getNode(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAttribute(
+XFLXPC RCODE XFLAPI xflaim_Db_getAttribute(
 	IF_Db *			pDb,
 	FLMUINT32		ui32Collection,
 	FLMUINT64		ui64ElementNodeId,
@@ -756,7 +756,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAttribute(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDataType(
+XFLXPC RCODE XFLAPI xflaim_Db_getDataType(
 	IF_Db *		pDb,
 	FLMUINT32	ui32DictType,
 	FLMUINT32	ui3DictNumber,
@@ -773,7 +773,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDataType(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_backupBegin(
+XFLXPC RCODE XFLAPI xflaim_Db_backupBegin(
 	IF_Db *			pDb,
 	FLMBOOL			bFullBackup,
 	FLMBOOL			bLockDb,
@@ -814,7 +814,7 @@ FSTATIC void CS_copyImportStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_importDocument(
+XFLXPC RCODE XFLAPI xflaim_Db_importDocument(
 	IF_Db *						pDb,
 	IF_IStream *				pIStream,
 	FLMUINT32					ui32Collection,
@@ -833,7 +833,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_importDocument(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_importIntoDocument(
+XFLXPC RCODE XFLAPI xflaim_Db_importIntoDocument(
 	IF_Db *						pDb,
 	IF_IStream *				pIStream,
 	IF_DOMNode *				pNodeToLinkTo,
@@ -866,7 +866,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_changeItemState(
+XFLXPC RCODE XFLAPI xflaim_Db_changeItemState(
 	IF_Db *			pDb,
 	FLMUINT32		ui32DictType,
 	FLMUINT32		ui32DictNumber,
@@ -879,7 +879,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_changeItemState(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getRflFileName(
+XFLXPC RCODE XFLAPI xflaim_Db_getRflFileName(
 	IF_Db *			pDb,
 	FLMUINT32		ui32FileNum,
 	FLMBOOL			bBaseOnly,
@@ -908,7 +908,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setNextNodeId(
+XFLXPC RCODE XFLAPI xflaim_Db_setNextNodeId(
 	IF_Db *			pDb,
 	FLMUINT32		ui32Collection,
 	FLMUINT64		ui64NextNodeId)
@@ -919,7 +919,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setNextNodeId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setNextDictNum(
+XFLXPC RCODE XFLAPI xflaim_Db_setNextDictNum(
 	IF_Db *			pDb,
 	FLMUINT32		ui32DictType,
 	FLMUINT32		ui32DictNum)
@@ -930,7 +930,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setNextDictNum(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setRflKeepFilesFlag(
+XFLXPC RCODE XFLAPI xflaim_Db_setRflKeepFilesFlag(
 	IF_Db *		pDb,
 	FLMBOOL		bKeep)
 {
@@ -940,7 +940,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setRflKeepFilesFlag(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getRflKeepFlag(
+XFLXPC RCODE XFLAPI xflaim_Db_getRflKeepFlag(
 	IF_Db *		pDb,
 	FLMBOOL *	pbKeep)
 {
@@ -950,7 +950,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getRflKeepFlag(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setRflDir(
+XFLXPC RCODE XFLAPI xflaim_Db_setRflDir(
 	IF_Db *			pDb,
 	const char *	pszRflDir)
 {
@@ -960,7 +960,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setRflDir(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getRflDir(
+XFLXPC RCODE XFLAPI xflaim_Db_getRflDir(
 	IF_Db *	pDb,
 	char **	ppszRflDir)
 {
@@ -985,7 +985,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getRflFileNum(
+XFLXPC RCODE XFLAPI xflaim_Db_getRflFileNum(
 	IF_Db *		pDb,
 	FLMUINT32 *	pui32RflFileNum)
 {
@@ -1000,7 +1000,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getRflFileNum(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getHighestNotUsedRflFileNum(
+XFLXPC RCODE XFLAPI xflaim_Db_getHighestNotUsedRflFileNum(
 	IF_Db *		pDb,
 	FLMUINT32 *	pui32RflFileNum)
 {
@@ -1015,7 +1015,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getHighestNotUsedRflFileNum(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setRflFileSizeLimits(
+XFLXPC RCODE XFLAPI xflaim_Db_setRflFileSizeLimits(
 	IF_Db *		pDb,
 	FLMUINT32	ui32MinRflSize,
 	FLMUINT32	ui32MaxRflSize)
@@ -1026,7 +1026,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setRflFileSizeLimits(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getRflFileSizeLimits(
+XFLXPC RCODE XFLAPI xflaim_Db_getRflFileSizeLimits(
 	IF_Db *		pDb,
 	FLMUINT32 *	pui32MinRflSize,
 	FLMUINT32 *	pui32MaxRflSize)
@@ -1044,7 +1044,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getRflFileSizeLimits(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_rflRollToNextFile(
+XFLXPC RCODE XFLAPI xflaim_Db_rflRollToNextFile(
 	IF_Db *		pDb)
 {
 	return( pDb->rflRollToNextFile());
@@ -1053,7 +1053,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_rflRollToNextFile(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setKeepAbortedTransInRflFlag(
+XFLXPC RCODE XFLAPI xflaim_Db_setKeepAbortedTransInRflFlag(
 	IF_Db *		pDb,
 	FLMBOOL		bKeep)
 {
@@ -1063,7 +1063,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setKeepAbortedTransInRflFlag(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getKeepAbortedTransInRflFlag(
+XFLXPC RCODE XFLAPI xflaim_Db_getKeepAbortedTransInRflFlag(
 	IF_Db *		pDb,
 	FLMBOOL *	pbKeep)
 {
@@ -1073,7 +1073,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getKeepAbortedTransInRflFlag(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setAutoTurnOffKeepRflFlag(
+XFLXPC RCODE XFLAPI xflaim_Db_setAutoTurnOffKeepRflFlag(
 	IF_Db *		pDb,
 	FLMBOOL		bAutoTurnOff)
 {
@@ -1083,7 +1083,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_setAutoTurnOffKeepRflFlag(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAutoTurnOffKeepRflFlag(
+XFLXPC RCODE XFLAPI xflaim_Db_getAutoTurnOffKeepRflFlag(
 	IF_Db *		pDb,
 	FLMBOOL *	pbAutoTurnOff)
 {
@@ -1093,7 +1093,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAutoTurnOffKeepRflFlag(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Db_setFileExtendSize(
+XFLXPC void XFLAPI xflaim_Db_setFileExtendSize(
 	IF_Db *		pDb,
 	FLMUINT32	ui32FileExtendSize)
 {
@@ -1103,7 +1103,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Db_setFileExtendSize(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getFileExtendSize(
+XFLXPC FLMUINT32 XFLAPI xflaim_Db_getFileExtendSize(
 	IF_Db *		pDb)
 {
 	return( (FLMUINT32)pDb->getFileExtendSize());
@@ -1112,7 +1112,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getFileExtendSize(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getDbVersion(
+XFLXPC FLMUINT32 XFLAPI xflaim_Db_getDbVersion(
 	IF_Db *		pDb)
 {
 	return( (FLMUINT32)pDb->getDbVersion());
@@ -1121,7 +1121,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getDbVersion(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getBlockSize(
+XFLXPC FLMUINT32 XFLAPI xflaim_Db_getBlockSize(
 	IF_Db *		pDb)
 {
 	return( (FLMUINT32)pDb->getBlockSize());
@@ -1130,7 +1130,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getBlockSize(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getDefaultLanguage(
+XFLXPC FLMUINT32 XFLAPI xflaim_Db_getDefaultLanguage(
 	IF_Db *		pDb)
 {
 	return( (FLMUINT32)pDb->getDefaultLanguage());
@@ -1139,7 +1139,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_Db_getDefaultLanguage(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Db_getTransID(
+XFLXPC FLMUINT64 XFLAPI xflaim_Db_getTransID(
 	IF_Db *		pDb)
 {
 	return( pDb->getTransID());
@@ -1148,7 +1148,7 @@ FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Db_getTransID(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDbControlFileName(
+XFLXPC RCODE XFLAPI xflaim_Db_getDbControlFileName(
 	IF_Db *	pDb,
 	char **	ppszControlFileName)
 {
@@ -1177,7 +1177,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLastBackupTransID(
+XFLXPC RCODE XFLAPI xflaim_Db_getLastBackupTransID(
 	IF_Db *		pDb,
 	FLMUINT64 *	pui64LastBackupTransId)
 {
@@ -1187,7 +1187,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLastBackupTransID(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getBlocksChangedSinceBackup(
+XFLXPC RCODE XFLAPI xflaim_Db_getBlocksChangedSinceBackup(
 	IF_Db *		pDb,
 	FLMUINT32 *	pui32BlocksChanged)
 {
@@ -1202,7 +1202,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getBlocksChangedSinceBackup(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getNextIncBackupSequenceNum(
+XFLXPC RCODE XFLAPI xflaim_Db_getNextIncBackupSequenceNum(
 	IF_Db *		pDb,
 	FLMUINT32 *	pui32NextIncBackupSequenceNum)
 {
@@ -1217,7 +1217,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getNextIncBackupSequenceNum(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDiskSpaceUsage(
+XFLXPC RCODE XFLAPI xflaim_Db_getDiskSpaceUsage(
 	IF_Db *		pDb,
 	FLMUINT64 *	pui64DataSize,
 	FLMUINT64 *	pui64RollbackSize,
@@ -1229,7 +1229,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getDiskSpaceUsage(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getMustCloseRC(
+XFLXPC RCODE XFLAPI xflaim_Db_getMustCloseRC(
 	IF_Db *		pDb)
 {
 	return( pDb->getMustCloseRC());
@@ -1238,7 +1238,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getMustCloseRC(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAbortRC(
+XFLXPC RCODE XFLAPI xflaim_Db_getAbortRC(
 	IF_Db *		pDb)
 {
 	return( pDb->getAbortRC());
@@ -1247,7 +1247,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getAbortRC(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Db_setMustAbortTrans(
+XFLXPC void XFLAPI xflaim_Db_setMustAbortTrans(
 	IF_Db *		pDb,
 	RCODE			rc)
 {
@@ -1257,7 +1257,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Db_setMustAbortTrans(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_enableEncryption(
+XFLXPC RCODE XFLAPI xflaim_Db_enableEncryption(
 	IF_Db *		pDb)
 {
 	return( pDb->enableEncryption());
@@ -1266,7 +1266,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_enableEncryption(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_wrapKey(
+XFLXPC RCODE XFLAPI xflaim_Db_wrapKey(
 	IF_Db *			pDb,
 	const char *	pszPassword)
 {
@@ -1276,7 +1276,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_wrapKey(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_rollOverDbKey(
+XFLXPC RCODE XFLAPI xflaim_Db_rollOverDbKey(
 	IF_Db *	pDb)
 {
 	return( pDb->rollOverDbKey());
@@ -1285,7 +1285,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_rollOverDbKey(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Db_getSerialNumber(
+XFLXPC void XFLAPI xflaim_Db_getSerialNumber(
 	IF_Db *	pDb,
 	char *	pucSerialNum)
 {
@@ -1295,7 +1295,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Db_getSerialNumber(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Db_getCheckpointInfo(
+XFLXPC void XFLAPI xflaim_Db_getCheckpointInfo(
 	IF_Db *						pDb,
 	XFLM_CHECKPOINT_INFO *	pCheckpointInfo)
 {
@@ -1305,7 +1305,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Db_getCheckpointInfo(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_exportXML(
+XFLXPC RCODE XFLAPI xflaim_Db_exportXML(
 	IF_Db *			pDb,
 	IF_DOMNode *	pStartNode,
 	const char *	pszFileName,
@@ -1351,7 +1351,7 @@ public:
 	{
 	}
 	
-	RCODE FLMAPI write(
+	RCODE XFLAPI write(
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite,
 		FLMUINT *		puiBytesWritten = NULL)
@@ -1370,7 +1370,7 @@ public:
 		return( rc);
 	}
 	
-	RCODE FLMAPI closeStream( void)
+	RCODE XFLAPI closeStream( void)
 	{
 		return( m_pDynaBuf->appendByte( 0));
 	}
@@ -1384,7 +1384,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_exportXMLToString(
+XFLXPC RCODE XFLAPI xflaim_Db_exportXMLToString(
 	IF_Db *			pDb,
 	IF_DOMNode *	pStartNode,
 	FLMUINT32		ui32Format,
@@ -1411,7 +1411,7 @@ Exit:
 	return( rc);
 }
 
-typedef FLMBOOL (FLMAPI * LOCK_INFO_CLIENT)(
+typedef FLMBOOL (XFLAPI * LOCK_INFO_CLIENT)(
 	FLMBOOL		bSetTotalLocks,
 	FLMUINT32	ui32TotalLocks,
 	FLMUINT32	ui32LockNum,
@@ -1435,13 +1435,13 @@ public:
 	{
 	}
 
-	FLMBOOL FLMAPI setLockCount(
+	FLMBOOL XFLAPI setLockCount(
 		FLMUINT	uiTotalLocks)
 	{
 		return( m_fnLockInfoClient( TRUE, (FLMUINT32)uiTotalLocks, 0, 0, 0));
 	}
 
-	FLMBOOL FLMAPI addLockInfo(
+	FLMBOOL XFLAPI addLockInfo(
 		FLMUINT	uiLockNum,
 		FLMUINT	uiThreadId,
 		FLMUINT	uiTime)
@@ -1458,7 +1458,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Db_getLockUsers(
+XFLXPC RCODE XFLAPI xflaim_Db_getLockUsers(
 	IF_Db *				pDb,
 	LOCK_INFO_CLIENT	fnLockInfoClient)
 {

@@ -32,7 +32,7 @@ FSTATIC void copyCacheUsage(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_createDbSystem(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_createDbSystem(
 	IF_DbSystem **	ppDbSystem)
 {
 	return( FlmAllocDbSystem( ppDbSystem));
@@ -41,7 +41,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_createDbSystem(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_Release(
+XFLXPC void XFLAPI xflaim_DbSystem_Release(
 	IF_DbSystem *	pDbSystem)
 {
 	if (pDbSystem)
@@ -53,7 +53,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_Release(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCreate(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbCreate(
 	IF_DbSystem *	pDbSystem,
 	const char *			pszDbPath,
 	const char *			pszDataDir,
@@ -71,7 +71,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCreate(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbOpen(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbOpen(
 	IF_DbSystem *	pDbSystem,
 	const char *			pszDbPath,
 	const char *			pszDataDir,
@@ -87,7 +87,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbOpen(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRemove(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbRemove(
 	IF_DbSystem *	pDbSystem,
 	const char *			pszDbPath,
 	const char *			pszDataDir,
@@ -108,7 +108,7 @@ typedef enum
 	RESTORE_ABORT_FILE			= 6
 } eRestoreClientAction;
 
-typedef RCODE (FLMAPI * RESTORE_CLIENT)(
+typedef RCODE (XFLAPI * RESTORE_CLIENT)(
 	FLMINT32					iAction,
 	FLMUINT32				ui32FileNum,
 	FLMUINT32				ui32BytesRequested,
@@ -132,24 +132,24 @@ public:
 	{
 	}
 
-	RCODE FLMAPI openBackupSet( void)
+	RCODE XFLAPI openBackupSet( void)
 	{
 		return( m_fnRestoreClient( (FLMINT32)RESTORE_OPEN_BACKUP_SET, 0, 0, NULL, NULL));
 	}
 
-	RCODE FLMAPI openRflFile(
+	RCODE XFLAPI openRflFile(
 		FLMUINT	uiFileNum)
 	{
 		return( m_fnRestoreClient( (FLMINT32)RESTORE_OPEN_RFL_FILE, (FLMUINT32)uiFileNum, 0, NULL, NULL));
 	}
 
-	RCODE FLMAPI openIncFile(
+	RCODE XFLAPI openIncFile(
 		FLMUINT	uiFileNum)
 	{
 		return( m_fnRestoreClient( (FLMINT32)RESTORE_OPEN_INC_FILE, (FLMUINT32)uiFileNum, 0, NULL, NULL));
 	}
 
-	RCODE FLMAPI read(
+	RCODE XFLAPI read(
 		FLMUINT		uiBytesRequested,
 		void *		pvBuffer,
 		FLMUINT *	puiBytesRead)
@@ -168,12 +168,12 @@ public:
 	}
 
 	
-	RCODE FLMAPI close( void)
+	RCODE XFLAPI close( void)
 	{
 		return( m_fnRestoreClient( (FLMINT32)RESTORE_CLOSE, 0, 0, NULL, NULL));
 	}
 
-	RCODE FLMAPI abortFile( void)
+	RCODE XFLAPI abortFile( void)
 	{
 		return( m_fnRestoreClient( (FLMINT32)RESTORE_ABORT_FILE, 0, 0, NULL, NULL));
 	}
@@ -216,7 +216,7 @@ typedef enum
 	REPORT_ROLL_OVER_DB_KEY			= 28
 } eRestoreStatusAction;
 
-typedef RCODE (FLMAPI * RESTORE_STATUS)(
+typedef RCODE (XFLAPI * RESTORE_STATUS)(
 	FLMINT32					iAction,
 	FLMINT32 *				piRestoreAction,
 	FLMUINT64				ui64TransId,
@@ -245,7 +245,7 @@ public:
 	{
 	}
 
-	RCODE FLMAPI reportProgress(
+	RCODE XFLAPI reportProgress(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64BytesToDo,
 		FLMUINT64				ui64BytesDone)
@@ -260,7 +260,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportError(
+	RCODE XFLAPI reportError(
 		eRestoreAction *		peAction,
 		RCODE						rcErr)
 	{
@@ -274,7 +274,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportOpenRflFile(
+	RCODE XFLAPI reportOpenRflFile(
 		eRestoreAction *		peAction,
 		FLMUINT					uiFileNum)
 	{
@@ -288,7 +288,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportRflRead(
+	RCODE XFLAPI reportRflRead(
 		eRestoreAction *		peAction,
 		FLMUINT					uiFileNum,
 		FLMUINT					uiBytesRead)
@@ -303,7 +303,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportBeginTrans(
+	RCODE XFLAPI reportBeginTrans(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
@@ -317,7 +317,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportCommitTrans(
+	RCODE XFLAPI reportCommitTrans(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
@@ -331,7 +331,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportAbortTrans(
+	RCODE XFLAPI reportAbortTrans(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
@@ -345,7 +345,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportBlockChainFree(
+	RCODE XFLAPI reportBlockChainFree(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT64				ui64MaintDocNum,
@@ -363,7 +363,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportIndexSuspend(
+	RCODE XFLAPI reportIndexSuspend(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiIndexNum)
@@ -378,7 +378,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportIndexResume(
+	RCODE XFLAPI reportIndexResume(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiIndexNum)
@@ -393,7 +393,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportReduce(
+	RCODE XFLAPI reportReduce(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCount)
@@ -408,7 +408,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportUpgrade(
+	RCODE XFLAPI reportUpgrade(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiOldDbVersion,
@@ -424,7 +424,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportEnableEncryption(
+	RCODE XFLAPI reportEnableEncryption(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
@@ -438,7 +438,7 @@ public:
 		return( rc);
 	}
 
-	RCODE FLMAPI reportWrapKey(
+	RCODE XFLAPI reportWrapKey(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
@@ -452,7 +452,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportRollOverDbKey(
+	RCODE XFLAPI reportRollOverDbKey(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId)
 	{
@@ -466,7 +466,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportDocumentDone(
+	RCODE XFLAPI reportDocumentDone(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -482,7 +482,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportNodeDelete(
+	RCODE XFLAPI reportNodeDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -498,7 +498,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportAttributeDelete(
+	RCODE XFLAPI reportAttributeDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -515,7 +515,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportNodeChildrenDelete(
+	RCODE XFLAPI reportNodeChildrenDelete(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -532,7 +532,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportNodeCreate(
+	RCODE XFLAPI reportNodeCreate(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -551,7 +551,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportInsertBefore(
+	RCODE XFLAPI reportInsertBefore(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -569,7 +569,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportNodeUpdate(
+	RCODE XFLAPI reportNodeUpdate(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -585,7 +585,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportNodeSetValue(
+	RCODE XFLAPI reportNodeSetValue(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -601,7 +601,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportAttributeSetValue(
+	RCODE XFLAPI reportAttributeSetValue(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -618,7 +618,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportNodeFlagsUpdate(
+	RCODE XFLAPI reportNodeFlagsUpdate(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -636,7 +636,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportNodeSetPrefixId(
+	RCODE XFLAPI reportNodeSetPrefixId(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -654,7 +654,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportNodeSetMetaValue(
+	RCODE XFLAPI reportNodeSetMetaValue(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -671,7 +671,7 @@ public:
 		return( rc);
 	}
 		
-	RCODE FLMAPI reportSetNextNodeId(
+	RCODE XFLAPI reportSetNextNodeId(
 		eRestoreAction *		peAction,
 		FLMUINT64				ui64TransId,
 		FLMUINT					uiCollection,
@@ -696,7 +696,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRestore(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbRestore(
 	IF_DbSystem *	pDbSystem,
 	const char *		pszDbFileName,
 	const char *		pszDataDir,
@@ -747,7 +747,7 @@ Exit:
 	return( rc);
 }
 
-typedef RCODE (FLMAPI * DB_CHECK_STATUS)(
+typedef RCODE (XFLAPI * DB_CHECK_STATUS)(
 	FLMBOOL							bHaveProgressInfo,
 	XFLM_PROGRESS_CHECK_INFO *	pProgressInfo,
 	XFLM_CORRUPT_INFO *			pCorruptInfo);
@@ -769,13 +769,13 @@ public:
 	{
 	}
 
-	RCODE FLMAPI reportProgress(
+	RCODE XFLAPI reportProgress(
 		XFLM_PROGRESS_CHECK_INFO *	pProgCheck)
 	{
 		return( m_fnDbCheckStatus( TRUE, pProgCheck, NULL));
 	}
 	
-	RCODE FLMAPI reportCheckErr(
+	RCODE XFLAPI reportCheckErr(
 		XFLM_CORRUPT_INFO *	pCorruptInfo,
 		FLMBOOL *				pbFix)
 	{
@@ -794,7 +794,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCheck(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbCheck(
 	IF_DbSystem *	pDbSystem,
 	const char *		pszDbName,
 	const char *		pszDataDir,
@@ -833,7 +833,7 @@ Exit:
 	return( rc);
 }
 
-typedef RCODE (FLMAPI * DB_COPY_STATUS)(
+typedef RCODE (XFLAPI * DB_COPY_STATUS)(
 	FLMUINT64		ui64BytesToCopy,
 	FLMUINT64		ui64BytesCopied,
 	FLMBOOL			bNewSrcFile,
@@ -857,7 +857,7 @@ public:
 	{
 	}
 	
-	RCODE FLMAPI dbCopyStatus(
+	RCODE XFLAPI dbCopyStatus(
 		FLMUINT64		ui64BytesToCopy,
 		FLMUINT64		ui64BytesCopied,
 		FLMBOOL			bNewSrcFile,
@@ -877,7 +877,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbCopy(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbCopy(
 	IF_DbSystem *	pDbSystem,
 	const char *		pszSrcDbName,
 	const char *		pszSrcDataDir,
@@ -915,7 +915,7 @@ Exit:
 	return( rc);
 }
 
-typedef RCODE (FLMAPI * DB_RENAME_STATUS)(
+typedef RCODE (XFLAPI * DB_RENAME_STATUS)(
 	const char *	pszSrcFileName,
 	const char *	pszDestFileName);
 
@@ -936,7 +936,7 @@ public:
 	{
 	}
 	
-	RCODE FLMAPI dbRenameStatus(
+	RCODE XFLAPI dbRenameStatus(
 		const char *	pszSrcFileName,
 		const char *	pszDestFileName)
 	{
@@ -952,7 +952,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRename(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbRename(
 	IF_DbSystem *	pDbSystem,
 	const char *		pszSrcDbName,
 	const char *		pszSrcDataDir,
@@ -989,7 +989,7 @@ Exit:
 	return( rc);
 }
 
-typedef RCODE (FLMAPI * DB_REBUILD_STATUS)(
+typedef RCODE (XFLAPI * DB_REBUILD_STATUS)(
 	FLMBOOL					bHaveRebuildInfo,
 	XFLM_REBUILD_INFO *	pRebuildInfo,
 	XFLM_CORRUPT_INFO *	pCorruptInfo);
@@ -1011,13 +1011,13 @@ public:
 	{
 	}
 
-	RCODE FLMAPI reportRebuild(
+	RCODE XFLAPI reportRebuild(
 		XFLM_REBUILD_INFO *	pRebuildInfo)
 	{
 		return( m_fnDbRebuildStatus( TRUE, pRebuildInfo, NULL));
 	}
 	
-	RCODE FLMAPI reportRebuildErr(
+	RCODE XFLAPI reportRebuildErr(
 		XFLM_CORRUPT_INFO *	pCorruptInfo)
 	{
 		return( m_fnDbRebuildStatus( FALSE, NULL, pCorruptInfo));
@@ -1031,7 +1031,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbRebuild(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbRebuild(
 	IF_DbSystem *	pDbSystem,
 	const char *			pszSourceDbPath,
 	const char *			pszSourceDataDir,
@@ -1080,7 +1080,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferIStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openBufferIStream(
 	const char *			pszBuffer,
 	F_BufferIStream **	ppIStream)
 {
@@ -1119,7 +1119,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openFileIStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openFileIStream(
 	IF_DbSystem *		pDbSystem,
 	const char *		pszFileName,
 	IF_PosIStream **	ppIStream)
@@ -1130,7 +1130,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openFileIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openMultiFileIStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openMultiFileIStream(
 	IF_DbSystem *	pDbSystem,
 	const char *	pszDirectory,
 	const char *	pszBaseName,
@@ -1142,7 +1142,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openMultiFileIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferedIStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openBufferedIStream(
 	IF_DbSystem *	pDbSystem,
 	IF_IStream *	pInputIStream,
 	FLMUINT32		ui32BufferSize,
@@ -1155,7 +1155,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferedIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openUncompressingIStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openUncompressingIStream(
 	IF_DbSystem *	pDbSystem,
 	IF_IStream *	pInputIStream,
 	IF_IStream **	ppIStream)
@@ -1166,7 +1166,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openUncompressingIStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBase64Encoder(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openBase64Encoder(
 	IF_DbSystem *	pDbSystem,
 	IF_IStream *	pInputIStream,
 	FLMBOOL			bInsertLineBreaks,
@@ -1178,7 +1178,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBase64Encoder(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBase64Decoder(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openBase64Decoder(
 	IF_DbSystem *	pDbSystem,
 	IF_IStream *	pInputIStream,
 	IF_IStream **	ppIStream)
@@ -1189,7 +1189,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBase64Decoder(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openFileOStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openFileOStream(
 	IF_DbSystem *	pDbSystem,
 	const char *	pszFileName,
 	FLMBOOL			bTruncateIfExists,
@@ -1201,7 +1201,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openFileOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openMultiFileOStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openMultiFileOStream(
 	IF_DbSystem *	pDbSystem,
 	const char *	pszDirectory,
 	const char *	pszBaseName,
@@ -1216,7 +1216,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openMultiFileOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_removeMultiFileStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_removeMultiFileStream(
 	IF_DbSystem *	pDbSystem,
 	const char *	pszDirectory,
 	const char *	pszBaseName)
@@ -1227,7 +1227,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_removeMultiFileStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferedOStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openBufferedOStream(
 	IF_DbSystem *	pDbSystem,
 	IF_OStream *	pInputOStream,
 	FLMUINT32		ui32BufferSize,
@@ -1240,7 +1240,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openBufferedOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openCompressingOStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_openCompressingOStream(
 	IF_DbSystem *	pDbSystem,
 	IF_OStream *	pInputOStream,
 	IF_OStream **	ppOStream)
@@ -1251,7 +1251,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_openCompressingOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_writeToOStream(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_writeToOStream(
 	IF_DbSystem *	pDbSystem,
 	IF_IStream *	pIStream,
 	IF_OStream *	pOStream)
@@ -1262,7 +1262,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_writeToOStream(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_createDataVector(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_createDataVector(
 	IF_DbSystem *		pDbSystem,
 	IF_DataVector **	ppDataVector)
 {
@@ -1272,7 +1272,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_createDataVector(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_freeUnmanagedMem(
+XFLXPC void XFLAPI xflaim_DbSystem_freeUnmanagedMem(
 	IF_DbSystem *	pDbSystem,
 	void *			pvMem)
 {
@@ -1282,7 +1282,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_freeUnmanagedMem(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_updateIniFile(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_updateIniFile(
 	IF_DbSystem *	pDbSystem,
 	const char *	pszParamName,
 	const char *	pszValue)
@@ -1293,7 +1293,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_updateIniFile(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbDup(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_dbDup(
 	IF_DbSystem *	pDbSystem,
 	IF_Db *			pDbToDup,
 	IF_Db **			ppDupDb)
@@ -1304,7 +1304,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_dbDup(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setDynamicMemoryLimit(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_setDynamicMemoryLimit(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32CacheAdjustPercent,
 	FLMUINT64		ui64CacheAdjustMin,
@@ -1319,7 +1319,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setDynamicMemoryLimit(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setHardMemoryLimit(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_setHardMemoryLimit(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32Percent,
 	FLMBOOL			bPercentOfAvail,
@@ -1335,7 +1335,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setHardMemoryLimit(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_getDynamicCacheSupported(
+XFLXPC FLMBOOL XFLAPI xflaim_DbSystem_getDynamicCacheSupported(
 	IF_DbSystem *	pDbSystem)
 {
 	return( pDbSystem->getDynamicCacheSupported());
@@ -1362,7 +1362,7 @@ FSTATIC void copyCacheUsage(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getCacheInfo(
+XFLXPC void XFLAPI xflaim_DbSystem_getCacheInfo(
 	IF_DbSystem *			pDbSystem,
 	CS_XFLM_CACHE_INFO *	pCacheInfo)
 {
@@ -1395,7 +1395,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getCacheInfo(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_closeUnusedFiles(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_closeUnusedFiles(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32Seconds)
 {
@@ -1405,7 +1405,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_closeUnusedFiles(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_startStats(
+XFLXPC void XFLAPI xflaim_DbSystem_startStats(
 	IF_DbSystem *	pDbSystem)
 {
 	pDbSystem->startStats();
@@ -1414,7 +1414,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_startStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_stopStats(
+XFLXPC void XFLAPI xflaim_DbSystem_stopStats(
 	IF_DbSystem *	pDbSystem)
 {
 	pDbSystem->stopStats();
@@ -1423,7 +1423,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_stopStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_resetStats(
+XFLXPC void XFLAPI xflaim_DbSystem_resetStats(
 	IF_DbSystem *	pDbSystem)
 {
 	pDbSystem->resetStats();
@@ -1432,7 +1432,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_resetStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_getStats(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_getStats(
 	IF_DbSystem *	pDbSystem,
 	XFLM_STATS **	ppStats)
 {
@@ -1459,7 +1459,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setTempDir(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_setTempDir(
 	IF_DbSystem *	pDbSystem,
 	const char *	pszTempDir)
 {
@@ -1469,7 +1469,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_setTempDir(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_getTempDir(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_getTempDir(
 	IF_DbSystem *	pDbSystem,
 	char **			ppszTempDir)
 {
@@ -1495,7 +1495,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCheckpointInterval(
+XFLXPC void XFLAPI xflaim_DbSystem_setCheckpointInterval(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32Seconds)
 {
@@ -1505,7 +1505,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCheckpointInterval(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCheckpointInterval(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbSystem_getCheckpointInterval(
 	IF_DbSystem *	pDbSystem)
 {
 	return( (FLMUINT32)pDbSystem->getCheckpointInterval());
@@ -1514,7 +1514,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCheckpointInterval(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCacheAdjustInterval(
+XFLXPC void XFLAPI xflaim_DbSystem_setCacheAdjustInterval(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32Seconds)
 {
@@ -1524,7 +1524,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCacheAdjustInterval(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCacheAdjustInterval(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbSystem_getCacheAdjustInterval(
 	IF_DbSystem *	pDbSystem)
 {
 	return( (FLMUINT32)pDbSystem->getCacheAdjustInterval());
@@ -1533,7 +1533,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCacheAdjustInterval(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCacheCleanupInterval(
+XFLXPC void XFLAPI xflaim_DbSystem_setCacheCleanupInterval(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32Seconds)
 {
@@ -1543,7 +1543,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setCacheCleanupInterval(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCacheCleanupInterval(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbSystem_getCacheCleanupInterval(
 	IF_DbSystem *	pDbSystem)
 {
 	return( (FLMUINT32)pDbSystem->getCacheCleanupInterval());
@@ -1552,7 +1552,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getCacheCleanupInterval(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setUnusedCleanupInterval(
+XFLXPC void XFLAPI xflaim_DbSystem_setUnusedCleanupInterval(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32Seconds)
 {
@@ -1562,7 +1562,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setUnusedCleanupInterval(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getUnusedCleanupInterval(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbSystem_getUnusedCleanupInterval(
 	IF_DbSystem *	pDbSystem)
 {
 	return( (FLMUINT32)pDbSystem->getUnusedCleanupInterval());
@@ -1571,7 +1571,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getUnusedCleanupInterval(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setMaxUnusedTime(
+XFLXPC void XFLAPI xflaim_DbSystem_setMaxUnusedTime(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32Seconds)
 {
@@ -1581,7 +1581,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setMaxUnusedTime(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getMaxUnusedTime(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbSystem_getMaxUnusedTime(
 	IF_DbSystem *	pDbSystem)
 {
 	return( (FLMUINT32)pDbSystem->getMaxUnusedTime());
@@ -1590,7 +1590,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getMaxUnusedTime(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_deactivateOpenDb(
+XFLXPC void XFLAPI xflaim_DbSystem_deactivateOpenDb(
 	IF_DbSystem *	pDbSystem,
 	const char *	pszDbFileName,
 	const char *	pszDataDir)
@@ -1601,7 +1601,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_deactivateOpenDb(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setQuerySaveMax(
+XFLXPC void XFLAPI xflaim_DbSystem_setQuerySaveMax(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT32		ui32MaxToSave)
 {
@@ -1611,7 +1611,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setQuerySaveMax(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getQuerySaveMax(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbSystem_getQuerySaveMax(
 	IF_DbSystem *	pDbSystem)
 {
 	return( (FLMUINT32)pDbSystem->getQuerySaveMax());
@@ -1620,7 +1620,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbSystem_getQuerySaveMax(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setDirtyCacheLimits(
+XFLXPC void XFLAPI xflaim_DbSystem_setDirtyCacheLimits(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT64		ui64MaxDirty,
 	FLMUINT64		ui64LowDirty)
@@ -1631,7 +1631,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_setDirtyCacheLimits(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getDirtyCacheLimits(
+XFLXPC void XFLAPI xflaim_DbSystem_getDirtyCacheLimits(
 	IF_DbSystem *	pDbSystem,
 	FLMUINT64 *		pui64MaxDirty,
 	FLMUINT64 *		pui64LowDirty)
@@ -1647,7 +1647,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbSystem_getDirtyCacheLimits(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_compareStrings(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_compareStrings(
 	IF_DbSystem *	pDbSystem,
 	const FLMUNICODE *	puzLeftString,
 	FLMBOOL					bLeftWild,
@@ -1677,7 +1677,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsUpper(
+XFLXPC FLMBOOL XFLAPI xflaim_DbSystem_uniIsUpper(
 	IF_DbSystem *	pDbSystem,
 	FLMUNICODE		uzChar)
 {
@@ -1687,7 +1687,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsUpper(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsLower(
+XFLXPC FLMBOOL XFLAPI xflaim_DbSystem_uniIsLower(
 	IF_DbSystem *	pDbSystem,
 	FLMUNICODE		uzChar)
 {
@@ -1697,7 +1697,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsLower(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsAlpha(
+XFLXPC FLMBOOL XFLAPI xflaim_DbSystem_uniIsAlpha(
 	IF_DbSystem *	pDbSystem,
 	FLMUNICODE		uzChar)
 {
@@ -1707,7 +1707,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsAlpha(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsDecimalDigit(
+XFLXPC FLMBOOL XFLAPI xflaim_DbSystem_uniIsDecimalDigit(
 	IF_DbSystem *	pDbSystem,
 	FLMUNICODE		uzChar)
 {
@@ -1717,7 +1717,7 @@ FLMEXTC FLMEXP FLMBOOL FLMAPI xflaim_DbSystem_uniIsDecimalDigit(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUNICODE FLMAPI xflaim_DbSystem_uniToLower(
+XFLXPC FLMUNICODE XFLAPI xflaim_DbSystem_uniToLower(
 	IF_DbSystem *	pDbSystem,
 	FLMUNICODE		uzChar)
 {
@@ -1727,7 +1727,7 @@ FLMEXTC FLMEXP FLMUNICODE FLMAPI xflaim_DbSystem_uniToLower(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_waitToClose(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_waitToClose(
 	IF_DbSystem *	pDbSystem,
 	const char *	pszDbFileName)
 {
@@ -1737,7 +1737,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_waitToClose(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_DbSystem_clearCache(
+XFLXPC RCODE XFLAPI xflaim_DbSystem_clearCache(
 	IF_DbSystem *	pDbSystem,
 	IF_Db *			pDb)
 {

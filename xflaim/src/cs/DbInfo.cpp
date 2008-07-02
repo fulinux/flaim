@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_Release(
+XFLXPC void XFLAPI xflaim_DbInfo_Release(
 	IF_DbInfo *	pDbInfo)
 {
 	if (pDbInfo)
@@ -40,7 +40,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_Release(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumCollections(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbInfo_getNumCollections(
 	IF_DbInfo *	pDbInfo)
 {
 	return( (FLMUINT32)pDbInfo->getNumCollections());
@@ -49,7 +49,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumCollections(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumIndexes(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbInfo_getNumIndexes(
 	IF_DbInfo *	pDbInfo)
 {
 	return( (FLMUINT32)pDbInfo->getNumIndexes());
@@ -58,7 +58,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumIndexes(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumLogicalFiles(
+XFLXPC FLMUINT32 XFLAPI xflaim_DbInfo_getNumLogicalFiles(
 	IF_DbInfo *	pDbInfo)
 {
 	return( (FLMUINT32)pDbInfo->getNumLogicalFiles());
@@ -67,7 +67,7 @@ FLMEXTC FLMEXP FLMUINT32 FLMAPI xflaim_DbInfo_getNumLogicalFiles(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_DbInfo_getDatabaseSize(
+XFLXPC FLMUINT64 XFLAPI xflaim_DbInfo_getDatabaseSize(
 	IF_DbInfo *	pDbInfo)
 {
 	return( pDbInfo->getFileSize());
@@ -76,7 +76,7 @@ FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_DbInfo_getDatabaseSize(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getAvailBlockStats(
+XFLXPC void XFLAPI xflaim_DbInfo_getAvailBlockStats(
 	IF_DbInfo *	pDbInfo,
 	FLMUINT64 *	pui64BytesUsed,
 	FLMUINT32 *	pui32BlockCount,
@@ -101,7 +101,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getAvailBlockStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getLFHBlockStats(
+XFLXPC void XFLAPI xflaim_DbInfo_getLFHBlockStats(
 	IF_DbInfo *	pDbInfo,
 	FLMUINT64 *	pui64BytesUsed,
 	FLMUINT32 *	pui32BlockCount,
@@ -127,7 +127,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getLFHBlockStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeInfo(
+XFLXPC void XFLAPI xflaim_DbInfo_getBTreeInfo(
 	IF_DbInfo *		pDbInfo,
 	FLMUINT32		ui32NthLogicalFile,
 	FLMUINT32 *		pui32LfNum,
@@ -163,7 +163,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeInfo(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeBlockStats(
+XFLXPC void XFLAPI xflaim_DbInfo_getBTreeBlockStats(
 	IF_DbInfo *		pDbInfo,
 	FLMUINT32		ui32NthLogicalFile,
 	FLMUINT32		ui32Level,
@@ -195,7 +195,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getBTreeBlockStats(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_DbInfo_getDbHdr(
+XFLXPC void XFLAPI xflaim_DbInfo_getDbHdr(
 	IF_DbInfo *		pDbInfo,
 	XFLM_DB_HDR *	pDbHdr)
 {

@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Backup_Release(
+XFLXPC void XFLAPI xflaim_Backup_Release(
 	IF_Backup *	pBackup)
 {
 	if (pBackup)
@@ -40,7 +40,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Backup_Release(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Backup_getBackupTransId(
+XFLXPC FLMUINT64 XFLAPI xflaim_Backup_getBackupTransId(
 	IF_Backup *	pBackup)
 {
 	return( pBackup->getBackupTransId());
@@ -49,13 +49,13 @@ FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Backup_getBackupTransId(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP FLMUINT64 FLMAPI xflaim_Backup_getLastBackupTransId(
+XFLXPC FLMUINT64 XFLAPI xflaim_Backup_getLastBackupTransId(
 	IF_Backup *	pBackup)
 {
 	return( pBackup->getLastBackupTransId());
 }
 
-typedef RCODE (FLMAPI * BACKUP_CLIENT)(
+typedef RCODE (XFLAPI * BACKUP_CLIENT)(
 	const void *	pvData,
 	FLMUINT32		ui32DataLen);
 
@@ -76,7 +76,7 @@ public:
 	{
 	}
 
-	RCODE FLMAPI WriteData(
+	RCODE XFLAPI WriteData(
 		const void *			pvBuffer,
 		FLMUINT					uiBytesToWrite)
 	{
@@ -88,7 +88,7 @@ private:
 	BACKUP_CLIENT	m_fnBackupClient;
 };
 
-typedef RCODE (FLMAPI * BACKUP_STATUS)(
+typedef RCODE (XFLAPI * BACKUP_STATUS)(
 	FLMUINT64	ui64BytesToDo,
 	FLMUINT64	ui64BytesDone);
 
@@ -109,7 +109,7 @@ public:
 	{
 	}
 
-	RCODE FLMAPI backupStatus(
+	RCODE XFLAPI backupStatus(
 		FLMUINT64	ui64BytesToDo,
 		FLMUINT64	ui64BytesDone)
 	{
@@ -124,7 +124,7 @@ private:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Backup_backup(
+XFLXPC RCODE XFLAPI xflaim_Backup_backup(
 	IF_Backup *		pBackup,
 	const char *	pszBackupPath,
 	const char *	pszPassword,
@@ -181,7 +181,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Backup_endBackup(
+XFLXPC RCODE XFLAPI xflaim_Backup_endBackup(
 	IF_Backup *	pBackup)
 {
 	return( pBackup->endBackup());

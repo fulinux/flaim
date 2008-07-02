@@ -29,7 +29,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_createQuery(
+XFLXPC RCODE XFLAPI xflaim_Query_createQuery(
 	FLMUINT32	ui32Collection,
 	F_Query **	ppQuery)
 {
@@ -52,7 +52,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Query_Release(
+XFLXPC void XFLAPI xflaim_Query_Release(
 	IF_Query *	pQuery)
 {
 	if (pQuery)
@@ -64,7 +64,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Query_Release(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_setLanguage(
+XFLXPC RCODE XFLAPI xflaim_Query_setLanguage(
 	IF_Query *	pQuery,
 	FLMUINT32	ui32Language)
 {
@@ -74,7 +74,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_setLanguage(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_setupQueryExpr(
+XFLXPC RCODE XFLAPI xflaim_Query_setupQueryExpr(
 	IF_Query *				pQuery,
 	IF_Db *					pDb,
 	const FLMUNICODE *	puzQueryExpr)
@@ -85,7 +85,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_setupQueryExpr(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_copyCriteria(
+XFLXPC RCODE XFLAPI xflaim_Query_copyCriteria(
 	IF_Query *	pQuery,
 	IF_Query *	pQueryToCopy)
 {
@@ -95,7 +95,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_copyCriteria(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addXPathComponent(
+XFLXPC RCODE XFLAPI xflaim_Query_addXPathComponent(
 	IF_Query *	pQuery,
 	FLMUINT32	ui32XPathAxis,
 	FLMUINT32	ui32NodeType,
@@ -108,7 +108,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addXPathComponent(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addOperator(
+XFLXPC RCODE XFLAPI xflaim_Query_addOperator(
 	IF_Query *	pQuery,
 	FLMUINT32	ui32Operator,
 	FLMUINT32	ui32CompareFlags)
@@ -120,7 +120,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addOperator(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addStringValue(
+XFLXPC RCODE XFLAPI xflaim_Query_addStringValue(
 	IF_Query *				pQuery,
 	const FLMUNICODE *	puzValue)
 {
@@ -130,7 +130,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addStringValue(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addBinaryValue(
+XFLXPC RCODE XFLAPI xflaim_Query_addBinaryValue(
 	IF_Query *		pQuery,
 	const void *	pvValue,
 	FLMINT32			i32ValueLen)
@@ -141,7 +141,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addBinaryValue(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addULongValue(
+XFLXPC RCODE XFLAPI xflaim_Query_addULongValue(
 	IF_Query *	pQuery,
 	FLMUINT64	ui64Value)
 {
@@ -151,7 +151,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addULongValue(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addLongValue(
+XFLXPC RCODE XFLAPI xflaim_Query_addLongValue(
 	IF_Query *	pQuery,
 	FLMINT64		i64Value)
 {
@@ -161,7 +161,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addLongValue(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addUIntValue(
+XFLXPC RCODE XFLAPI xflaim_Query_addUIntValue(
 	IF_Query *	pQuery,
 	FLMUINT32	ui32Value)
 {
@@ -171,7 +171,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addUIntValue(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addIntValue(
+XFLXPC RCODE XFLAPI xflaim_Query_addIntValue(
 	IF_Query *	pQuery,
 	FLMINT32		i32Value)
 {
@@ -181,7 +181,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addIntValue(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addBoolean(
+XFLXPC RCODE XFLAPI xflaim_Query_addBoolean(
 	IF_Query *	pQuery,
 	FLMBOOL		bValue)
 {
@@ -191,7 +191,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addBoolean(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addUnknown(
+XFLXPC RCODE XFLAPI xflaim_Query_addUnknown(
 	IF_Query *	pQuery)
 {
 	return( pQuery->addBoolean( FALSE, TRUE));
@@ -200,7 +200,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addUnknown(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getFirst(
+XFLXPC RCODE XFLAPI xflaim_Query_getFirst(
 	IF_Query *		pQuery,
 	IF_Db *			pDb,
 	FLMUINT32		ui32TimeLimit,
@@ -212,7 +212,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getFirst(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getLast(
+XFLXPC RCODE XFLAPI xflaim_Query_getLast(
 	IF_Query *		pQuery,
 	IF_Db *			pDb,
 	FLMUINT32		ui32TimeLimit,
@@ -224,7 +224,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getLast(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getNext(
+XFLXPC RCODE XFLAPI xflaim_Query_getNext(
 	IF_Query *		pQuery,
 	IF_Db *			pDb,
 	FLMUINT32		ui32TimeLimit,
@@ -236,7 +236,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getNext(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getPrev(
+XFLXPC RCODE XFLAPI xflaim_Query_getPrev(
 	IF_Query *		pQuery,
 	IF_Db *			pDb,
 	FLMUINT32		ui32TimeLimit,
@@ -248,7 +248,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getPrev(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getCurrent(
+XFLXPC RCODE XFLAPI xflaim_Query_getCurrent(
 	IF_Query *		pQuery,
 	IF_Db *			pDb,
 	IF_DOMNode **	ppNode)
@@ -259,7 +259,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getCurrent(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Query_resetQuery(
+XFLXPC void XFLAPI xflaim_Query_resetQuery(
 	IF_Query *	pQuery)
 {
 	pQuery->resetQuery();
@@ -294,7 +294,7 @@ typedef struct
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getStatsAndOptInfo(
+XFLXPC RCODE XFLAPI xflaim_Query_getStatsAndOptInfo(
 	IF_Query *			pQuery,
 	XFLM_OPT_INFO **	ppOptInfoArray,
 	FLMUINT32 *			pui32NumOptInfos)
@@ -317,7 +317,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Query_getOptInfo(
+XFLXPC void XFLAPI xflaim_Query_getOptInfo(
 	XFLM_OPT_INFO *		pOptInfoArray,
 	FLMUINT32				ui32InfoToGet,
 	CS_XFLM_OPT_INFO *	pCSOptInfo)
@@ -349,7 +349,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Query_getOptInfo(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Query_setDupHandling(
+XFLXPC void XFLAPI xflaim_Query_setDupHandling(
 	IF_Query *	pQuery,
 	FLMBOOL		bRemoveDups)
 {
@@ -359,7 +359,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Query_setDupHandling(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_setIndex(
+XFLXPC RCODE XFLAPI xflaim_Query_setIndex(
 	IF_Query *	pQuery,
 	FLMUINT32	ui32Index)
 {
@@ -369,7 +369,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_setIndex(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getIndex(
+XFLXPC RCODE XFLAPI xflaim_Query_getIndex(
 	IF_Query *	pQuery,
 	IF_Db *		pDb,
 	FLMUINT32 *	pui32Index,
@@ -386,7 +386,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getIndex(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addSortKey(
+XFLXPC RCODE XFLAPI xflaim_Query_addSortKey(
 	IF_Query *	pQuery,
 	void *		pvSortKeyContext,
 	FLMBOOL		bChildToContext,
@@ -409,7 +409,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_addSortKey(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_enablePositioning(
+XFLXPC RCODE XFLAPI xflaim_Query_enablePositioning(
 	IF_Query *	pQuery)
 {
 	return( pQuery->enablePositioning());
@@ -418,7 +418,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_enablePositioning(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionTo(
+XFLXPC RCODE XFLAPI xflaim_Query_positionTo(
 	IF_Query *		pQuery,
 	IF_Db *			pDb,
 	FLMUINT32		ui32TimeLimit,
@@ -431,7 +431,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionTo(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionToByKey(
+XFLXPC RCODE XFLAPI xflaim_Query_positionToByKey(
 	IF_Query *			pQuery,
 	IF_Db *				pDb,
 	FLMUINT32			ui32TimeLimit,
@@ -446,7 +446,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_positionToByKey(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getPosition(
+XFLXPC RCODE XFLAPI xflaim_Query_getPosition(
 	IF_Query *		pQuery,
 	IF_Db *			pDb,
 	FLMUINT32 *		pui32Position)
@@ -462,7 +462,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getPosition(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_buildResultSet(
+XFLXPC RCODE XFLAPI xflaim_Query_buildResultSet(
 	IF_Query *	pQuery,
 	IF_Db *		pDb,
 	FLMUINT32	ui32TimeLimit)
@@ -473,7 +473,7 @@ FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_buildResultSet(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Query_stopBuildingResultSet(
+XFLXPC void XFLAPI xflaim_Query_stopBuildingResultSet(
 	IF_Query *	pQuery)
 {
 	pQuery->stopBuildingResultSet();
@@ -482,7 +482,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Query_stopBuildingResultSet(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP void FLMAPI xflaim_Query_enableResultSetEncryption(
+XFLXPC void XFLAPI xflaim_Query_enableResultSetEncryption(
 	IF_Query *	pQuery)
 {
 	pQuery->enableResultSetEncryption();
@@ -491,7 +491,7 @@ FLMEXTC FLMEXP void FLMAPI xflaim_Query_enableResultSetEncryption(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-FLMEXTC FLMEXP RCODE FLMAPI xflaim_Query_getCounts(
+XFLXPC RCODE XFLAPI xflaim_Query_getCounts(
 	IF_Query *		pQuery,
 	IF_Db *			pDb,
 	FLMUINT32		ui32TimeLimit,
