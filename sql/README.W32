@@ -1,10 +1,10 @@
-flaim-projects README.W32 file 
-==============================
+flaimsql README file for Windows
+================================
 
 Contents:
 --------
 1. Tools for Building on Windows
-2. FLAIM Runtime Library Use
+2. FLAIMSQL Runtime Library Use
 3. GUI or Command-Line Build
 4. Legacy Makefile
 

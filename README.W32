@@ -32,16 +32,12 @@ to build the desired targets.
 The flaim project solution files are located in the win32 directories
 in the following locations:
 
-flaim-projects
-  flaim
-    win32 - flaim.sln
-  ftk
-    win32 - flaimtk.sln
-  sql
-    win32 - flaimsql.sln
-  xflaim
-    win32 - xflaim.sln
-  win32   - flaim-projects.sln 
+trunk\flaim
+   flaim\win32\flaim    - flaim.sln
+   ftk\win32\ftk        - flaimtk.sln
+   sql\win32\sql        - flaimsql.sln
+   xflaim\win32\xflaim  - xflaim.sln
+   win32\flaim-projects - flaim-projects.sln 
 
 The projects may be build individually from each of the lower-level 
 solution files, or all at once from the flaim-projects solution file.
@@ -90,51 +86,45 @@ the CodeProjects website:
 GUI or Command-Line Build
 -------------------------
 
-The flaim-projects repository is divided into four sub-projects, named 
-for the sub-directories in which they reside:
+The flaim SVN repository is divided into four sub-projects, named for the 
+sub-directories in which they reside:
 
   * flaim
   * ftk
   * sql
   * xflaim
 
-Each of these sub-projects is a complete project in its own right. The only
-inter-project dependencies among them are that the flaim, sql and xflaim 
-projects depend on the FLAIM Tool Kit library (flaimtk) and header file
-(flaimtk.h) provided by the ftk project.
+Each of these sub-projects is a complete project in its own right. However,
+the flaim, sql and xflaim projects each depend on the flaimtk libraries built
+by the ftk project, and on the flaimtk.h header file.
 
-When these four projects are built from the flaim\trunk\win32\flaim-projects
-directory, using the flaim-projects.sln solution file or the buildall.cmd
-file in that directory, the dependencies are managed for you by the umbrella
-solution. 
+When one of these higher-level projects is is built from the 
+flaim\win32\flaim-projects directory, using the flaim-projects.sln solution 
+file or the buildall.cmd file in that directory, the dependencies are managed 
+for you by this umbrella solution. 
 
-However, each of the four sub-projects may also be built as separate projects,
-simply by changing into the desired win32\<project> sub-directory, and then 
-running ONE of the following two commands:
+However, when you build one of these three higher-level database projects by 
+themselves, using the <project>\win32\<project>\<project>.sln solution file,
+then you need to provide the location of the flaimtk libraries and the 
+flaimtk.h header file by setting a few environment variables in the 
+environment from which you launch the VC++ 2008 IDE, via the "devenv" command,
+as in the following command sequence:
 
-  c:> buildall.cmd [debug|release]
-  c:> devenv <project-name>.sln
-
-The latter will bring up the Visual C++ 2008 IDE, so you can build in a 
-"GUI" fashion. The former will use devenv command line options to build 
-from the commnand line.
-
-When you build a sub-project by itself in this manner, you need to provide
-the location of the flaimtk library by setting a few environment variables:
-
+  c:> set FTKINC=c:\full\path\to\ftk\src\directory
   c:> set FTKLIB_STATIC_DEBUG=c:\full\path\to\debug\flaimtk_static.lib
   c:> set FTKLIB_STATIC_RELEASE=c:\full\path\to\release\flaimtk_static.lib
   c:> set FTKLIB_DEBUG=c:\full\path\to\debug\flaimtk.lib
   c:> set FTKLIB_RELEASE=c:\full\path\to\release\flaimtk.lib
+  c:> devenv <project>.sln
 
-This technique works with all three of the higher level projects.
+(or) 
 
-CAVEAT: Currently, the include directory location for flaimtk.h is hard-coded
-into the three higher-level projects, so the ftk project must be located in
-the relative path specified above -- that is, ftk must be co-located in the
-same parent directory as the flaim, sql and xflaim directories. This will be 
-fixed soon to work with environment variables in the same manner as the 
-library paths.
+  c:> buildall.cmd [debug|release]
+
+NOTE: You may also use relative paths in these variables, but this is tricky, 
+because each project is built from the directory containing the solution 
+(.sln) file, so you'll have to calculate these paths relative to the 
+flaim/win32/flaim directory, as that's where the flaim.sln file is located.
 
 Legacy Makefile
 ---------------

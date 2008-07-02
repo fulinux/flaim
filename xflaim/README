@@ -40,6 +40,10 @@ command line on your host system.
 Building XFLAIM
 ---------------
 
+IMPORTANT: You must have installed Autoconf version 2.62, Automake version 
+1.10 and Libtool version 2.2. These are the latest versions of these three
+tools, as of this writing (July 2, 2008).
+
 Building XFLAIM on Unix and Linux systems is as simple as with any other
 Autotools-based project. If you're building from an SVN working directory,
 enter the following command first, immediately after a clean check-out:

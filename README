@@ -46,6 +46,10 @@ Both of these techniques work with all three of the higher level projects.
 Autotools Build
 ---------------
 
+IMPORTANT: You must have installed Autoconf version 2.62, Automake version 
+1.10 and Libtool version 2.2. These are the latest versions of these three
+tools, as of this writing (July 2, 2008).
+
 To build the flaim-projects from a Subversion working copy, just create
 a clean working copy from the Subversion repository at:
 
