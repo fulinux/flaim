@@ -1,6 +1,6 @@
 ACLOCAL_AMFLAGS = -I m4
 
-EXTRA_DIST = GNUMakefile INSTALL.W32 debian netware win32
+EXTRA_DIST = GNUMakefile README.W32 debian netware win32
 
 SUBDIRS = src util obs
 

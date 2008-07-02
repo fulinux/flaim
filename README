@@ -1,10 +1,15 @@
 flaim-projects README file
 ==========================
 
+NOTE: This README file covers platform-independant, and GNU/Linux and
+Unix specific information. For information on building and installing
+on Windows platforms, please see the README.W32 file.
+
 Contents
 --------
 1. Project Hierarchy
 2. Autotools Build
+3. Windows Build
 
 Project Hierarchy
 -----------------
