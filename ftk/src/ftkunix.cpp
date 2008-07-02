@@ -347,7 +347,7 @@ Exit:
 /******************************************************************************
 Desc:	Close a file
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::closeFile( void)
+RCODE FTKAPI F_FileHdl::closeFile( void)
 {
 	if( m_fd != -1)
 	{
@@ -381,7 +381,7 @@ RCODE FLMAPI F_FileHdl::closeFile( void)
 /******************************************************************************
 Desc:	Make sure all file data is safely on disk
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::flush( void)
+RCODE FTKAPI F_FileHdl::flush( void)
 {
 	f_assert( m_bFileOpened);
 	
@@ -450,7 +450,7 @@ RCODE FLMAPI F_FileHdl::flush( void)
 /******************************************************************************
 Desc:	Return the size of the file
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::size(
+RCODE FTKAPI F_FileHdl::size(
 	FLMUINT64 *		pui64Size)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -474,7 +474,7 @@ Exit:
 /******************************************************************************
 Desc:	Truncate the file to the indicated size
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::truncateFile(
+RCODE FTKAPI F_FileHdl::truncateFile(
 	FLMUINT64		ui64NewSize)
 {
 	RCODE				rc = NE_FLM_OK;
@@ -1065,7 +1065,7 @@ Desc:	Attempts to lock byte 0 of the file.  This method is used to
 		lock byte 0 of the .lck file to ensure that only one process
 		has access to a database.
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::lock( void)
+RCODE FTKAPI F_FileHdl::lock( void)
 {
 	RCODE				rc = NE_FLM_OK;
 	struct flock   LockStruct;
@@ -1094,7 +1094,7 @@ Exit:
 /******************************************************************************
 Desc:	Attempts to unlock byte 0 of the file.
 ******************************************************************************/
-RCODE FLMAPI F_FileHdl::unlock( void)
+RCODE FTKAPI F_FileHdl::unlock( void)
 {
 	RCODE				rc = NE_FLM_OK;
 	struct flock   LockStruct;
@@ -1404,7 +1404,7 @@ FLMATOMIC ppc_atomic_xchg(
 /****************************************************************************
 Desc:
 ****************************************************************************/
-void FLMAPI f_yieldCPU( void)
+void FTKAPI f_yieldCPU( void)
 {
 #ifndef FLM_LIBC_NLM
 	sched_yield();
@@ -1478,7 +1478,7 @@ FLMINT32 posix_atomic_xchg_32(
 /**********************************************************************
 Desc:
 **********************************************************************/
-RCODE FLMAPI f_chdir(
+RCODE FTKAPI f_chdir(
 	const char *		pszDir)
 {
 	RCODE		rc = NE_FLM_OK;
@@ -1497,7 +1497,7 @@ Exit:
 /**********************************************************************
 Desc:
 **********************************************************************/
-RCODE FLMAPI f_getcwd(
+RCODE FTKAPI f_getcwd(
 	char *			pszDir)
 {
 	RCODE		rc = NE_FLM_OK;
