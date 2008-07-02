@@ -41,7 +41,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\..\ftk\src"
+				AdditionalIncludeDirectories="..\..\..\..\ftk\src, $(FTKINC)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_WINDLL;_WINDOWS;_USRDLL;FLAIM_EXPORTS;FLM_DEBUG;FLM_SOURCE;$(NOINHERIT)"
 				StringPooling="true"
 				MinimalRebuild="false"
@@ -122,7 +122,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\..\..\ftk\src"
+				AdditionalIncludeDirectories="..\..\..\..\ftk\src, $(FTKINC)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_WINDLL;_WINDOWS;_USRDLL;FLAIM_EXPORTS;FLM_SOURCE;$(NOINHERIT)"
 				StringPooling="true"
 				MinimalRebuild="false"
