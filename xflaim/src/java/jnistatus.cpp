@@ -28,7 +28,7 @@
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI JNIRenameStatus::dbRenameStatus(
+RCODE XFLAPI JNIRenameStatus::dbRenameStatus(
 	const char *		pszSrcFileName,
 	const char *		pszDstFileName)
 {
@@ -82,7 +82,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI JNICopyStatus::dbCopyStatus(
+RCODE XFLAPI JNICopyStatus::dbCopyStatus(
 	FLMUINT64		ui64BytesToCopy,
 	FLMUINT64		ui64BytesCopied,
 	FLMBOOL			bNewSrcFile,
@@ -140,7 +140,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI JNICheckStatus::reportProgress(
+RCODE XFLAPI JNICheckStatus::reportProgress(
 	XFLM_PROGRESS_CHECK_INFO *)		// pProgCheck)
 {
 	RCODE				rc = NE_XFLM_OK;
@@ -196,7 +196,7 @@ Exit:
 /****************************************************************************
 Desc:
 ****************************************************************************/
-RCODE FLMAPI JNICheckStatus::reportCheckErr(
+RCODE XFLAPI JNICheckStatus::reportCheckErr(
 	XFLM_CORRUPT_INFO *,		// pCorruptInfo,
 	FLMBOOL *)					// pbFix)
 {

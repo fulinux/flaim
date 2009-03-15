@@ -1559,7 +1559,7 @@ public:
 		}
 	}
 			
-	RCODE FLMAPI reportRebuild(
+	RCODE XFLAPI reportRebuild(
 		XFLM_REBUILD_INFO *	pRebuild)
 	{
 		
@@ -1581,7 +1581,7 @@ public:
 									(jlong)pRebuild->ui64DiscardedDocs));
 	}
 	
-	RCODE FLMAPI reportRebuildErr(
+	RCODE XFLAPI reportRebuildErr(
 		XFLM_CORRUPT_INFO *	pCorruptInfo)
 	{
 		return( (RCODE)m_pEnv->CallIntMethod( m_jDbRebuildStatusObject,

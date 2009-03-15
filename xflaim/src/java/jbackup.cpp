@@ -78,21 +78,21 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE FLMAPI WriteData(
+	RCODE XFLAPI WriteData(
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite);
 		
-	FINLINE FLMINT FLMAPI getRefCount( void)
+	FINLINE FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_BackupClient::getRefCount());
 	}
 
-	virtual FINLINE FLMINT FLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_BackupClient::AddRef());
 	}
 
-	virtual FINLINE FLMINT FLMAPI Release( void)
+	virtual FINLINE FLMINT XFLAPI Release( void)
 	{
 		return( IF_BackupClient::Release());
 	}
@@ -120,21 +120,21 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE FLMAPI backupStatus(
+	RCODE XFLAPI backupStatus(
 		FLMUINT64	ui64BytesToDo,
 		FLMUINT64	ui64BytesDone);
 	
-	FINLINE FLMINT FLMAPI getRefCount( void)
+	FINLINE FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_BackupStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT FLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_BackupStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT FLMAPI Release( void)
+	virtual FINLINE FLMINT XFLAPI Release( void)
 	{
 		return( IF_BackupStatus::Release());
 	}

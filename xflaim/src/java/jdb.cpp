@@ -2944,7 +2944,7 @@ public:
 	{
 	}
 	
-	RCODE FLMAPI write(
+	RCODE XFLAPI write(
 		const void *	pvBuffer,
 		FLMUINT			uiBytesToWrite,
 		FLMUINT *		puiBytesWritten = NULL)
@@ -2963,7 +2963,7 @@ public:
 		return( rc);
 	}
 	
-	RCODE FLMAPI closeStream( void)
+	RCODE XFLAPI closeStream( void)
 	{
 		return( m_pDynaBuf->appendByte( 0));
 	}
@@ -3031,7 +3031,7 @@ public:
 		}
 	}
 	
-	FLMBOOL FLMAPI setLockCount(
+	FLMBOOL XFLAPI setLockCount(
 		FLMUINT	uiTotalLocks)
 	{
 		if (RC_BAD( f_calloc( sizeof( F_LOCK_USER) * uiTotalLocks,
@@ -3046,7 +3046,7 @@ public:
 		}
 	}
 	
-	FLMBOOL FLMAPI addLockInfo(
+	FLMBOOL XFLAPI addLockInfo(
 		FLMUINT		uiLockNum,
 		FLMUINT		uiThreadID,
 		FLMUINT		uiTime)
@@ -3167,7 +3167,7 @@ public:
 		}
 	}
 			
-	RCODE FLMAPI reportDelete(
+	RCODE XFLAPI reportDelete(
 		FLMUINT	uiBlocksDeleted,
 		FLMUINT	uiBlockSize)
 	{
@@ -3254,7 +3254,7 @@ public:
 		}
 	}
 			
-	RCODE FLMAPI doIndexing(
+	RCODE XFLAPI doIndexing(
 		IF_Db *			pDb,
 		FLMUINT			uiIndexNum,
 		FLMUINT			uiCollection,
@@ -3353,7 +3353,7 @@ public:
 		}
 	}
 			
-	RCODE FLMAPI reportIndex(
+	RCODE XFLAPI reportIndex(
 		FLMUINT64		ui64LastDocumentId)
 	{
 		
@@ -3445,7 +3445,7 @@ public:
 		}
 	}
 			
-	void FLMAPI commit(
+	void XFLAPI commit(
 		IF_Db *			// pDb
 		)
 	{

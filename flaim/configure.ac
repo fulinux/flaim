@@ -115,8 +115,8 @@ fi
 
 # Configure global pre-processor definitions.
 AC_DEFINE([_REENTRANT], [], [Define for reentrant code])
-AC_DEFINE([_LARGEFILE64_SOURCE], [], [Define for 64-bit data files])
-AC_DEFINE([_LARGEFILE_SOURCE], [], [Define for 64-bit data files])
+# AC_DEFINE([_LARGEFILE64_SOURCE], [], [Define for 64-bit data files])
+# AC_DEFINE([_LARGEFILE_SOURCE], [], [Define for 64-bit data files])
 
 # Configure supported platforms' compiler and linker flags.
 case $host in

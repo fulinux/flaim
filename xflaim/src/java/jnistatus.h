@@ -44,21 +44,21 @@ public:
 		m_pJvm = pJvm;
 	}
 
-	RCODE FLMAPI dbRenameStatus(
+	RCODE XFLAPI dbRenameStatus(
 		const char *	pszSrcFileName,
 		const char *	pszDstFileName);
 
-	FINLINE FLMINT FLMAPI getRefCount( void)
+	FINLINE FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_DbRenameStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT FLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_DbRenameStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT FLMAPI Release( void)
+	virtual FINLINE FLMINT XFLAPI Release( void)
 	{
 		return( IF_DbRenameStatus::Release());
 	}
@@ -86,24 +86,24 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE FLMAPI dbCopyStatus(
+	RCODE XFLAPI dbCopyStatus(
 		FLMUINT64		ui64BytesToCopy,
 		FLMUINT64		ui64BytesCopied,
 		FLMBOOL			bNewSrcFile,
 		const char *	pszSrcFileName,
 		const char *	pszDestFileName);
 		
-	FINLINE FLMINT FLMAPI getRefCount( void)
+	FINLINE FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_DbCopyStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT FLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_DbCopyStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT FLMAPI Release( void)
+	virtual FINLINE FLMINT XFLAPI Release( void)
 	{
 		return( IF_DbCopyStatus::Release());
 	}
@@ -131,24 +131,24 @@ public:
 		m_pJvm = pJvm;
 	}
 	
-	RCODE FLMAPI reportProgress(
+	RCODE XFLAPI reportProgress(
 		XFLM_PROGRESS_CHECK_INFO *	pProgCheck);
 
-	RCODE FLMAPI reportCheckErr(
+	RCODE XFLAPI reportCheckErr(
 		XFLM_CORRUPT_INFO *	pCorruptInfo,
 		FLMBOOL *				pbFix);
 		
-	FINLINE FLMINT FLMAPI getRefCount( void)
+	FINLINE FLMINT XFLAPI getRefCount( void)
 	{
 		return( IF_DbCheckStatus::getRefCount());
 	}
 
-	virtual FINLINE FLMINT FLMAPI AddRef( void)
+	virtual FINLINE FLMINT XFLAPI AddRef( void)
 	{
 		return( IF_DbCheckStatus::AddRef());
 	}
 
-	virtual FINLINE FLMINT FLMAPI Release( void)
+	virtual FINLINE FLMINT XFLAPI Release( void)
 	{
 		return( IF_DbCheckStatus::Release());
 	}
