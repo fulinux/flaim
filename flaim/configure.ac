@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.62])
-AC_INIT([FLAIM], [4.10], [flaim-users@forge.novell.com])
+AC_INIT([FLAIM],[4.10],[flaim-users@forge.novell.com])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
@@ -21,45 +21,8 @@ AC_PROG_INSTALL
 # Checks for optional programs.
 AC_PROG_TRY_DOXYGEN
 
-# Configure FTKLIB and FTKINC variables.
-AC_ARG_VAR([FTKLIB], [The PATH wherein libflaimtk.la can be found.])
-AC_ARG_VAR([FTKINC], [The PATH wherein flaimtk.h can be found.])
-
-# Ensure that both or neither FTK paths were specified.
-if (test -n "$FTKLIB" && test -z "$FTKINC") || \
-   (test -n "$FTKINC" && test -z "$FTKLIB"); then
-  AC_MSG_ERROR([Specify both FTKINC and FTKLIB, or neither.])
-fi 
-
-# Not specified? Check for FTK in standard places.
-if test -z "$FTKLIB"; then
-  # Check for flaim tool kit as a sub-project.
-  if test -d "$srcdir/ftk"; then
-    AC_CONFIG_SUBDIRS([ftk])
-    FTKINC='$(top_srcdir)/ftk/src'
-    FTKLIB='$(top_builddir)/ftk/src'
-  else
-    # Check for flaim tool kit as a super-project.
-    if test -d "$srcdir/../ftk"; then
-      FTKINC='$(top_srcdir)/../ftk/src'
-      FTKLIB='$(top_builddir)/../ftk/src'
-    fi
-  fi
-fi
-
-# Still empty? Check for *installed* flaim tool kit.
-if test -z "$FTKLIB"; then
-  AC_CHECK_LIB([flaimtk], [ftkFastChecksum], 
-    [AC_CHECK_HEADERS([flaimtk.h])
-     LIBS="-lflaimtk $LIBS"],
-    [AC_MSG_ERROR([No FLAIM Toolkit found. Terminating.])])
-fi
-
-# AC_SUBST command line variables from FTKLIB and FTKINC.
-if test -n "$FTKLIB"; then
-  AC_SUBST([FTK_LTLIB], ["$FTKLIB/libflaimtk.la"])
-  AC_SUBST([FTK_INCLUDE], ["-I$FTKINC"])
-fi
+# Configure FTKLIB, FTKINC, FTK_LTLIB and FTK_INCLUDE
+FLM_FTK_SEARCH
 
 # Configure options: --enable-debug[=no].
 AC_ARG_ENABLE([debug],
