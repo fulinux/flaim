@@ -3,7 +3,7 @@
 
 AC_PREREQ([2.62])
 AC_INIT([XFLAIM],[5.2],[flaim-users@forge.novell.com])
-AC_CANONICAL_TARGET
+AC_CANONICAL_SYSTEM
 AM_INIT_AUTOMAKE([-Wall -Werror])
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
@@ -62,6 +62,15 @@ if test -z "$DOXYGEN"; then
 fi
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
 
+# Check for pthreads
+ACX_PTHREAD(
+ [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])
+  LIBS="$PTHREAD_LIBS $LIBS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+  CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
+  CC="$PTHREAD_CC"
+  CXX="$PTHREAD_CXX"])
+
 # Checks for libraries.
 
 # Checks for header files.
@@ -102,7 +111,6 @@ if test "x$debug" = xyes; then
 fi
 
 # Configure global pre-processor definitions.
-AC_DEFINE([_REENTRANT], [], [Define for reentrant code])
 AC_SYS_LARGEFILE
 # AC_DEFINE([_LARGEFILE64_SOURCE], [], [Define for 64-bit data files])
 # AC_DEFINE([_LARGEFILE_SOURCE], [], [Define for 64-bit data files])
@@ -127,7 +135,7 @@ case $host in
 
   *-*-aix*)
     if "x$CXX" != "xg++"; then
-      CXXFLAGS="$CXXFLAGS -qthreaded -qstrict"
+      CXXFLAGS="$CXXFLAGS -qstrict"
     fi ;;
 
   *-*-hpux*)

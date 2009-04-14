@@ -41,9 +41,17 @@ if test -z "$DOXYGEN"; then
 fi
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 
+# Check for pthreads
+ACX_PTHREAD(
+ [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])
+  LIBS="$PTHREAD_LIBS $LIBS"
+  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+  CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
+  CC="$PTHREAD_CC"
+  CXX="$PTHREAD_CXX"])
+
 # Checks for libraries.
 AC_CHECK_LIB([ncurses], [initscr])
-AC_CHECK_LIB([pthread], [pthread_create])
 AC_CHECK_LIB([rt], [aio_suspend])
 if test "x$openssl" = xyes; then 
   AC_DEFINE([FLM_OPENSSL], [], [Define to use openssl])
@@ -102,7 +110,6 @@ if test "x$debug" = xyes; then
 fi
 
 # Configure global pre-processor definitions.
-AC_DEFINE([_REENTRANT], [], [Define for reentrant code])
 AC_SYS_LARGEFILE
 # AC_DEFINE([_LARGEFILE64_SOURCE], [], [Define for 64-bit data files])
 # AC_DEFINE([_LARGEFILE_SOURCE], [], [Define for 64-bit data files])
@@ -127,7 +134,7 @@ case $host in
 
   *-*-aix*)
     if "x$CXX" != "xg++"; then
-      CXXFLAGS="$CXXFLAGS -qthreaded -qstrict"
+      CXXFLAGS="$CXXFLAGS -qstrict"
     fi ;;
 
   *-*-hpux*)
@@ -156,4 +163,3 @@ echo "
   Linker.........: $LD $LDFLAGS $LIBS
   Doxygen........: ${DOXYGEN:-NONE}
 "
-

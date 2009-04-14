@@ -13,8 +13,8 @@ jar_DATA = $(jarfile)
 java-headers.stamp: $(dist_noinst_JAVA)
 	@list="`echo $(dist_noinst_JAVA) | sed -e 's|\.java||g' -e 's|/|.|g'`"; \
 	for class in $$list; do \
-	  echo "$(JAVAH) -jni -d $(jhdrout) $(JAVAHFLAGS) $$class"; \
-	  $(JAVAH) -jni -d $(jhdrout) $(JAVAHFLAGS) $$class; \
+	  echo "$(JAVAH) -cp . -jni -d $(jhdrout) $(JAVAHFLAGS) $$class"; \
+	  $(JAVAH) -cp . -jni -d $(jhdrout) $(JAVAHFLAGS) $$class; \
 	done
 	@echo "JNI headers generated" > java-headers.stamp
 
