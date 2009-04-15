@@ -37,28 +37,28 @@ if test -z "$JAVAC"; then have_java=no; fi
 if test -z "$JAVAH"; then have_java=no; fi
 if test -z "$JAR"; then have_java=no; fi
 if test "x$have_java" = xno; then
-  echo "-----------------------------------------"
-  echo " Some Java tools not found - continuing"
-  echo " without XFLAIM JNI support."
-  echo "-----------------------------------------"
+  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
+  echo " Some Java tools not found - continuing" >&AS_MESSAGE_LOG_FD
+  echo " without XFLAIM JNI support." >&AS_MESSAGE_LOG_FD
+  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
 fi
 AM_CONDITIONAL([HAVE_JAVA], [test "x$have_java" = xyes])
 
 # Check for CSharp compiler.
 if test -z "$CSC"; then
-  echo "-----------------------------------------"
-  echo " No CSharp compiler found - continuing"
-  echo " without XFLAIM CSHARP support."
-  echo "-----------------------------------------"
+  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
+  echo " No CSharp compiler found - continuing" >&AS_MESSAGE_LOG_FD
+  echo " without XFLAIM CSHARP support." >&AS_MESSAGE_LOG_FD
+  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
 fi
 AM_CONDITIONAL([HAVE_CSHARP], [test -n "$CSC"])
 
 # Check for doxygen program.
 if test -z "$DOXYGEN"; then
-  echo "-----------------------------------------"
-  echo " No Doxygen program found - continuing"
-  echo " without Doxygen documentation support."
-  echo "-----------------------------------------"
+  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
+  echo " No Doxygen program found - continuing" >&AS_MESSAGE_LOG_FD
+  echo " without Doxygen documentation support." >&AS_MESSAGE_LOG_FD
+  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
 fi
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
 
@@ -84,6 +84,14 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_CHECK_FUNCS([atexit strerror])
 
+# Configure for large files, even on 32-bit systems
+AC_SYS_LARGEFILE
+
+# Configure DEBUG source code, if requested.
+if test "x$debug" = xyes; then
+  AC_DEFINE([FLM_DEBUG], [], [Define to enable FLAIM debug features])
+fi
+
 # Configure compiler and platform flags and options.
 # This stuff was in the original makefile...
 # Personally, I believe -O2 does as good a job as 
@@ -104,16 +112,6 @@ gcc_opt_flags="-O -foptimize-sibling-calls
 #  CXXFLAGS="$CXXFLAGS -Wall -Werror"
 #  CXXFLAGS="$CXXFLAGS $gcc_opt_flags"
 #fi
-
-# Configure DEBUG source code, if requested.
-if test "x$debug" = xyes; then
-  AC_DEFINE([FLM_DEBUG], [], [Define to enable FLAIM debug features])
-fi
-
-# Configure global pre-processor definitions.
-AC_SYS_LARGEFILE
-# AC_DEFINE([_LARGEFILE64_SOURCE], [], [Define for 64-bit data files])
-# AC_DEFINE([_LARGEFILE_SOURCE], [], [Define for 64-bit data files])
 
 # Configure supported platforms' compiler and linker flags.
 case $host in
@@ -176,4 +174,3 @@ echo "
   Javadoc Utility: ${JAVADOC:-NONE}
   Doxygen........: ${DOXYGEN:-NONE}
 "
-

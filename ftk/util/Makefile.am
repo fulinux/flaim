@@ -1,5 +1,5 @@
-FTKINC=-I$(top_srcdir)/src
-FTKLIB=../src/libflaimtk.la
+FTKINC = -I$(top_srcdir)/src
+FTKLIB = ../src/libflaimtk.la
 
 check_PROGRAMS = ftktest
 
@@ -8,4 +8,3 @@ ftktest_CPPFLAGS = $(FTKINC)
 ftktest_LDADD = $(FTKLIB)
 
 TESTS = ftktest
-

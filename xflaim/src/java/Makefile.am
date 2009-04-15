@@ -1,6 +1,6 @@
 SUBDIRS = wrapper
 
-XFLAIM_INCLUDE=-I$(srcdir)/..
+XFLAIM_INCLUDE = -I$(srcdir)/..
 
 noinst_LTLIBRARIES = libxfjni.la
 
@@ -21,4 +21,3 @@ libxfjni_la_SOURCES = \
  jquery.cpp
 
 libxfjni_la_CPPFLAGS = $(XFLAIM_INCLUDE) $(FTK_INCLUDE)
-

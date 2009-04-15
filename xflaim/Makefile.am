@@ -16,4 +16,3 @@ dist-hook:
 	-rm -rf `find $(distdir) -name .svn`
 
 .PHONY: srcrpm rpms
-

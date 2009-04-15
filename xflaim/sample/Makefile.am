@@ -6,4 +6,3 @@ XFLAIM_LIB=../src/libxflaim.la
 sample_SOURCES = sample.cpp
 sample_CPPFLAGS = $(XFLAIM_INC) $(FTK_INCLUDE)
 sample_LDADD = $(XFLAIM_LIB)
-

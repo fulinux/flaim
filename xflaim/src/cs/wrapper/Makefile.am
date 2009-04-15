@@ -95,4 +95,3 @@ cstest_script: cstest.exe libxflaim.so
 	echo "#!/bin/sh" > cstest_script
 	echo "$(CSVM) cstest.exe" >> cstest_script
 	chmod 0755 cstest_script
-

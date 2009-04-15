@@ -42,4 +42,3 @@ libflaimtk_la_SOURCES = \
  ftkxml.cpp
 
 libflaimtk_la_LDFLAGS = -version-info 0:0:0
-

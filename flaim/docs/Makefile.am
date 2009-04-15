@@ -10,4 +10,3 @@ doc_DATA =\
  FLAIMArchitecture.odg\
  FLAIMArchitecture.png\
  introduction_to_flaim_4.doc
-

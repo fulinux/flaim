@@ -119,4 +119,3 @@ libflaim_la_SOURCES = \
 libflaim_la_CPPFLAGS = $(FTK_INCLUDE)
 libflaim_la_LIBADD = $(FTK_LTLIB)
 libflaim_la_LDFLAGS = -version-info 5:2:0
-

@@ -5,4 +5,3 @@ if HAVE_DOXYGEN
 endif
 
 doc_DATA = XFLAIMArchitecture.odg XFLAIMArchitecture.png
-

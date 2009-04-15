@@ -103,4 +103,3 @@ libxflaim_la_SOURCES = \
 libxflaim_la_CPPFLAGS = $(FTK_INCLUDE)
 libxflaim_la_LIBADD = $(JNI_LIBADD) $(CSI_LIBADD) $(FTK_LTLIB)
 libxflaim_la_LDFLAGS = -version-info 3:2:0
-

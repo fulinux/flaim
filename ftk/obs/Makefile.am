@@ -23,4 +23,3 @@ rpms: rpmcheck $(rpmspec)
 	rpmbuild -ba $(rpmmacros) $(rpmopts) $(rpmspec)
 
 .PHONY: rpmcheck srcrpm rpms
-

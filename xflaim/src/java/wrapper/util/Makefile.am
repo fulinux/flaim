@@ -35,4 +35,3 @@ dist_noinst_JAVA = \
  $(pkgpath)/UITools.java \
  $(pkgpath)/XEdit.java \
  $(pkgpath)/XFileFilter.java
-

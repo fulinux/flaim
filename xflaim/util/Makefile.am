@@ -1,7 +1,7 @@
 EXTRA_DIST = dbdiff.cpp dbdiff.h domedit.cpp diffbackups.cpp xmlfiles
 
-XFLAIM_INCLUDE=-I$(top_srcdir)/src
-XFLAIM_LDADD=../src/libxflaim.la
+XFLAIM_INCLUDE = -I$(top_srcdir)/src
+XFLAIM_LDADD = ../src/libxflaim.la
 
 ## Utility Programs
 
@@ -205,4 +205,3 @@ clean-local:
 	-rm -rf tst.bak
 	-rm -f *.xml
 	-rm -f copy-xml-files.stamp
-
