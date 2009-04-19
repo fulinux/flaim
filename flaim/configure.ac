@@ -127,7 +127,8 @@ AC_CONFIG_FILES([Makefile
                  obs/Makefile
                  sample/Makefile
                  src/Makefile
-                 util/Makefile])
+                 util/Makefile
+                 libflaim.pc])
 AC_OUTPUT
 
 echo "

@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libflaim
+Description: Embeddable cross-platform database engine
+Version: @VERSION@
+Libs: -lpthread -lrt -lstdc++ -ldl -lncurses -lflaim -L${libdir}
+Cflags: -I${includedir}
