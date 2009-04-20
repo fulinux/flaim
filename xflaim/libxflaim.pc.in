@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libxflaim
+Description: Embeddable cross-platform XML database engine
+Version: @VERSION@
+Libs: -lpthread -lrt -lstdc++ -ldl -lncurses -lxflaim -L${libdir}
+Cflags: -I${includedir}
