@@ -825,7 +825,7 @@ RCODE F_FileHdl::extendFile(
 {
 	RCODE						rc = NE_FLM_OK;
 	FLMUINT					uiBytesToWrite;
-	FLMUINT					uiBytesWritten;
+	DWORD						uiBytesWritten;
 	FLMBYTE *				pucBuffer = NULL;
 	FLMUINT					uiBufferSize;
 	FLMUINT64				ui64FileSize;
@@ -949,7 +949,7 @@ RetryWrite:
 				goto Exit;
 			}
 					
-			uiBytesWritten = pAsyncClient->m_uiBytesDone;
+			uiBytesWritten = (DWORD)pAsyncClient->m_uiBytesDone;
 			pAsyncClient->Release();
 			pAsyncClient = NULL;
 		}
@@ -974,7 +974,7 @@ RetryWrite:
 
 		// No more room on disk
 
-		if( uiBytesWritten < uiBytesToWrite)
+		if( uiBytesWritten < (DWORD)uiBytesToWrite)
 		{
 			rc = RC_SET( NE_FLM_IO_DISK_FULL);
 			goto Exit;

@@ -39,7 +39,7 @@ extern "C" void ftkFastChecksum(
 extern "C" unsigned long ftkGetMMXSupported(void);
 
 #if defined( FLM_X86)
-	#if defined( FLM_GNUC) || defined( FLM_WIN) || defined( FLM_NLM)
+	#if defined( FLM_GNUC) || (defined( FLM_WIN) && !defined(FLM_64BIT)) || defined( FLM_NLM)
 		#define FLM_HAVE_FAST_CHECKSUM_ROUTINES
 	#endif
 #endif
@@ -71,7 +71,7 @@ unsigned long ftkGetMMXSupported( void)
 /********************************************************************
 Desc:
 *********************************************************************/
-#if defined( FLM_X86) && defined( FLM_WIN)
+#if defined( FLM_X86) && defined( FLM_WIN) && !defined( FLM_64BIT)
 unsigned long ftkGetMMXSupported( void)
 {
 	unsigned long bMMXSupported;

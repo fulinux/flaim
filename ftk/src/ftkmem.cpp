@@ -921,13 +921,17 @@ FSTATIC FLMUINT * memWalkStack( void)
 	f_memset( &stackFrame, 0, sizeof( stackFrame));
 	f_memset( &context, 0, sizeof( context));
 
+	// While you can continue walking the stack...
+
 #ifdef FLM_64BIT
 	machineType = IMAGE_FILE_MACHINE_IA64;
+
+	GetThreadContext(GetCurrentThread(), &context);
+
+	stackFrame.AddrPC.Offset = context.Rip;
+	stackFrame.AddrFrame.Offset = context.Rbp;
 #else
 	machineType = IMAGE_FILE_MACHINE_I386;
-#endif
-
-	// While you can continue walking the stack...
 
 	unsigned vEBP, vEIP;
 	__asm mov vEBP, ebp
@@ -937,8 +941,11 @@ nextinstr:
 
 	context.Ebp = vEBP;
 	context.Eip = vEIP;
+
 	stackFrame.AddrPC.Offset = vEIP;
 	stackFrame.AddrFrame.Offset = vEBP;
+#endif
+
 	stackFrame.AddrPC.Mode = AddrModeFlat;
 	stackFrame.AddrFrame.Mode = AddrModeFlat;
 

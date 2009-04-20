@@ -4,21 +4,32 @@ setlocal
 
 set solution=flaim-projects.sln
 set operation=Build
+set build=Release
+set platform=Win32
+set program=%0
 
-set build="Release"
-if     "%1" == "debug"   (set build="Debug" && goto do_build)
-if     "%1" == "release" (set build="Release" && goto do_build)
-if NOT "%1" == ""         goto help
+:next_arg
+shift
+if "%0" == ""           goto do_build
+if "%0" == "clean"      ((set operation=Clean) && goto next_arg)
+if "%0" == "build"      ((set operation=Build) && goto next_arg)
+if "%0" == "debug"      ((set build=Debug)     && goto next_arg)
+if "%0" == "release"    ((set build=Release)   && goto next_arg)
+if "%0" == "win32"      ((set platform=Win32)  && goto next_arg)
+if "%0" == "32"         ((set platform=Win32)  && goto next_arg)
+if "%0" == "win64"      ((set platform=x64)    && goto next_arg)
+if "%0" == "64"         ((set platform=x64)    && goto next_arg)
+goto help
 
 :do_build
-echo %operation%ing %solution% %build% build...
-devenv flaim-projects.sln /%operation% %build%
+echo %operation%ing %solution% "%build%|%platform%" build...
+devenv flaim-projects.sln /%operation% "%build%|%platform%"
 
 goto done
 
 :help
-echo Usage: %0 [release^|debug]
-echo %operation%s the "release" build by default.
+echo Usage: %program% [Build^|Clean] [Release^|Debug] [[Win]32^|[Win]64]
+echo Builds the "Release|Win32" configuration by default.
 
 :done
 endlocal
