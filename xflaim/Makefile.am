@@ -6,6 +6,9 @@ SUBDIRS = $(subdirs) src util sample docs obs
 
 doc_DATA = AUTHORS ChangeLog COPYING INSTALL NEWS README
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libxflaim.pc
+
 rpms srcrpm: dist
 	$(MAKE) -C obs $(AM_MAKEFLAGS) $@
 	rpmarch=`rpm --showrc | grep ^build\ arch | sed 's/\(.*: \)\(.*\)/\2/'`; \

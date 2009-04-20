@@ -120,7 +120,8 @@ esac
 AC_CONFIG_FILES([Makefile
                  obs/sqlflaim.spec
                  obs/Makefile
-                 src/Makefile])
+                 src/Makefile
+                 libflaimsql.pc])
 AC_OUTPUT
 
 echo "

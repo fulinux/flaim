@@ -155,7 +155,8 @@ AC_CONFIG_FILES([Makefile
                  src/cs/wrapper/Makefile
                  src/java/Makefile
                  src/java/wrapper/Makefile
-                 util/Makefile])
+                 util/Makefile
+                 libxflaim.pc])
 AC_OUTPUT
 
 echo "
