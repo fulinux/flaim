@@ -37,28 +37,31 @@ if test -z "$JAVAC"; then have_java=no; fi
 if test -z "$JAVAH"; then have_java=no; fi
 if test -z "$JAR"; then have_java=no; fi
 if test "x$have_java" = xno; then
-  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
-  echo " Some Java tools not found - continuing" >&AS_MESSAGE_LOG_FD
-  echo " without XFLAIM JNI support." >&AS_MESSAGE_LOG_FD
-  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
+  AC_MSG_WARN([
+  -----------------------------------------
+   Some Java tools not found - continuing
+   without XFLAIM JNI support.
+  -----------------------------------------])
 fi
 AM_CONDITIONAL([HAVE_JAVA], [test "x$have_java" = xyes])
 
 # Check for CSharp compiler.
 if test -z "$CSC"; then
-  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
-  echo " No CSharp compiler found - continuing" >&AS_MESSAGE_LOG_FD
-  echo " without XFLAIM CSHARP support." >&AS_MESSAGE_LOG_FD
-  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
+  AC_MSG_WARN([
+  -----------------------------------------
+   No CSharp compiler found - continuing
+   without XFLAIM CSHARP support.
+  -----------------------------------------])
 fi
 AM_CONDITIONAL([HAVE_CSHARP], [test -n "$CSC"])
 
 # Check for doxygen program.
 if test -z "$DOXYGEN"; then
-  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
-  echo " No Doxygen program found - continuing" >&AS_MESSAGE_LOG_FD
-  echo " without Doxygen documentation support." >&AS_MESSAGE_LOG_FD
-  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
+  AC_MSG_WARN([
+  -----------------------------------------
+   No Doxygen program found - continuing
+   without Doxygen documentation support.
+  -----------------------------------------])
 fi
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
 

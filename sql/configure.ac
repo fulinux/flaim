@@ -31,10 +31,11 @@ AC_ARG_ENABLE([debug],
 
 # Check for doxygen program.
 if test -z "$DOXYGEN"; then
-  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
-  echo " No Doxygen program found - continuing" >&AS_MESSAGE_LOG_FD
-  echo " without Doxygen documentation support." >&AS_MESSAGE_LOG_FD
-  echo "-----------------------------------------" >&AS_MESSAGE_LOG_FD
+  AC_MSG_WARN([
+  -----------------------------------------
+   No Doxygen program found - continuing
+   without Doxygen documentation support.
+  -----------------------------------------])
 fi
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
 
