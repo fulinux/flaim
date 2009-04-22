@@ -1,30 +1,34 @@
-dnl @synopsis AC_PROG_TRY_JAVAH
-dnl
-dnl AC_PROG_TRY_JAVAH looks for an existing Java native header (JNI)
-dnl generator. It sets and/or uses the environment variable JAVAH, 
-dnl then tests for the javah utility, beginning with free ones.
-dnl
-dnl You can use the JAVAH variable in your Makefile.in, with @JAVAH@.
-dnl
-dnl @category Java
-dnl @author John Calcote <john.calcote@gmail.com>
-dnl @version 2008-06-23
-dnl @license GPLWithACException
-
-AC_DEFUN([AC_PROG_TRY_JAVAH],[
-AC_REQUIRE([AC_CANONICAL_SYSTEM])dnl
+# AC_PROG_TRY_JAVAH([quiet])
+# --------------------------
+# AC_PROG_TRY_JAVAH looks for an existing Java native header (JNI)
+# generator. If the JAVAH environment variable is not set, it looks
+# in the system path for a javah program. 
+#
+# If no arguments are given to this macro, and no javah program
+# can be found, it prints a very visible message to STDOUT and 
+# to the config.log file. If the "quiet" argument is passed, 
+# then only the normal "check" line is displayed. (Technically, 
+# any passing any value in the first argument has the same effect
+# as "quiet".)
+#
+# Makes JAVAH precious to Autoconf. You can use the JAVAH
+# variable in your Makefile.in files with @JAVAH@.
+#
+# Author:   John Calcote <john.calcote@gmail.com>
+# Modified: 2009-04-22
+# License:  AllPermissive
+#
+AC_DEFUN([AC_PROG_TRY_JAVAH],
+[AC_REQUIRE([AC_CANONICAL_SYSTEM])dnl
 AC_REQUIRE([AC_PROG_CPP])dnl
-AC_PATH_PROG(JAVAH,javah)
-if test x"`eval 'echo $ac_cv_path_JAVAH'`" != x ; then
-  AC_TRY_CPP([#include <jni.h>],,[
-    ac_save_CPPFLAGS="$CPPFLAGS"
-changequote(, )dnl
-    ac_dir=`echo $ac_cv_path_JAVAH | sed 's,\(.*\)/[^/]*/[^/]*$,\1/include,'`
-    ac_machdep=`echo $build_os | sed 's,[-0-9].*,,' | sed 's,cygwin,win32,'`
-changequote([, ])dnl
-    CPPFLAGS="$ac_save_CPPFLAGS -I$ac_dir -I$ac_dir/$ac_machdep"
-    AC_TRY_CPP([#include <jni.h>],
-               ac_save_CPPFLAGS="$CPPFLAGS",
-               AC_MSG_WARN([unable to include <jni.h>]))
-    CPPFLAGS="$ac_save_CPPFLAGS"])
-fi])
+AC_ARG_VAR([JAVAH], [Java header utility])dnl
+AC_CHECK_PROGS([JAVAH], [javah])
+m4_ifvaln([$1],,
+[if test -z "$DOXYGEN"; then
+  AC_MSG_WARN([
+  -----------------------------------------
+   No javah utility found - continuing
+   without Java Header utility support.
+  -----------------------------------------])
+fi])dnl
+])

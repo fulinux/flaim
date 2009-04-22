@@ -32,14 +32,7 @@ AC_ARG_ENABLE([openssl],
     [enable the use of openssl (default is no)])], 
   [openssl="$withval"], [openssl=no])
 
-# Check for doxygen program.
-if test -z "$DOXYGEN"; then
-  AC_MSG_WARN([
-  -----------------------------------------
-   No Doxygen program found - continuing
-   without Doxygen documentation support.
-  -----------------------------------------])
-fi
+# Create Automake conditional based on the DOXYGEN variable
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 
 # Check for pthreads
@@ -52,7 +45,7 @@ ACX_PTHREAD(
   CXX="$PTHREAD_CXX"])
 
 # Checks for libraries.
-AC_CHECK_LIB([ncurses], [initscr])
+AC_SEARCH_LIBS([initscr], [ncurses])
 AC_CHECK_LIB([rt], [aio_suspend])
 if test "x$openssl" = xyes; then 
   AC_DEFINE([FLM_OPENSSL], [], [Define to use openssl])

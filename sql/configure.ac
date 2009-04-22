@@ -29,14 +29,7 @@ AC_ARG_ENABLE([debug],
     [enable debug code (default is no)])],
   [debug="$withval"], [debug=no])
 
-# Check for doxygen program.
-if test -z "$DOXYGEN"; then
-  AC_MSG_WARN([
-  -----------------------------------------
-   No Doxygen program found - continuing
-   without Doxygen documentation support.
-  -----------------------------------------])
-fi
+# Create Automake conditional based on the DOXYGEN variable
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
 
 # Check for pthreads

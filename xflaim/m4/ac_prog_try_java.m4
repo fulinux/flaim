@@ -1,26 +1,33 @@
-dnl @synopsis AC_PROG_TRY_JAVA
-dnl
-dnl AC_PROG_TRY_JAVA looks for an existing JAVA virtual machine. It 
-dnl sets and/or uses the environment variable JAVA, then tests for
-dnl various Java virtual machines, beginning with the free ones.
-dnl
-dnl If and when a JVM is located, it's then tested via 
-dnl AC_PROG_JAVA_WORKS.
-dnl
-dnl You can use the JAVA variable in your Makefile.in, with @JAVA@.
-dnl
-dnl @category Java
-dnl @author John Calcote <john.calcote@gmail.com>
-dnl @version 2008-06-24
-dnl @license GPLWithACException
-
-AC_DEFUN([AC_PROG_TRY_JAVA],[
-AC_REQUIRE([AC_EXEEXT])dnl
-if test -z "$JAVAPREFIX"; then
-  test -z "$JAVA" && AC_CHECK_PROGS([JAVA], [kaffe$EXEEXT java$EXEEXT])
-else
-  test -z "$JAVA" && AC_CHECK_PROGS([JAVA], [kaffe$EXEEXT java$EXEEXT], [$JAVAPREFIX])
-fi
-if test -n "$JAVA"; then
-  AC_PROG_JAVA_WORKS
-fi])
+# AC_PROG_TRY_JAVA([quiet])
+# -------------------------
+# AC_PROG_TRY_JAVA looks for an existing JAVA virtual machine. If 
+# the JAVA environment variable is empty, it searches the system 
+# path for a java program.
+#
+# If no arguments are given to this macro, and no java virtual
+# machine can be found, it prints a very visible message to STDOUT
+# and to the config.log file. If the "quiet" argument is passed,
+# then only the normal "check" line is displayed. (Technically, 
+# any passing any value in the first argument has the same effect
+# as "quiet".)
+#
+# Makes JAVA precious to Autoconf. You can use the JAVA variable
+# in your Makefile.in files with @JAVA@.
+#
+# Author:   John Calcote <john.calcote@gmail.com>
+# Modified: 2009-04-22
+# License:  AllPermissive
+#
+AC_DEFUN([AC_PROG_TRY_JAVA],
+[AC_REQUIRE([AC_EXEEXT])dnl
+AC_ARG_VAR([JAVA], [Java virtual machine])dnl
+AC_CHECK_PROGS([JAVA], [kaffe$EXEEXT java$EXEEXT])
+m4_ifvaln([$1],,
+[if test -z "$DOXYGEN"; then
+  AC_MSG_WARN([
+  -----------------------------------------
+   No Doxygen program found - continuing
+   without Doxygen documentation support.
+  -----------------------------------------])
+fi])dnl
+])

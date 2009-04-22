@@ -22,48 +22,23 @@ AC_PROG_INSTALL
 # Checks for optional programs.
 AC_PROG_TRY_CSC
 AC_PROG_TRY_CSVM
-AC_PROG_TRY_JAVAC
-AC_PROG_TRY_JAVAH
+AC_PROG_TRY_JNI
 AC_PROG_TRY_JAVADOC
-AC_PROG_TRY_JAR
 AC_PROG_TRY_DOXYGEN
 
 # Configure FTKLIB, FTKINC, FTK_LTLIB and FTK_INCLUDE
 FLM_FTK_SEARCH
 
-# Check for Java compiler.
-have_java=yes 
-if test -z "$JAVAC"; then have_java=no; fi
-if test -z "$JAVAH"; then have_java=no; fi
-if test -z "$JAR"; then have_java=no; fi
-if test "x$have_java" = xno; then
-  AC_MSG_WARN([
-  -----------------------------------------
-   Some Java tools not found - continuing
-   without XFLAIM JNI support.
-  -----------------------------------------])
-fi
-AM_CONDITIONAL([HAVE_JAVA], [test "x$have_java" = xyes])
+# Configure options: --enable-debug[=no].
+AC_ARG_ENABLE([debug],
+  [AS_HELP_STRING([--enable-debug],
+    [enable debug code (default is no)])],
+  [debug="$withval"], [debug=no])
 
-# Check for CSharp compiler.
-if test -z "$CSC"; then
-  AC_MSG_WARN([
-  -----------------------------------------
-   No CSharp compiler found - continuing
-   without XFLAIM CSHARP support.
-  -----------------------------------------])
-fi
+# Automake conditionals
+AM_CONDITIONAL([HAVE_JAVA], [test "x$ac_prog_have_jni" = xyes])
 AM_CONDITIONAL([HAVE_CSHARP], [test -n "$CSC"])
-
-# Check for doxygen program.
-if test -z "$DOXYGEN"; then
-  AC_MSG_WARN([
-  -----------------------------------------
-   No Doxygen program found - continuing
-   without Doxygen documentation support.
-  -----------------------------------------])
-fi
-AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 
 # Check for pthreads
 ACX_PTHREAD(
