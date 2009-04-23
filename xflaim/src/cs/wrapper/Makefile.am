@@ -65,8 +65,8 @@ install-data-local:
 	$(INSTALL_DATA) xflaim_csharp.xml "$(DESTDIR)$(docdir)"
 
 uninstall-local:
-	rm "$(DESTDIR)$(libdir)/xflaim_csharp.dll"
-	rm "$(DESTDIR)$(docdir)/xflaim_csharp.xml"
+	rm -f "$(DESTDIR)$(libdir)/xflaim_csharp.dll"
+	rm -f "$(DESTDIR)$(docdir)/xflaim_csharp.xml"
 
 xflaim_csharp.dll: $(xfcs_sources)
 	@list1='$+'; list2=; if test -n "$$list1"; then \

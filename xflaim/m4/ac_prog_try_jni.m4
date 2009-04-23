@@ -1,24 +1,30 @@
-# AC_PROG_TRY_JNI([quiet])
-# ------------------------
+# AC_PROG_TRY_JNI(["quiet"])
+# --------------------------
 # AC_PROG_TRY_JNI tests for the existence of the three
 # tools required to build Java Native Interface (JNI) 
-# modules: javac, javah, and jar
+# modules: javac, javah, and jar. It manages the
+# environment variable ac_prog_have_jni.
 #
-# If one or more of the tools are not found, and the "quiet"
-# parameter was not passed, then it prints a very visible 
-# message to STDOUT and to the log file indicating that the
-# build process will continue without JNI support.
+# If all three tools are present, then the 
+# ac_prog_have_jni environment variable is set to 'yes', 
+# otherwise it's set to 'no'.
 #
-# In the process, the JAVAC, JAVAH and JAR environment 
-# variables are made precious to Autoconf. You can use them 
-# in your Makefile.in files with @JAVAC@, @JAVAH@ and @JAR@.
+# If no arguments are given to this macro, and any of
+# these programs cannot be found, it prints a warning 
+# message to STDOUT and to the config.log file. If the 
+# "quiet" argument is passed, then only the normal 
+# "check" line is displayed.
 #
-# If all three tools are present, then the ac_prog_have_jni
-# environment variable is set to 'yes', otherwise it's set to
-# 'no'.
+# Makes the JAVAC, JAVAH, and JAR variables precious to
+# Autoconf. You can use these variables in your Makefile.in
+# files with @JAVAC@, @JAVAH@, and @JAR@, respectively.
+#
+# NOTE: Currently, passing any value in the first argument has 
+#       the same effect as passing "quiet", however, you should
+#       not rely on this, as all other words are reserved.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-22
+# Modified: 2009-04-23
 # License:  AllPermissive
 #
 AC_DEFUN([AC_PROG_TRY_JNI],
@@ -32,11 +38,6 @@ if test -z "$JAVAC"; then ac_prog_have_jni=no; fi
 if test -z "$JAVAH"; then ac_prog_have_jni=no; fi
 if test -z "$JAR"; then ac_prog_have_jni=no; fi
 if test "x$ac_prog_have_jni" = xno; then
-  AC_MSG_WARN([
-  -----------------------------------------
-   Some required Java Native Interface
-   tools missing - continuing without 
-   project JNI support.
-  -----------------------------------------])
+  AC_MSG_WARN([Some required JNI tools are missing - continuing without JNI support])
 fi])dnl
 ])
