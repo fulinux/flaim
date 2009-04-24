@@ -9,6 +9,9 @@ doxygen.stamp: doxyfile
 	$(DOXYGEN) $(DOXYFLAGS) $<
 	echo Timestamp > $@
 	
+install-data-hook:
+	cd $(DESTDIR)$(docdir) && tar xf $(docpkg)
+
 CLEANFILES = doxywarn.txt doxygen.stamp $(docpkg)
 
 clean-local:
