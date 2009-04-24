@@ -37,8 +37,22 @@ AC_ARG_ENABLE([debug],
 
 # Automake conditionals
 AM_CONDITIONAL([HAVE_JAVA], [test "x$ac_prog_have_jni" = xyes])
+if test "x$ac_prog_have_jni" = xyes; then
+  AC_CONFIG_FILES([src/java/Makefile
+                   src/java/wrapper/Makefile])
+fi
+
 AM_CONDITIONAL([HAVE_CSHARP], [test -n "$CSC"])
+if test -n "$CSC"; then
+  AC_CONFIG_FILES([src/cs/Makefile
+                   src/cs/wrapper/Makefile])
+fi
+
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+if test -n "$DOXYGEN"; then
+  AC_CONFIG_FILES([docs/doxygen/Makefile
+                   docs/doxygen/doxyfile])
+fi
 
 # Check for pthreads
 ACX_PTHREAD(
@@ -123,16 +137,10 @@ esac
 
 AC_CONFIG_FILES([Makefile
                  docs/Makefile
-                 docs/doxygen/Makefile
-                 docs/doxygen/doxyfile
                  obs/Makefile
                  obs/xflaim.spec
                  sample/Makefile
                  src/Makefile
-                 src/cs/Makefile
-                 src/cs/wrapper/Makefile
-                 src/java/Makefile
-                 src/java/wrapper/Makefile
                  util/Makefile
                  libxflaim.pc])
 AC_OUTPUT

@@ -14,9 +14,9 @@ rpms srcrpm: dist
 	$(MAKE) -C obs $(AM_MAKEFLAGS) $@
 	rpmarch=`rpm --showrc | grep ^build\ arch | sed 's/\(.*: \)\(.*\)/\2/'`; \
 	test -z $$rpmarch || ( mv $$rpmarch/* .; rm -rf $$rpmarch )
-	-rm -rf $(distdir)
+	rm -rf $(distdir)
 
 dist-hook:
-	-rm -rf `find $(distdir) -name .svn`
+	rm -rf `find $(distdir) -name .svn`
 
 .PHONY: srcrpm rpms

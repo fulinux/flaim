@@ -66,4 +66,4 @@ ut_basictest_LDADD = libutil.la ../src/libflaim.la
 TESTS = ut_basictest
 
 clean-local:
-	-rm -rf samplebackup samplerestore.*
+	rm -rf samplebackup samplerestore.*

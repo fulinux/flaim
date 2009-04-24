@@ -12,4 +12,4 @@ doxygen.stamp: doxyfile
 CLEANFILES = doxywarn.txt doxygen.stamp $(docpkg)
 
 clean-local:
-	-rm -rf html
+	rm -rf html

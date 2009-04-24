@@ -34,6 +34,10 @@ AC_ARG_ENABLE([openssl],
 
 # Create Automake conditional based on the DOXYGEN variable
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+if test -n "$DOXYGEN"; then
+  AC_CONFIG_FILES([docs/Makefile
+                   docs/doxyfile])
+fi
 
 # Check for pthreads
 ACX_PTHREAD(
@@ -137,8 +141,6 @@ case $host in
 esac
 
 AC_CONFIG_FILES([Makefile
-                 docs/Makefile
-                 docs/doxyfile
                  obs/Makefile
                  obs/ftk.spec
                  src/Makefile

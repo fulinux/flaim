@@ -31,7 +31,11 @@ AC_ARG_ENABLE([debug],
   [debug="$withval"], [debug=no])
 
 # Automake conditionals
-AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
+AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
+if test -n "$DOXYGEN"; then
+  AC_CONFIG_FILES([docs/doxygen/Makefile
+                   docs/doxygen/doxyfile])
+fi
 
 # Check for pthreads
 ACX_PTHREAD(
@@ -115,8 +119,6 @@ esac
 
 AC_CONFIG_FILES([Makefile
                  docs/Makefile
-                 docs/doxygen/Makefile
-                 docs/doxygen/doxyfile
                  obs/flaim.spec
                  obs/Makefile
                  sample/Makefile

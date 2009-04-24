@@ -200,8 +200,8 @@ copy-xml-files.stamp:
 	echo Timestamp > $@
 
 clean-local: 
-	-rm -rf ix2.*
-	-rm -rf bld.*
-	-rm -rf tst.bak
-	-rm -f *.xml
-	-rm -f copy-xml-files.stamp
+	rm -rf ix2.*
+	rm -rf bld.*
+	rm -rf tst.bak
+	rm -f *.xml
+	rm -f copy-xml-files.stamp

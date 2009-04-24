@@ -50,9 +50,9 @@ AM_CSCFLAGS = -d:mono -nologo -warn:4 -warnaserror+ -optimize+
 all-local: xflaim_csharp.dll
 
 clean-local:
-	-rm xflaim_csharp.dll xflaim_csharp.xml cstest_script cstest.exe libxflaim.so
-	-rm Output_Stream 
-	-rm -rf abc backup test.*
+	rm -f xflaim_csharp.dll xflaim_csharp.xml cstest_script cstest.exe libxflaim.so
+	rm -f Output_Stream 
+	rm -rf abc backup test.*
 
 check-local: cstest.exe cstest_script
 	
