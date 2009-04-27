@@ -17,16 +17,15 @@
 #       not rely on this, as all other words are reserved.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-23
+# Modified: 2009-04-27
 # License:  AllPermissive
 #
 AC_DEFUN([AC_PROG_TRY_JAVAH],
-[AC_REQUIRE([AC_CANONICAL_SYSTEM])dnl
-AC_REQUIRE([AC_PROG_CPP])dnl
+[AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([JAVAH], [Java header utility])dnl
-AC_CHECK_PROGS([JAVAH], [javah])
-m4_ifvaln([$1],,
-[if test -z "$DOXYGEN"; then
-  AC_MSG_WARN([No javah utility found - continuing wihtout javah support])
-fi])dnl
+AC_CHECK_PROGS([JAVAH], [javah$EXEEXT])
+ifelse([$1],,
+[if test -z "$JAVAH"; then
+  AC_MSG_WARN([Java header program not found - continuing without javah])
+fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
 ])

@@ -24,7 +24,7 @@
 #       not rely on this, as all other words are reserved.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-23
+# Modified: 2009-04-27
 # License:  AllPermissive
 #
 AC_DEFUN([AC_PROG_TRY_JNI],
@@ -32,12 +32,12 @@ AC_DEFUN([AC_PROG_TRY_JNI],
 AC_PROG_TRY_JAVAC([quiet])dnl
 AC_PROG_TRY_JAVAH([quiet])dnl
 AC_PROG_TRY_JAR([quiet])dnl
-m4_ifvaln([$1],,
+ifelse([$1],,
 [ac_prog_have_jni=yes
 if test -z "$JAVAC"; then ac_prog_have_jni=no; fi
 if test -z "$JAVAH"; then ac_prog_have_jni=no; fi
 if test -z "$JAR"; then ac_prog_have_jni=no; fi
 if test "x$ac_prog_have_jni" = xno; then
   AC_MSG_WARN([Some required JNI tools are missing - continuing without JNI support])
-fi])dnl
+fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
 ])

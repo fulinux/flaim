@@ -17,15 +17,15 @@
 #       not rely on this, as all other words are reserved.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-23
+# Modified: 2009-04-27
 # License:  AllPermissive
 #
 AC_DEFUN([AC_PROG_TRY_JAVA],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([JAVA], [Java virtual machine])dnl
 AC_CHECK_PROGS([JAVA], [kaffe$EXEEXT java$EXEEXT])
-m4_ifvaln([$1],,
-[if test -z "$DOXYGEN"; then
-  AC_MSG_WARN([No Java virtual machine found - continuing without JVM support])
-fi])dnl
+ifelse([$1],,
+[if test -z "$JAVA"; then
+  AC_MSG_WARN([Java VM not found - continuing without JVM])
+fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
 ])

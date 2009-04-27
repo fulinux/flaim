@@ -18,15 +18,15 @@
 #       not rely on this, as all other words are reserved.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-23
+# Modified: 2009-04-27
 # License:  AllPermissive
 #
 AC_DEFUN([AC_PROG_TRY_DOXYGEN],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([DOXYGEN], [Doxygen source doc generation program])dnl
 AC_CHECK_PROGS([DOXYGEN], [doxygen$EXEEXT])
-m4_ifvaln([$1],,
+ifelse([$1],,
 [if test -z "$DOXYGEN"; then
-  AC_MSG_WARN([Doxygen program not found - continuing without Doxygen support])
-fi])dnl
+  AC_MSG_WARN([Doxygen program not found - continuing without Doxygen])
+fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
 ])

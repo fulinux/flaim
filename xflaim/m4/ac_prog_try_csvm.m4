@@ -17,15 +17,15 @@
 #       not rely on this, as all other words are reserved.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-23
+# Modified: 2009-04-27
 # License:  AllPermissive
 #
 AC_DEFUN([AC_PROG_TRY_CSVM],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([CSVM], [CSharp virtual machine])dnl
 AC_CHECK_PROGS([CSVM], [mono$EXEEXT cs$EXEEXT])
-m4_ifvaln([$1],,
+ifelse([$1],,
 [if test -z "$CSVM"; then
-  AC_MSG_WARN([No CSharp virtual machine found - continuing without CSVM support])
-fi])dnl
+  AC_MSG_WARN([CSharp VM not found - continuing without CSharp VM])
+fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
 ])
