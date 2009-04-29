@@ -12,6 +12,9 @@ doxygen.stamp: doxyfile
 install-data-hook:
 	cd $(DESTDIR)$(docdir) && tar xf $(docpkg)
 
+uninstall-hook:
+	cd $(DESTDIR)$(docdir) && rm -rf html
+
 CLEANFILES = doxywarn.txt doxygen.stamp $(docpkg)
 
 clean-local:
