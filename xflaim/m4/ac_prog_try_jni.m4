@@ -13,15 +13,13 @@
 # these programs cannot be found, it prints a warning 
 # message to STDOUT and to the config.log file. If the 
 # "quiet" argument is passed, then only the normal 
-# "check" line is displayed.
+# "check" line is displayed. Any other argument is 
+# considered by autoconf to be an error at expansion
+# time.
 #
 # Makes the JAVAC, JAVAH, and JAR variables precious to
 # Autoconf. You can use these variables in your Makefile.in
 # files with @JAVAC@, @JAVAH@, and @JAR@, respectively.
-#
-# NOTE: Currently, passing any value in the first argument has 
-#       the same effect as passing "quiet", however, you should
-#       not rely on this, as all other words are reserved.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
 # Modified: 2009-04-27
@@ -40,4 +38,4 @@ if test -z "$JAR"; then ac_prog_have_jni=no; fi
 if test "x$ac_prog_have_jni" = xno; then
   AC_MSG_WARN([Some required JNI tools are missing - continuing without JNI support])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
-])
+])# AC_PROG_TRY_JNI
