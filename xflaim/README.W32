@@ -3,10 +3,23 @@ xflaim README file for Windows
 
 Contents:
 --------
-1. Tools for Building on Windows
-2. Building the Projects
-3. Visual Studio Runtime Library Use
-4. Legacy Makefile
+1. Known Build Issues
+2. Tools for Building on Windows
+3. Building the Projects
+4. Visual Studio Runtime Library Use
+5. Legacy Makefile
+
+Known Build Issues
+------------------
+
+1. There is an occasional build failure due to an "access denied"
+   error when attempting to write to a manifest file. Just build 
+   again, and it will work the second time.
+
+2. 64-bit builds of the flaim library have a few warnings, but
+   should build cleanly otherwise.
+
+3. xflaim and sql don't build cleanly in 64-bit builds yet.
 
 Tools for Building on Windows
 -----------------------------
@@ -76,6 +89,10 @@ provided by Visual Studio, and located within the following directory:
 
   c:\program files\microsoft visual studio 8\vc\vcvarsall.bat
 
+The Visual Studio 2008 IDE will automatically upgrade the solution and 
+project files from VS 2005 format to VS 2008 format. PLEASE DO NOT COMMIT
+THESE CHANGES (if you have commit rights to the flaim project repository).
+
 The projects may also be built from Windows command (.cmd) files provided 
 in the same locations as the flaim project Visual Studio solution files. 
 Additionally, there is a master command file in the trunk\flaim\win32 
@@ -101,6 +118,11 @@ products are left in the individual projects' solution file directories.
 For instance, ftk Win64 Debug products can be found in:
 
   flaim/ftk/win32/ftk/x64/Debug
+
+If you're using Visual Studio 2008, the build.cmd files will automatically
+detect and upgrade the VS 2005 solution and project files to VS 2008 format.
+PLEASE DO NOT COMMIT THESE CHANGES (if you have commit rights to the flaim
+project repository).
 
 Visual Studio Runtime Library Use
 ---------------------------------
@@ -173,4 +195,3 @@ CAVEAT: We're trying to phase out the legacy GNU makefile build system, so:
 2) Don't be surprised if it doesn't work all the time
 
 Enjoy!
-

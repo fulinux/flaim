@@ -2,7 +2,7 @@
 
 setlocal
 
-set solution=flaim-projects.sln
+set solution=sql
 set operation=Build
 set build=Release
 set platform=Win32
@@ -13,7 +13,7 @@ set FTKLIB=..\..\..\..\ftk\win32\ftk
 
 :next_arg
 shift
-if "%0" == ""           goto do_build
+if "%0" == ""           goto do_version_test
 if "%0" == "clean"      ((set operation=Clean)  && goto next_arg)
 if "%0" == "Clean"      ((set operation=%0)     && goto next_arg)
 if "%0" == "build"      ((set operation=Build)  && goto next_arg)
@@ -31,8 +31,14 @@ if "%0" == "64"         ((set platform=x64)     && goto next_arg)
 if "%0" == "x64"        ((set platform=%0%)     && goto next_arg)
 goto help
 
+:do_version_test
+devenv /? | find "Visual Studio Version 9.0" >NULL
+if errorlevel 1 goto do_build
+find "# Visual Studio 2008" %solution%.sln >NULL
+if errorlevel 1 devenv %solution%.sln /Upgrade
+
 :do_build
-devenv flaim-projects.sln /%operation% "%build%|%platform%"
+devenv %solution%.sln /%operation% "%build%|%platform%"
 
 goto done
 
