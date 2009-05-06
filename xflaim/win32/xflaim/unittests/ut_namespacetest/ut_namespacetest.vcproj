@@ -1,12 +1,11 @@
 <?xml version="1.0" encoding="Windows-1252"?>
 <VisualStudioProject
 	ProjectType="Visual C++"
-	Version="9.00"
+	Version="8.00"
 	Name="ut_namespacetest"
 	ProjectGUID="{42C7F8FC-C759-4C42-92A4-4EEB3A8ADCB4}"
 	RootNamespace="ut_namespacetest"
 	Keyword="Win32Proj"
-	TargetFrameworkVersion="196613"
 	>
 	<Platforms>
 		<Platform
@@ -21,8 +20,8 @@
 	<Configurations>
 		<Configuration
 			Name="Debug|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
 			ConfigurationType="1"
 			CharacterSet="1"
 			>
@@ -44,7 +43,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\..\..\ftk\src,..\..\..\..\src, $(FTKINC)"
+				AdditionalIncludeDirectories="..\..\..\..\src, $(FTKINC)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;FLM_DEBUG;XFL_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
 				StringPooling="true"
 				MinimalRebuild="false"
@@ -67,9 +66,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrtd.lib msvcprtd.lib $(FTKLIB_STATIC_DEBUG) $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrtd.lib msvcprtd.lib $(FTKLIB)\$(PlatformName)\$(ConfigurationName)\flaimtk_static.lib $(NOINHERIT)"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\..\..\..\ftk\win32\ftk\Debug"
+				AdditionalLibraryDirectories=""
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -94,86 +93,7 @@
 				Name="VCAppVerifierTool"
 			/>
 			<Tool
-				Name="VCPostBuildEventTool"
-			/>
-		</Configuration>
-		<Configuration
-			Name="Release|Win32"
-			OutputDirectory="$(SolutionDir)$(ConfigurationName)"
-			IntermediateDirectory="$(ConfigurationName)"
-			ConfigurationType="1"
-			CharacterSet="1"
-			WholeProgramOptimization="1"
-			>
-			<Tool
-				Name="VCPreBuildEventTool"
-			/>
-			<Tool
-				Name="VCCustomBuildTool"
-			/>
-			<Tool
-				Name="VCXMLDataGeneratorTool"
-			/>
-			<Tool
-				Name="VCWebServiceProxyGeneratorTool"
-			/>
-			<Tool
-				Name="VCMIDLTool"
-			/>
-			<Tool
-				Name="VCCLCompilerTool"
-				Optimization="2"
-				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\..\..\..\ftk\src,..\..\..\..\src, $(FTKINC)"
-				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;XFL_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
-				StringPooling="true"
-				MinimalRebuild="false"
-				RuntimeLibrary="2"
-				EnableFunctionLevelLinking="true"
-				DefaultCharIsUnsigned="true"
-				UsePrecompiledHeader="0"
-				ProgramDataBaseFileName="$(OutDir)\$(ProjectName).pdb"
-				WarningLevel="4"
-				DebugInformationFormat="3"
-			/>
-			<Tool
-				Name="VCManagedResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCResourceCompilerTool"
-			/>
-			<Tool
-				Name="VCPreLinkEventTool"
-			/>
-			<Tool
-				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrt.lib msvcprt.lib $(FTKLIB_STATIC_RELEASE) $(NOINHERIT)"
-				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\..\..\..\ftk\win32\ftk\Release"
-				IgnoreAllDefaultLibraries="true"
-				GenerateDebugInformation="true"
-				SubSystem="1"
-				OptimizeReferences="2"
-				EnableCOMDATFolding="2"
-				TargetMachine="1"
-			/>
-			<Tool
-				Name="VCALinkTool"
-			/>
-			<Tool
-				Name="VCManifestTool"
-			/>
-			<Tool
-				Name="VCXDCMakeTool"
-			/>
-			<Tool
-				Name="VCBscMakeTool"
-			/>
-			<Tool
-				Name="VCFxCopTool"
-			/>
-			<Tool
-				Name="VCAppVerifierTool"
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -205,7 +125,7 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="0"
-				AdditionalIncludeDirectories="..\..\..\..\..\ftk\src,..\..\..\..\src, $(FTKINC)"
+				AdditionalIncludeDirectories="..\..\..\..\src, $(FTKINC)"
 				PreprocessorDefinitions="WIN32;_DEBUG;_CONSOLE;FLM_DEBUG;XFL_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
 				StringPooling="true"
 				MinimalRebuild="false"
@@ -228,9 +148,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrtd.lib msvcprtd.lib $(FTKLIB_STATIC_DEBUG) $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrtd.lib msvcprtd.lib $(FTKLIB)\$(PlatformName)\$(ConfigurationName)\flaimtk_static.lib $(NOINHERIT)"
 				LinkIncremental="2"
-				AdditionalLibraryDirectories="..\..\..\..\..\ftk\win32\ftk\Debug"
+				AdditionalLibraryDirectories=""
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -253,6 +173,94 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
+			/>
+			<Tool
+				Name="VCPostBuildEventTool"
+			/>
+		</Configuration>
+		<Configuration
+			Name="Release|Win32"
+			OutputDirectory="$(SolutionDir)$(PlatformName)\$(ConfigurationName)"
+			IntermediateDirectory="$(PlatformName)\$(ConfigurationName)"
+			ConfigurationType="1"
+			CharacterSet="1"
+			WholeProgramOptimization="1"
+			>
+			<Tool
+				Name="VCPreBuildEventTool"
+			/>
+			<Tool
+				Name="VCCustomBuildTool"
+			/>
+			<Tool
+				Name="VCXMLDataGeneratorTool"
+			/>
+			<Tool
+				Name="VCWebServiceProxyGeneratorTool"
+			/>
+			<Tool
+				Name="VCMIDLTool"
+			/>
+			<Tool
+				Name="VCCLCompilerTool"
+				Optimization="2"
+				EnableIntrinsicFunctions="true"
+				AdditionalIncludeDirectories="..\..\..\..\src, $(FTKINC)"
+				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;XFL_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
+				StringPooling="true"
+				MinimalRebuild="false"
+				RuntimeLibrary="2"
+				EnableFunctionLevelLinking="true"
+				DefaultCharIsUnsigned="true"
+				UsePrecompiledHeader="0"
+				ProgramDataBaseFileName="$(OutDir)\$(ProjectName).pdb"
+				WarningLevel="4"
+				DebugInformationFormat="3"
+			/>
+			<Tool
+				Name="VCManagedResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCResourceCompilerTool"
+			/>
+			<Tool
+				Name="VCPreLinkEventTool"
+			/>
+			<Tool
+				Name="VCLinkerTool"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrt.lib msvcprt.lib $(FTKLIB)\$(PlatformName)\$(ConfigurationName)\flaimtk_static.lib $(NOINHERIT)"
+				LinkIncremental="1"
+				AdditionalLibraryDirectories=""
+				IgnoreAllDefaultLibraries="true"
+				GenerateDebugInformation="true"
+				SubSystem="1"
+				OptimizeReferences="2"
+				EnableCOMDATFolding="2"
+				TargetMachine="1"
+			/>
+			<Tool
+				Name="VCALinkTool"
+			/>
+			<Tool
+				Name="VCManifestTool"
+			/>
+			<Tool
+				Name="VCXDCMakeTool"
+			/>
+			<Tool
+				Name="VCBscMakeTool"
+			/>
+			<Tool
+				Name="VCFxCopTool"
+			/>
+			<Tool
+				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -286,7 +294,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				EnableIntrinsicFunctions="true"
-				AdditionalIncludeDirectories="..\..\..\..\..\ftk\src,..\..\..\..\src, $(FTKINC)"
+				AdditionalIncludeDirectories="..\..\..\..\src, $(FTKINC)"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE;XFL_STATIC_LINK;FTK_STATIC_LINK;$(NOINHERIT)"
 				StringPooling="true"
 				MinimalRebuild="false"
@@ -309,9 +317,9 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrt.lib msvcprt.lib $(FTKLIB_STATIC_RELEASE) $(NOINHERIT)"
+				AdditionalDependencies="kernel32.lib user32.lib rpcrt4.lib advapi32.lib imagehlp.lib wsock32.lib msvcrt.lib msvcprt.lib $(FTKLIB)\$(PlatformName)\$(ConfigurationName)\flaimtk_static.lib $(NOINHERIT)"
 				LinkIncremental="1"
-				AdditionalLibraryDirectories="..\..\..\..\..\ftk\win32\ftk\Release"
+				AdditionalLibraryDirectories=""
 				IgnoreAllDefaultLibraries="true"
 				GenerateDebugInformation="true"
 				SubSystem="1"
@@ -336,6 +344,9 @@
 			/>
 			<Tool
 				Name="VCAppVerifierTool"
+			/>
+			<Tool
+				Name="VCWebDeploymentTool"
 			/>
 			<Tool
 				Name="VCPostBuildEventTool"
@@ -368,12 +379,6 @@
 				RelativePath="..\..\..\..\util\flmunittest.h"
 				>
 			</File>
-		</Filter>
-		<Filter
-			Name="Resource Files"
-			Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav"
-			UniqueIdentifier="{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}"
-			>
 		</Filter>
 	</Files>
 	<Globals>

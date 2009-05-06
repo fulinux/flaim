@@ -1182,6 +1182,20 @@ public:
 	void operator delete[](
 		void *			ptr);
 
+	void operator delete(
+		void *			ptr,
+		FLMUINT			uiBlockSize);
+
+	void operator delete(
+		void *			ptr,
+		const char *	pszFile,
+		int				iLine);
+
+	void operator delete[](
+		void *			ptr,
+		const char *	pszFile,
+		int				iLine);
+
 private:
 
 	void unlinkFromReplaceList( void);

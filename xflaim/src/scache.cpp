@@ -7796,3 +7796,13 @@ void F_CachedBlock::operator delete[](
 {
 	flmAssert( 0);
 }
+
+/****************************************************************************
+Desc:
+****************************************************************************/
+void F_CachedBlock::operator delete(
+	void *,	//			ptr
+	FLMUINT) //			uiBlockSize
+{
+	flmAssert( 0);
+}

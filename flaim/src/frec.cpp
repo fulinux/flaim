@@ -4838,7 +4838,6 @@ void FlmRecord::operator delete[](
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__)
 void FlmRecord::operator delete( 
 	void *			ptr,
 	const char *,	// file
@@ -4852,12 +4851,10 @@ void FlmRecord::operator delete(
 
 	gv_FlmSysData.RCacheMgr.pRecAlloc->freeCell( ptr);
 }
-#endif
 
 /****************************************************************************
 Desc:
 ****************************************************************************/
-#if defined( FLM_DEBUG) && !defined( __WATCOMC__)
 void FlmRecord::operator delete[](
 	void *,			// ptr,
 	const char *,	// file
@@ -4866,8 +4863,6 @@ void FlmRecord::operator delete[](
 {
 	flmAssert( 0);
 }
-
-#endif
 
 /******************************************************************************
 Desc:	Verify the structure and content of the FlmField

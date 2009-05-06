@@ -3832,22 +3832,9 @@
 		void * operator new(
 			FLMSIZET			uiSize	///< Number of bytes to allocate - should be sizeof( ::FlmRecord).
 			)
-#ifndef FLM_WATCOM_NLM
+	#ifndef FLM_WATCOM_NLM
 			throw()
-#endif
-			;
-
-		/// Overloaded new operator for ::FlmRecord objects (with source file and line number).
-		/// This new operator passes in the current file and line number.  This information is
-		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void * operator new(
-			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be sizeof( ::FlmRecord).
-			const char *	pszFile,	///< Name of source file where this allocation is made.
-			int				iLine		///< Line number in source file where this allocation request is made.
-			)
-#ifndef FLM_WATCOM_NLM
-			throw()
-#endif
+	#endif
 			;
 
 		/// Overloaded new operator (array) for ::FlmRecord objects.
@@ -3855,23 +3842,9 @@
 		void * operator new[](
 			FLMSIZET			uiSize	///< Number of bytes to allocate - should be a multiple of sizeof( ::FlmRecord).
 			)
-#ifndef FLM_WATCOM_NLM
+	#ifndef FLM_WATCOM_NLM
 			throw()
-#endif
-			;
-
-		/// Overloaded new operator (array) for ::FlmRecord objects (with source file and line number).
-		/// This new operator is called when an array of ::FlmRecord objects is allocated.
-		/// This new operator passes in the current file and line number.  This information is
-		/// useful in tracking memory allocations to determine where memory leaks are coming from.
-		void * operator new[](
-			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be a multiple of sizeof( ::FlmRecord).
-			const char *	pszFile,	///< Name of source file where this allocation is made.
-			int				iLine		///< Line number in source file where this allocation request is made.
-			)
-#ifndef FLM_WATCOM_NLM
-			throw()
-#endif
+	#endif
 			;
 
 		/// Overloaded delete operator for ::FlmRecord objects.
@@ -3883,7 +3856,33 @@
 		void operator delete[](
 			void *			ptr);		///< Pointer to array of ::FlmRecord objects being freed.
 
-	#if defined( FLM_DEBUG) && !defined( __WATCOMC__)
+		/// Overloaded new operator for ::FlmRecord objects (with source file and line number).
+		/// This new operator passes in the current file and line number.  This information is
+		/// useful in tracking memory allocations to determine where memory leaks are coming from.
+		void * operator new(
+			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be sizeof( ::FlmRecord).
+			const char *	pszFile,	///< Name of source file where this allocation is made.
+			int				iLine		///< Line number in source file where this allocation request is made.
+			)
+	#ifndef FLM_WATCOM_NLM
+			throw()
+	#endif
+			;
+
+		/// Overloaded new operator (array) for ::FlmRecord objects (with source file and line number).
+		/// This new operator is called when an array of ::FlmRecord objects is allocated.
+		/// This new operator passes in the current file and line number.  This information is
+		/// useful in tracking memory allocations to determine where memory leaks are coming from.
+		void * operator new[](
+			FLMSIZET			uiSize,	///< Number of bytes to allocate - should be a multiple of sizeof( ::FlmRecord).
+			const char *	pszFile,	///< Name of source file where this allocation is made.
+			int				iLine		///< Line number in source file where this allocation request is made.
+			)
+	#ifndef FLM_WATCOM_NLM
+			throw()
+	#endif
+			;
+
 		/// Overloaded delete operator for ::FlmRecord objects (with source file and line number).
 		/// This delete operator passes in the current file and line number.  This information is
 		/// useful in tracking memory allocations to determine where memory leaks are coming from.
@@ -3891,9 +3890,7 @@
 			void *			ptr,		///< Pointer to ::FlmRecord object being freed.
 			const char *	pszFile,	///< Name of source file where this delete occurs.
 			int				iLine);	///< Line number in source file where this delete occurs.
-	#endif
 
-	#if defined( FLM_DEBUG) && !defined( __WATCOMC__)
 		/// Overloaded delete operator (array) for ::FlmRecord objects (with source file and line number).
 		/// This delete operator is called when an array of ::FlmRecord objects is freed.
 		/// This delete operator passes in the current file and line number.  This information is
@@ -3902,7 +3899,6 @@
 			void *			ptr,		///< Pointer to array of ::FlmRecord objects being freed.
 			const char *	pszFile,	///< Name of source file where this delete occurs.
 			int				iLine);	///< Line number in source file where this delete occurs.
-	#endif
 
 		/// Increment the reference count for this ::FlmRecord object.
 		/// The reference count is the number of pointers that are referencing this ::FlmRecord object.

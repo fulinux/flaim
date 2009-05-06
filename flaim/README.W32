@@ -1,130 +1,154 @@
-flaim project README for Windows
-================================
+flaim README file for Windows
+=============================
 
 Contents:
 --------
 1. Tools for Building on Windows
-2. FLAIM Runtime Library Use
-3. GUI or Command-Line Build
+2. Building the Projects
+3. Visual Studio Runtime Library Use
 4. Legacy Makefile
-5. A Word About the Utilities
 
 Tools for Building on Windows
 -----------------------------
 
-Visual C++ 2008 Express is good, but more to the point, it's free. To build 
-the FLAIM projects, you will need to download and install Visual C++ 2008 
-Express (which now thankfully comes with a reasonably late version of the 
-Windows Platform SDK).
+The flaim projects contain Visual Studio 2005 solution and project files.
+These files have been tested and work correctly in both VS 2005 and VS 2008.
 
-You can get Visual C++ 2008 Express here:
+If you choose to use Visual C++ 2005 Express edition (very difficult to 
+find these days), you will have to install a recent version of the Windows
+Platform SDK. See this link for details:
 
-   http://www.microsoft.com/express/vc
+  http://msdn.microsoft.com/en-us/library/ms235626(VS.80).aspx
 
-The ">> Download Now!" link on that page, and decide whether you want to 
-install from the web (slow) or install off-line (also slow - there's no fast 
-solution, sorry). 
+Regardless of which version of VC++ 2005 you use (Express, Professional, 
+Enterprise, etc.), you should ensure that you have the latest Visual 
+Studio service pack installed. See this link for details concerning the 
+Express edition of VC++ 2005, Service Pack 1, for instance:
 
-Once Visual C++ 2008 Express has been installed you may simply double click 
-on the flaim\win32\flaim\flaim.sln solution file to bring up the flaim project 
-in the Visual C++ 2008 IDE. Use the main or context menu options to build the 
-desired targets.
+  http://www.microsoft.com/downloads/details.aspx?
+    FamilyId=7B0B0339-613A-46E6-AB4D-080D4D4A8C4E&amp;amp;
+    displaylang=en&displaylang=en
 
-FLAIM Runtime Library Use
--------------------------
+Visual C++ 2008 Express good, but more to the point, it's free. Download 
+and install Visual C++ 2008 Express (which thankfully now comes with a 
+reasonably up-to-date version of the Windows Platform SDK). You can get 
+Visual C++ 2008 Express edition here:
 
-The flaim libraries - both static and dynamic - and the flaim utility programs
-consume the dynamic (DLL) form of the Visual C++ 2008 runtime libraries. This
-is in alignment with the use of runtime libraries on Unix platforms. It's more
-efficient and flexible to use the DLL versions of these libraries, and it 
-allows Microsoft to update these libraries as necessary to fix security holes 
-and defects which may be found in the future.
+  http://www.microsoft.com/express/vc
+
+Click on the "Download" link on that page, and decide whether you want to 
+install from the web (slow) or install off-line (also slow - there's no 
+fast solution, sorry).
+
+Building the Projects
+---------------------
+
+The flaim project solution (.sln) files are located beneath win32 
+directories found in the following locations:
+
+trunk\flaim
+   ftk\win32\ftk        - flaimtk.sln
+   flaim\win32\flaim    - flaim.sln
+   xflaim\win32\xflaim  - xflaim.sln
+   sql\win32\sql        - flaimsql.sln
+
+If you plan to build these projects individually from the Visual Studio IDE 
+using the provided solution files, then you must build the flaim toolkit (ftk)
+project first, followed by any (or all) of the remaining projects.
+
+Additionally, you will need to define environment variables that provide the
+higher-level projects (flaim, xflaim, and sql) with the location of the ftk 
+project libraries and headers. These variables point to directories, and may
+be defined as absolute or relative paths. For the proper relative locations
+of the ftk project headers and libraries, as defined within the flaim project
+subversion repository, you may simply use the following variable definitions:
+
+  set FTKINC=..\..\..\..\ftk\src
+  set FTKLIB=..\..\..\..\ftk\win32\ftk
+
+These definitions must be set within the environment from which the IDE is 
+executed. This may be accomplished by setting the variables within a command
+shell, and then executing the Visual Studio 'devenv' command to start the 
+IDE from within that shell, or you may set them in the global environment
+(my computer|properties|advance|environment). If you choose to execute the 
+IDE from the command prompt, you should execute the vcvarsall.bat file 
+provided by Visual Studio, and located within the following directory:
+
+  c:\program files\microsoft visual studio 8\vc\vcvarsall.bat
+
+The projects may also be built from Windows command (.cmd) files provided 
+in the same locations as the flaim project Visual Studio solution files. 
+Additionally, there is a master command file in the trunk\flaim\win32 
+directory. This script may be used to build the ftk project, followed by 
+one or all of the remaining projects. By default, the master scrip builds 
+only the ftk and flaim libraries. To build xflaim and sql, please use the
+--help option on the script's command-line. The scripts are found here:
+
+trunk\flaim
+   win32                - buildall.cmd
+   ftk\win32\ftk        - build.cmd
+   flaim\win32\flaim    - build.cmd
+   xflaim\win32\xflaim  - build.cmd
+   sql\win32\sql        - build.cmd
+
+The buildall.cmd script is unique in that it sets the appropriate FTK
+environment variables, and then calls the remaining scripts in the proper 
+order. The build.cmd scripts are identical to each other, and thus
+interchangeable.
+
+Regardless of the method chosen for building the flaim projects, the 
+products are left in the individual projects' solution file directories.
+For instance, ftk Win64 Debug products can be found in:
+
+  flaim/ftk/win32/ftk/x64/Debug
+
+Visual Studio Runtime Library Use
+---------------------------------
+
+The flaim project libraries - both static and dynamic - and their respective
+utilities consume the dynamic (DLL) form of the Visual C++ 2005/2008 runtime
+libraries. This is in alignment with the use of runtime libraries on Unix
+platforms. It's more efficient and flexible to use the DLL versions of these
+libraries, and it allows Microsoft to update them as necessary to fix security
+holes and defects which may be found in the future.
 
 With each new version of Windows and Microsoft tools, Microsoft platforms 
-become more security minded - and consequently more secure. This is generally
-done by copying features from Unix platforms into the Windows operating system 
-and into the tools themselves. Visual Studio 2008 is no exception. The most 
-significant security feature in Visual C++ 2008 (IMHO) is secure package 
-deployment and executable module manifests. This is nothing less than the 
-direct equivalent of RPATH's in Unix and Linux, and the usual security 
-features - and annoying issues - come along with it.
+become more security minded - and more secure. This is generally done by 
+copying features from Unix platforms into the Windows operating system and 
+into the tools themselves. Visual Studio 2005/2008 are not exceptions. The 
+most significant security feature in Visual C++ 2005/2008 (IMHO) is secure 
+package deployment and executable module manifests. This is nothing less 
+than the direct equivalent of RPATH's in Unix and Linux, along with the usual 
+security features - and annoyances.
 
-The Visual C++ 2008 runtime libraries include MSVCR90.DLL, MSVCP90.DLL and 
-MSVCM90.DLL, which represent the C standard library, the C++ standard library,
-and the C math library, respectively. These libraries may no longer be simply
-dropped into the same directory as your executable and consumed. Executables 
-and consumer DLL's need to be configured to build with a manifest file (a 
-default setting for new projects), and the runtime libraries need to be 
-"deployed". Deployment consists of running a significant algorithm to 
-determine platform requirements and features, and making the right decisions 
-to install these runtime libraries. 
+The Visual C++ 2005 runtime libraries include MSVCR80.DLL, MSVCP80.DLL, and 
+MSVCM80.DLL, (VS 2008 provides MSVCR90.DLL, MSVCP90.DLL, and MSVCM90.DLL),
+which represent the C standard library, the C++ standard library, and the C 
+math library, respectively. These libraries may no longer be simply dropped 
+into the same directory as your executable and consumed. Executables and 
+consumer DLL's need to be configured to build with a manifest file (a default 
+setting for new projects), and the runtime libraries need to be "deployed". 
+Deployment consists of running a significant algorithm to determine platform 
+requirements and features, and making the right decisions to install these 
+runtime libraries. 
 
 Developers (like you) will not have a problem executing your own projects 
-built against the FLAIM libraries because you've installed VC++ 2008, 
-(actually VC9) which consumes the VC9 runtime libraries, and so deploys them 
-during its install process. For more information, see this excellent article 
-on the CodeProjects website:
+built against the FLAIM libraries because you've installed VC 2005 or 2008, 
+which consume the VC 2005/2008 runtime libraries, and so deploy them during 
+their own installation processes. For more information, see this excellent 
+article on the CodeProjects website:
 
-   http://www.codeproject.com/cpp/vcredists_x86.asp
-
-GUI or Command-Line Build
--------------------------
-
-The flaim project is a complete VC++ 2008 project in its own right, and may be
-used to build the flaim libraries and utilities by simply by changing into the 
-flaim\win32\flaim sub-directory and then running ONE of the following two 
-commands:
-
-  c:> buildall.cmd [debug|release]
-  c:> devenv flaim.sln
-
-The latter will bring up the Visual C++ 2008 IDE, so you can build in a "GUI" 
-fashion. The former will use devenv command line options to build from the 
-command line.
-
-The flaim SVN repository is divided into four sub-projects, named for the 
-sub-directories in which they reside:
-
-  * flaim
-  * ftk
-  * sql
-  * xflaim
-
-Each of these sub-projects is a complete project in its own right. However,
-the flaim, sql and xflaim projects each depend on the flaimtk libraries built
-by the ftk project, and on the flaimtk.h header file.
-
-When the flaim project is is built from the flaim\trunk\win32\flaim-projects
-directory, using the flaim-projects.sln solution file or the buildall.cmd
-file in that directory, the dependencies are managed for you by this umbrella 
-solution. 
-
-When you build the flaim sub-project by itself in this manner, you need to 
-provide the location of the flaimtk library by setting a few environment 
-variables in the environment from which you launch the VC++ 2008 IDE, via
-the "devenv" command, as in the following command sequence:
-
-  c:> set FTKINC=c:\full\path\to\ftk\src\directory
-  c:> set FTKLIB_STATIC_DEBUG=c:\full\path\to\debug\flaimtk_static.lib
-  c:> set FTKLIB_STATIC_RELEASE=c:\full\path\to\release\flaimtk_static.lib
-  c:> set FTKLIB_DEBUG=c:\full\path\to\debug\flaimtk.lib
-  c:> set FTKLIB_RELEASE=c:\full\path\to\release\flaimtk.lib
-  c:> devenv
-
-NOTE: You may also use relative paths in these variables, but this is tricky, 
-because each project is built from the directory containing the solution 
-(.sln) file, so you'll have to calculate these paths relative to the 
-flaim/win32/flaim directory, as that's where the flaim.sln file is located.
+  http://www.codeproject.com/cpp/vcredists_x86.asp
 
 Legacy Makefile
 ---------------
 
-There is also a legacy makefile (GNUMakefile) that has been hand written to 
-target flaim for all of the platforms that flaim currently supports. If you
-don't want to use Autotools, and you don't feel comfortable in the Visual C++
-2008 IDE, then you may build for Windows by simply running 'make' from the 
-root of the flaim project. This makefile accepts multiple auxilliary targets, 
-which modify the build in various ways. These auxilliary targets include:
+There is also a legacy makefile (GNUMakefile) that has been hand written 
+to target flaim for all of the platforms that flaim currently supports. If 
+you don't feel comfortable in the Visual C++ 2005 or 2008 IDE, then you may 
+build for Windows by simply running 'make' from the root of the FLAIM project.
+This makefile accepts multiple auxilliary targets, which modify the build in 
+various ways. These auxilliary targets include:
 
    debug
    release
@@ -145,34 +169,8 @@ True build targets include:
 
 CAVEAT: We're trying to phase out the legacy GNU makefile build system, so:
 
-a) Don't expect it to last forever, and 
-b) Don't be surprised if it doesn't work all the time
-
-A Word About the Utilities
---------------------------
-
-The flaim console utility programs include the following:
-
-  * flmcheckdb.exe,
-  * flmrebuild.exe,
-  * flmview.exe,
-  * flmdbshell.exe and
-  * flmgigatest.exe
-
-Additionally, there is a single unit test (which may also be executed from
-the Windows command prompt) in the flaim project called:
-
-  * ut_basictest
-
-These utilities and tests are currently statically linked to the flaim and 
-flaimtk libraries, because they access internal functionality that is not 
-part of the public interfaces of either of these libraries.
-
-They do well what they were designed to do, and from that angle, they are 
-very useful utilities. But they are NOT good examples of FLAIM database 
-applications. The reason they access internal functionality is because they
-need to be able to analyze and display information about flaim databases that
-is not generally useful from the perspective of a normal database application.
+1) Don't expect it to last forever, and 
+2) Don't be surprised if it doesn't work all the time
 
 Enjoy!
 
