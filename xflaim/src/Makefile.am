@@ -1,16 +1,14 @@
-SUBDIRS = 
-
 if HAVE_JAVA
-  SUBDIRS += java
+  JAVADIR = java
   JNI_LIBADD=java/libxfjni.la
 endif
 
 if HAVE_CSHARP
-  SUBDIRS += cs
+  CSDIR = cs
   CSI_LIBADD=cs/libxfcsi.la
 endif
 
-SUBDIRS += .
+SUBDIRS = $(JAVADIR) $(CSDIR)
 
 lib_LTLIBRARIES = libxflaim.la
 include_HEADERS = xflaim.h

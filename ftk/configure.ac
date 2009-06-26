@@ -34,30 +34,30 @@ AC_ARG_ENABLE([openssl],
 
 # Create Automake conditional based on the DOXYGEN variable
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
-if test -n "$DOXYGEN"; then
-  AC_CONFIG_FILES([docs/Makefile
-                   docs/doxyfile])
-fi
+#AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([docs/doxyfile])])
+AS_IF([test -n "$DOXYGEN"], [AC_CONFIG_FILES([docs/doxyfile])])
+
+# Configure for large files, even in 32-bit environments
+AC_SYS_LARGEFILE
 
 # Check for pthreads
 ACX_PTHREAD(
- [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])
-  LIBS="$PTHREAD_LIBS $LIBS"
-  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-  CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
-  CC="$PTHREAD_CC"
-  CXX="$PTHREAD_CXX"])
+  [AC_DEFINE([HAVE_PTHREAD], [1], [Define if you have POSIX threads libraries and header files.])
+   LIBS="$PTHREAD_LIBS $LIBS"
+   CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+   CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
+   CC="$PTHREAD_CC"
+   CXX="$PTHREAD_CXX"])
 
 # Checks for libraries.
 AC_SEARCH_LIBS([initscr], [ncurses])
 AC_CHECK_LIB([rt], [aio_suspend])
-if test "x$openssl" = xyes; then 
-  AC_DEFINE([FLM_OPENSSL], [], [Define to use openssl])
-  AC_CHECK_LIB([ssl], [SSL_new])
-  AC_CHECK_LIB([crypto], [CRYPTO_add])
-  AC_CHECK_LIB([dl], [dlopen])
-  AC_CHECK_LIB([z], [gzopen])
-fi
+AS_IF([test "x$openssl" = xyes],
+  [AC_DEFINE([FLM_OPENSSL], [1], [Define to use openssl])
+   AC_CHECK_LIB([ssl], [SSL_new])
+   AC_CHECK_LIB([crypto], [CRYPTO_add])
+   AC_CHECK_LIB([dl], [dlopen])
+   AC_CHECK_LIB([z], [gzopen])])
 
 # Checks for header files.
 AC_HEADER_RESOLV
@@ -81,13 +81,9 @@ AC_FUNC_MALLOC
 AC_FUNC_MKTIME
 AC_CHECK_FUNCS([atexit fdatasync ftruncate getcwd gethostbyaddr gethostbyname gethostname gethrtime gettimeofday inet_ntoa localtime_r memmove memset mkdir pstat_getdynamic realpath rmdir select socket strchr strrchr strstr])
 
-# Configure for large files, even in 32-bit environments
-AC_SYS_LARGEFILE
-
 # Configure DEBUG source code, if requested.
-if test "x$debug" = xyes; then
-  AC_DEFINE([FLM_DEBUG], [], [Define to enable FLAIM debug features])
-fi
+AS_IF([test "x$debug" = xyes],
+  [AC_DEFINE([FLM_DEBUG], [1], [Define to enable FLAIM debug features])])
 
 # Configure compiler and platform flags and options.
 # This stuff was in the original makefile...
@@ -125,8 +121,7 @@ case $host in
     fi ;;
 
   *-apple-darwin*)
-    AC_DEFINE([OSX], [], 
-      [Define if building on Apple OSX.]) ;;
+    AC_DEFINE([OSX], [1], [Define if building on Apple OSX.]) ;;
 
   *-*-aix*)
     if "x$CXX" != "xg++"; then
@@ -141,10 +136,12 @@ case $host in
 esac
 
 AC_CONFIG_FILES([Makefile
+                 docs/Makefile
                  obs/Makefile
                  obs/ftk.spec
                  src/Makefile
-                 util/Makefile])
+                 util/Makefile
+                 libflaimtk.pc])
 
 AC_OUTPUT
 

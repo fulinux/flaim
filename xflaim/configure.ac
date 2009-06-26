@@ -37,31 +37,22 @@ AC_ARG_ENABLE([debug],
 
 # Automake conditionals
 AM_CONDITIONAL([HAVE_JAVA], [test "x$ac_prog_have_jni" = xyes])
-if test "x$ac_prog_have_jni" = xyes; then
-  AC_CONFIG_FILES([src/java/Makefile
-                   src/java/wrapper/Makefile])
-fi
-
 AM_CONDITIONAL([HAVE_CSHARP], [test -n "$CSC"])
-if test -n "$CSC"; then
-  AC_CONFIG_FILES([src/cs/Makefile
-                   src/cs/wrapper/Makefile])
-fi
-
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
-if test -n "$DOXYGEN"; then
-  AC_CONFIG_FILES([docs/doxygen/Makefile
-                   docs/doxygen/doxyfile])
-fi
+#AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([docs/doxygen/doxyfile])])
+AS_IF([test -n "$DOXYGEN"], [AC_CONFIG_FILES([docs/doxygen/doxyfile])])
+
+# Configure for large files, even on 32-bit systems
+AC_SYS_LARGEFILE
 
 # Check for pthreads
 ACX_PTHREAD(
- [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])
-  LIBS="$PTHREAD_LIBS $LIBS"
-  CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-  CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
-  CC="$PTHREAD_CC"
-  CXX="$PTHREAD_CXX"])
+  [AC_DEFINE([HAVE_PTHREAD], [1], [Define if you have POSIX threads libraries and header files.])
+   LIBS="$PTHREAD_LIBS $LIBS"
+   CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
+   CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
+   CC="$PTHREAD_CC"
+   CXX="$PTHREAD_CXX"])
 
 # Checks for libraries.
 
@@ -76,13 +67,9 @@ AC_TYPE_SIZE_T
 # Checks for library functions.
 AC_CHECK_FUNCS([atexit strerror])
 
-# Configure for large files, even on 32-bit systems
-AC_SYS_LARGEFILE
-
 # Configure DEBUG source code, if requested.
-if test "x$debug" = xyes; then
-  AC_DEFINE([FLM_DEBUG], [], [Define to enable FLAIM debug features])
-fi
+AS_IF([test "x$debug" = xyes],
+  [AC_DEFINE([FLM_DEBUG], [1], [Define to enable FLAIM debug features])])
 
 # Configure compiler and platform flags and options.
 # This stuff was in the original makefile...
@@ -120,8 +107,7 @@ case $host in
     fi ;;
 
   *-apple-darwin*)
-    AC_DEFINE([OSX], [], 
-      [Define if building on Apple OSX.]) ;;
+    AC_DEFINE([OSX], [], [Define if building on Apple OSX.]) ;;
 
   *-*-aix*)
     if "x$CXX" != "xg++"; then
@@ -137,10 +123,15 @@ esac
 
 AC_CONFIG_FILES([Makefile
                  docs/Makefile
+                 docs/doxygen/Makefile
                  obs/Makefile
                  obs/xflaim.spec
                  sample/Makefile
                  src/Makefile
+                 src/cs/Makefile
+                 src/cs/wrapper/Makefile
+                 src/java/Makefile
+                 src/java/wrapper/Makefile
                  util/Makefile
                  libxflaim.pc])
 AC_OUTPUT

@@ -32,9 +32,12 @@ AC_ARG_ENABLE([debug],
 # Create Automake conditional based on the DOXYGEN variable
 AM_CONDITIONAL([HAVE_DOXYGEN], [test "x$DOXYGEN" != x])
 
+# Configure for large files, even on 32-bit systems
+AC_SYS_LARGEFILE
+
 # Check for pthreads
 ACX_PTHREAD(
- [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])
+ [AC_DEFINE([HAVE_PTHREAD], [1], [Define if you have POSIX threads libraries and header files.])
   LIBS="$PTHREAD_LIBS $LIBS"
   CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
   CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
@@ -51,13 +54,9 @@ AC_C_INLINE
 
 # Checks for library functions.
 
-# Configure for large files, even on 32-bit systems
-AC_SYS_LARGEFILE
-
 # Configure DEBUG source code, if requested.
-if test "x$debug" = xyes; then
-  AC_DEFINE([FLM_DEBUG], [], [Define to enable FLAIM debug features])
-fi
+AS_IF([test "x$debug" = xyes],
+  [AC_DEFINE([FLM_DEBUG], [1], [Define to enable FLAIM debug features])])
 
 # Configure compiler and platform flags and options.
 # This stuff was in the original makefile...
@@ -95,8 +94,7 @@ case $host in
     fi ;;
 
   *-apple-darwin*)
-    AC_DEFINE([OSX], [], 
-      [Define if building on Apple OSX.]) ;;
+    AC_DEFINE([OSX], [1], [Define if building on Apple OSX.]) ;;
 
   *-*-aix*)
     if "x$CXX" != "xg++"; then

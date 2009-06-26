@@ -2,17 +2,19 @@ ACLOCAL_AMFLAGS = -I m4
 
 EXTRA_DIST = GNUMakefile README.W32 debian netware win32
 
-SUBDIRS = $(subdirs) src util sample docs obs
+SUBDIRS = src util sample docs obs
 
 doc_DATA = AUTHORS ChangeLog COPYING INSTALL NEWS README
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libxflaim.pc
 
+RPM = rpm
+
 rpms srcrpm: dist
-	$(MAKE) -C obs $(AM_MAKEFLAGS) $@
-	rpmarch=`rpm --showrc | grep ^build\ arch | sed 's/\(.*: \)\(.*\)/\2/'`; \
-	test -z $$rpmarch || ( mv $$rpmarch/* .; rm -rf $$rpmarch )
+	cd obs && $(MAKE) $(AM_MAKEFLAGS) $@
+	rpmarch=`$(RPM) --showrc | grep "^build arch" | sed 's/\(.*: \)\(.*\)/\2/'`; \
+	test -z "$$rpmarch" || ( mv $$rpmarch/* .; rm -rf $$rpmarch )
 	rm -rf $(distdir)
 
 dist-hook:

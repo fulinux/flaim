@@ -6,7 +6,7 @@ SUBDIRS = ftk flaim sql xflaim
 
 rpms srcrpm:
 	for dir in $(SUBDIRS); do \
- 	  $(MAKE) -C $$dir $@; \
+ 	  cd $$dir && $(MAKE) $(AM_MAKEFLAGS) $@; \
 	done
 
 dist-hook:

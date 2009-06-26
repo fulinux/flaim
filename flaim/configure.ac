@@ -32,14 +32,12 @@ AC_ARG_ENABLE([debug],
 
 # Automake conditionals
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
-if test -n "$DOXYGEN"; then
-  AC_CONFIG_FILES([docs/doxygen/Makefile
-                   docs/doxygen/doxyfile])
-fi
+#AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([docs/doxygen/doxyfile])])
+AS_IF([test -n "$DOXYGEN"], [AC_CONFIG_FILES([docs/doxygen/doxyfile])])
 
 # Check for pthreads
 ACX_PTHREAD(
- [AC_DEFINE([HAVE_PTHREAD],[1],[Define if you have POSIX threads libraries and header files.])
+ [AC_DEFINE([HAVE_PTHREAD], [1], [Define if you have POSIX threads libraries and header files.])
   LIBS="$PTHREAD_LIBS $LIBS"
   CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
   CXXFLAGS="$CXXFLAGS $PTHREAD_CXXFLAGS"
@@ -61,9 +59,8 @@ AC_CHECK_FUNCS([atexit strchr])
 AC_SYS_LARGEFILE
 
 # Configure DEBUG source code, if requested.
-if test "x$debug" = xyes; then
-  AC_DEFINE([FLM_DEBUG], [], [Define to enable FLAIM debug features])
-fi
+AS_IF([test "x$debug" = xyes],
+  [AC_DEFINE([FLM_DEBUG], [], [Define to enable FLAIM debug features])])
 
 # Configure compiler and platform flags and options.
 # This stuff was in the original makefile...
@@ -101,8 +98,7 @@ case $host in
     fi ;;
 
   *-apple-darwin*)
-    AC_DEFINE([OSX], [], 
-      [Define if building on Apple OSX.]) ;;
+    AC_DEFINE([OSX], [1], [Define if building on Apple OSX.]) ;;
 
   *-*-aix*)
     if "x$CXX" != "xg++"; then
@@ -119,6 +115,7 @@ esac
 
 AC_CONFIG_FILES([Makefile
                  docs/Makefile
+                 docs/doxygen/Makefile
                  obs/flaim.spec
                  obs/Makefile
                  sample/Makefile
