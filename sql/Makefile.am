@@ -12,7 +12,7 @@ pkgconfig_DATA = libflaimsql.pc
 RPM = rpm
 
 rpms srcrpm: dist
-	cd obj && $(MAKE) $(AM_MAKEFLAGS) $@
+	(cd obj && $(MAKE) $(AM_MAKEFLAGS) $@) || exit 1
 	rpmarch=`$(RPM) --showrc | grep "^build arch" | sed 's/\(.*: \)\(.*\)/\2/'`; \
 	test -z "$$rpmarch" || ( mv $$rpmarch/* .; rm -rf $$rpmarch )
 	rm -rf $(distdir)

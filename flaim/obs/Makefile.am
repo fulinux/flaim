@@ -1,11 +1,11 @@
 rpmspec = $(PACKAGE_TARNAME).spec
 
 rpmmacros =\
- --define='_rpmdir $(PWD)'\
- --define='_srcrpmdir $(PWD)'\
- --define='_sourcedir $(PWD)'\
- --define='_specdir $(PWD)'\
- --define='_builddir $(PWD)'
+ --define='_rpmdir $(PWD)/..'\
+ --define='_srcrpmdir $(PWD)/..'\
+ --define='_sourcedir $(PWD)/..'\
+ --define='_specdir $(PWD)/..'\
+ --define='_builddir $(PWD)/..'
 
 rpmopts = --nodeps --buildroot='$(PWD)/_rpm'
 
