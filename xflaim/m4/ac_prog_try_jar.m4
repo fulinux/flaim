@@ -21,7 +21,7 @@
 AC_DEFUN([AC_PROG_TRY_JAR],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([JAR], [Java archive utility])dnl
-AC_CHECK_PROGS([JAR], [jar$EXEEXT])
+AC_CHECK_PROGS([JAR], [fastjar$EXEEXT jar$EXEEXT])
 ifelse([$1],,
 [if test -z "$JAR"; then
   AC_MSG_WARN([Java ARchive program not found - continuing without jar])

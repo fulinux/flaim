@@ -21,7 +21,7 @@
 AC_DEFUN([AC_PROG_TRY_JAVADOC],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([JAVADOC], [Java source documentation utility])dnl
-AC_CHECK_PROGS([JAVADOC], [javadoc$EXEEXT])
+AC_CHECK_PROGS([JAVADOC], [gjdoc$EXEEXT javadoc$EXEEXT])
 ifelse([$1],,
 [if test -z "$JAVADOC"; then
   AC_MSG_WARN([Javadoc program not found - continuing without javadoc])
