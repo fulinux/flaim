@@ -9,7 +9,7 @@ Contents
 --------
 1. Project Hierarchy
 2. Autotools Build
-3. Windows Build
+3. Building RPMs
 
 Project Hierarchy
 -----------------
@@ -79,6 +79,38 @@ Check the help page for any of the configure scripts like this:
 Once you know the options you wish to use, you may use them all on the 
 flaim-projects configure script command line. Those not understood by any
 given script will simply be ignored.
+
+Building RPMs
+-------------
+
+The FLAIM build system provides two custom targets, rpms and srcrpm. These
+targets can be used to build RPM packages for RPM-based Linux distributions.
+
+To use these targets, you'll need to be building on an RPM-based platform,
+and you'll need to have the platform's package-manager build package installed.
+Most development systems have this package installed by default.
+
+If you plan to build RPM's please be aware that the RPM make target (rpms) is 
+not quite as automatic as we'd like it to be - however, it's close. The only 
+problem you're likely to notice is that you must have the flaim toolkit packages
+(flaimtk and flaimtk-devel) installed as RPM packages before you can build the 
+flaim, xflaim and sqlflaim RPM packages. As long as the flaimtk ABI doesn't
+change too dramatically, you can continue to build against these installed 
+packages for future builds (although, you'll probably want to update your 
+installed flaimtk packages at reasonable intervals as they are improved).
+
+The easiest way to make this work for you is to configure the ftk directory in
+your build tree and then (also from within the ftk directory) type:
+
+  $ make rpms
+    ...
+  $ sudo rpm -Uvh flaimtk*.rpm
+    ...
+
+At this point you will be able to make the rpms target from the top-level 
+umbrella project directory, if you wish. Or you may build each individual rpm
+package (flaim, xflaim, or sqlflaim) from within their respective project
+directories.
 
 Enjoy!
 

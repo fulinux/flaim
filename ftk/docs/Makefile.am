@@ -8,7 +8,7 @@ $(docpkg): doxygen.stamp
 doxygen.stamp: doxyfile
 	$(DOXYGEN) $(DOXYFLAGS) $<
 	echo Timestamp > $@
-	
+
 install-data-hook:
 	cd $(DESTDIR)$(docdir) && tar xf $(docpkg)
 

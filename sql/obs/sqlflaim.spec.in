@@ -1,6 +1,6 @@
 Name: @PACKAGE_TARNAME@
-BuildRequires: gcc-c++ libstdc++-devel
-Requires: libstdc++
+BuildRequires: gcc-c++ libstdc++-devel flaimtk-devel
+Requires: libstdc++ flaimtk
 Summary: SQLFLAIM is a SQL database library.
 URL: http://forge.novell.com/modules/xfmod/project/?flaim
 Version: @PACKAGE_VERSION@
@@ -33,19 +33,15 @@ SQLFLAIM is a SQL database library.
 %configure
 make
 
-%install
-rm -rf ${RPM_BUILD_ROOT}
-make DESTDIR=${RPM_BUILD_ROOT} install
+%check
+make check
 
-# remove installed ftk files if they exist
-if test -f ${RPM_BUILD_ROOT}/usr/include/flaimtk.h; then
-  rm ${RPM_BUILD_ROOT}/usr/include/flaimtk.h
-  rm ${RPM_BUILD_ROOT}/usr/lib64/libflaimtk.*
-  rm -rf ${RPM_BUILD_ROOT}/usr/share/doc/ftk
-fi
+%install
+make DESTDIR=%{buildroot} install
+rm -rf %{buildroot}%{_datadir}/doc/%{name}/html
 
 %clean
-rm -rf ${RPM_BUILD_ROOT}
+rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
@@ -59,6 +55,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libflaimsql.so*
 
 %files devel
+%{_libdir}/pkgconfig/libflaimsql.pc
 %{_libdir}/libflaimsql.a
 %{_includedir}/flaimsql.h
 

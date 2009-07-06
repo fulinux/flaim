@@ -1,6 +1,6 @@
 Name: @PACKAGE_TARNAME@
 BuildRequires: gcc-c++ libstdc++ libstdc++-devel doxygen
-Summary: FTK is the FLAIM cross-platfomr toolkit.
+Summary: FLAIMTK is the FLAIM cross-platform toolkit.
 URL: http://forge.novell.com/modules/xfmod/project/?flaim
 Version: @PACKAGE_VERSION@
 Release: 1
@@ -11,7 +11,7 @@ Source: %{name}-%{version}.tar.gz
 BuildRoot: %{_tmppath}/%{name}-%{version}-build
 
 %description
-FTK is the FLAIM cross-platform toolkit.
+FLAIMTK is the FLAIM cross-platform toolkit.
 
 Authors:
 --------
@@ -32,19 +32,22 @@ FTK is the FLAIM cross-platform toolkit.
 %configure
 make
 
+%check
+make check
+
 %install
-rm -rf ${RPM_BUILD_ROOT}
-make DESTDIR=${RPM_BUILD_ROOT} install
+make DESTDIR=%{buildroot} install
+# remove the uncompressed doxygen html directory
+rm -rf %{buildroot}%{_datadir}/doc/%{name}/html
 
 %clean
-rm -rf ${RPM_BUILD_ROOT}
+rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
 %doc %{_datadir}/doc/%{name}/AUTHORS
 %doc %{_datadir}/doc/%{name}/ChangeLog
 %doc %{_datadir}/doc/%{name}/COPYING
-%doc %{_datadir}/doc/%{name}/COPYRIGHT
 %doc %{_datadir}/doc/%{name}/INSTALL
 %doc %{_datadir}/doc/%{name}/NEWS
 %doc %{_datadir}/doc/%{name}/README
@@ -53,6 +56,7 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libflaimtk.so*
 
 %files devel
+%{_libdir}/pkgconfig/libflaimtk.pc
 %{_libdir}/libflaimtk.a
 %{_includedir}/flaimtk.h
 

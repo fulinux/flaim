@@ -1,6 +1,6 @@
 Name: @PACKAGE_TARNAME@
-BuildRequires: gcc-c++ libstdc++-devel gcc-java mono-core doxygen
-Requires: libstdc++ mono-core java >= 1.4.2
+BuildRequires: gcc-c++ libstdc++-devel flaimtk-devel gcc-java gjdoc gcc-gij fastjar mono-core doxygen
+Requires: libstdc++ flaimtk mono-core java >= 1.4.2
 Summary: XFLAIM is an XML database library.
 URL: http://forge.novell.com/modules/xfmod/project/?flaim
 Version: @PACKAGE_VERSION@
@@ -33,17 +33,16 @@ XFLAIM is an XML database library.
 %configure
 make
 
+%check
+make check
+
 %install
-rm -rf ${RPM_BUILD_ROOT}
-make DESTDIR=${RPM_BUILD_ROOT} install
-if test -f ${RPM_BUILD_ROOT}/usr/include/flaimtk.h; then
-  rm ${RPM_BUILD_ROOT}/usr/include/flaimtk.h
-  rm ${RPM_BUILD_ROOT}/usr/lib64/libflaimtk.*
-  rm -rf ${RPM_BUILD_ROOT}/usr/share/doc/ftk
-fi
+rm -rf %{buildroot}
+make DESTDIR=%{buildroot} install
+rm -rf %{buildroot}%{_datadir}/doc/%{name}/html
 
 %clean
-rm -rf ${RPM_BUILD_ROOT}
+rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
@@ -57,17 +56,17 @@ rm -rf ${RPM_BUILD_ROOT}
 %doc %{_datadir}/doc/%{name}/xflaim_csharp.xml
 %doc %{_datadir}/doc/%{name}/XFLAIMArchitecture.odg
 %doc %{_datadir}/doc/%{name}/XFLAIMArchitecture.png
-%{_datadir}/java/xflaimjni-5.1.jar
+%{_datadir}/java/xflaimjni-%{version}.jar
 %{_libdir}/libxflaim.la
 %{_libdir}/libxflaim.so*
 %{_libdir}/xflaim_csharp.dll
 %{_bindir}/xflmcheckdb
 %{_bindir}/xflmrebuild
-%{_bindir}/xflmsample
 %{_bindir}/xflmview
 %{_bindir}/xflmdbshell
 
 %files devel
+%{_libdir}/pkgconfig/libxflaim.pc
 %{_libdir}/libxflaim.a
 %{_includedir}/xflaim.h
 

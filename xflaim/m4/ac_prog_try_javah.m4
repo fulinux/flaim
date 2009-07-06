@@ -21,7 +21,7 @@
 AC_DEFUN([AC_PROG_TRY_JAVAH],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([JAVAH], [Java header utility])dnl
-AC_CHECK_PROGS([JAVAH], [javah$EXEEXT])
+AC_CHECK_PROGS([JAVAH], [gcjh$EXEEXT javah$EXEEXT])
 ifelse([$1],,
 [if test -z "$JAVAH"; then
   AC_MSG_WARN([Java header program not found - continuing without javah])

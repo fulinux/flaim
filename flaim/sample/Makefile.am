@@ -1,4 +1,4 @@
-bin_PROGRAMS = sample
+noinst_PROGRAMS = sample
 
 FLAIM_INC=-I$(top_srcdir)/src
 FLAIM_LIB=../src/libflaim.la

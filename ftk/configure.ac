@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ([2.62])
-AC_INIT([FTK], [1.2], [flaim-users@forge.novell.com])
+AC_INIT([FLAIMTK], [1.2], [flaim-users@forge.novell.com])
 AM_INIT_AUTOMAKE([-Wall -Werror])
 LT_PREREQ([2.2])
 LT_INIT([dlopen])
@@ -138,7 +138,7 @@ esac
 AC_CONFIG_FILES([Makefile
                  docs/Makefile
                  obs/Makefile
-                 obs/ftk.spec
+                 obs/flaimtk.spec
                  src/Makefile
                  util/Makefile
                  libflaimtk.pc])

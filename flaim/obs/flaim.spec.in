@@ -1,6 +1,6 @@
 Name: @PACKAGE_TARNAME@
-BuildRequires: gcc-c++ libstdc++-devel doxygen
-Requires: libstdc++
+BuildRequires: gcc-c++ libstdc++-devel flaimtk-devel doxygen
+Requires: libstdc++ flaimtk
 Summary: FLAIM is a database library.
 URL: http://forge.novell.com/modules/xfmod/project/?flaim
 Version: @PACKAGE_VERSION@
@@ -33,17 +33,15 @@ FLAIM is a database library.
 %configure
 make
 
+%check
+make check
+
 %install
-rm -rf ${RPM_BUILD_ROOT}
-make DESTDIR=${RPM_BUILD_ROOT} install
-if test -f ${RPM_BUILD_ROOT}/usr/include/flaimtk.h; then
-  rm ${RPM_BUILD_ROOT}/usr/include/flaimtk.h
-  rm ${RPM_BUILD_ROOT}/usr/lib64/libflaimtk.*
-  rm -rf ${RPM_BUILD_ROOT}/usr/share/doc/ftk
-fi
+make DESTDIR=%{buildroot} install
+rm -rf %{buildroot}%{_datadir}/doc/%{name}/html
 
 %clean
-rm -rf ${RPM_BUILD_ROOT}
+rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root)
@@ -62,12 +60,12 @@ rm -rf ${RPM_BUILD_ROOT}
 %{_libdir}/libflaim.so*
 %{_bindir}/flmcheckdb
 %{_bindir}/flmrebuild
-%{_bindir}/flmsample
 %{_bindir}/flmview
 %{_bindir}/flmdbshell
 %{_bindir}/flmgigatest
 
 %files devel
+%{_libdir}/pkgconfig/libflaim.pc
 %{_libdir}/libflaim.a
 %{_includedir}/flaim.h
 
