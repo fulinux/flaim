@@ -17,3 +17,4 @@ libxfcsi_la_SOURCES = \
  Query.cpp
 
 libxfcsi_la_CPPFLAGS = $(XFLAIM_INCLUDE) $(FTK_INCLUDE)
+

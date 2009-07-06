@@ -1,11 +1,11 @@
 if HAVE_JAVA
   JAVADIR = java
-  JNI_LIBADD=java/libxfjni.la
+  JNI_LIBADD = java/libxfjni.la
 endif
 
 if HAVE_CSHARP
   CSDIR = cs
-  CSI_LIBADD=cs/libxfcsi.la
+  CSI_LIBADD = cs/libxfcsi.la
 endif
 
 SUBDIRS = $(JAVADIR) $(CSDIR)
