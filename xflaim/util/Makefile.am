@@ -17,15 +17,12 @@ libutil_la_SOURCES = \
  flm_lutl.h \
  sharutil.cpp \
  sharutil.h
-libutil_la_LIBADD = $(XFLAIM_LDADD)
 
 ## Utility Programs
 
 bin_PROGRAMS = xflmcheckdb xflmrebuild xflmview xflmdbshell
 
 xflmcheckdb_SOURCES = checkdb.cpp
-xflmcheckdb_LDADD = libutil.la
-
 xflmrebuild_SOURCES = rebuild.cpp
 
 xflmview_SOURCES = \
