@@ -1,6 +1,6 @@
-# AC_PROG_TRY_JAVADOC(["quiet"])
+# FLM_PROG_TRY_JAVADOC(["quiet"])
 # ------------------------------
-# AC_PROG_TRY_JAVADOC tests for an existing javadoc generator.
+# FLM_PROG_TRY_JAVADOC tests for an existing javadoc generator.
 # It uses or sets the environment variable JAVADOC.
 #
 # If no arguments are given to this macro, and no javadoc 
@@ -18,7 +18,7 @@
 # Modified: 2009-04-27
 # License:  AllPermissive
 #
-AC_DEFUN([AC_PROG_TRY_JAVADOC],
+AC_DEFUN([FLM_PROG_TRY_JAVADOC],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([JAVADOC], [Java source documentation utility])dnl
 AC_CHECK_PROGS([JAVADOC], [gjdoc$EXEEXT javadoc$EXEEXT])
@@ -26,4 +26,4 @@ ifelse([$1],,
 [if test -z "$JAVADOC"; then
   AC_MSG_WARN([Javadoc program not found - continuing without javadoc])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
-])# AC_PROG_TRY_JAVADOC
+])# FLM_PROG_TRY_JAVADOC

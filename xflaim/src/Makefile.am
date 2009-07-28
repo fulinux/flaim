@@ -10,6 +10,9 @@ endif
 
 SUBDIRS = $(JAVADIR) $(CSDIR)
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libxflaim.pc
+
 lib_LTLIBRARIES = libxflaim.la
 include_HEADERS = xflaim.h
 

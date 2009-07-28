@@ -1,6 +1,6 @@
-# AC_PROG_TRY_JNI(["quiet"])
+# FLM_PROG_TRY_JNI(["quiet"])
 # --------------------------
-# AC_PROG_TRY_JNI tests for the existence of the three
+# FLM_PROG_TRY_JNI tests for the existence of the three
 # tools required to build Java Native Interface (JNI) 
 # modules: javac, javah, and jar. It manages the
 # environment variable ac_prog_have_jni.
@@ -25,11 +25,11 @@
 # Modified: 2009-04-27
 # License:  AllPermissive
 #
-AC_DEFUN([AC_PROG_TRY_JNI],
+AC_DEFUN([FLM_PROG_TRY_JNI],
 [AC_REQUIRE([AC_EXEEXT])dnl
-AC_PROG_TRY_JAVAC([quiet])dnl
-AC_PROG_TRY_JAVAH([quiet])dnl
-AC_PROG_TRY_JAR([quiet])dnl
+FLM_PROG_TRY_JAVAC([quiet])dnl
+FLM_PROG_TRY_JAVAH([quiet])dnl
+FLM_PROG_TRY_JAR([quiet])dnl
 ifelse([$1],,
 [ac_prog_have_jni=yes
 if test -z "$JAVAC"; then ac_prog_have_jni=no; fi
@@ -38,4 +38,4 @@ if test -z "$JAR"; then ac_prog_have_jni=no; fi
 if test "x$ac_prog_have_jni" = xno; then
   AC_MSG_WARN([Some required JNI tools are missing - continuing without JNI support])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
-])# AC_PROG_TRY_JNI
+])# FLM_PROG_TRY_JNI

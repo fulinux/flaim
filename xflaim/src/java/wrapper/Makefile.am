@@ -10,12 +10,10 @@ $(jarfile): $(dist_noinst_JAVA)
 
 jar_DATA = $(jarfile)
 
-java-headers.stamp: $(dist_noinst_JAVA)
-	@list="`echo $(dist_noinst_JAVA) | sed -e 's|\.java||g' -e 's|/|.|g'`"; \
-	for class in $$list; do \
-	  echo "$(JAVAH) -cp . -jni -d $(jhdrout) $(JAVAHFLAGS) $$class"; \
-	  $(JAVAH) -cp . -jni -d $(jhdrout) $(JAVAHFLAGS) $$class; \
-	done
+java-headers.stamp: $(classdist_noinst.stamp)
+	@list=`echo $(dist_noinst_JAVA) | sed -e 's|\.java||g' -e 's|/|.|g'`; \
+	echo "$(JAVAH) -cp . -jni -d $(jhdrout) $(JAVAHFLAGS) $$list"; \
+	$(JAVAH) -cp . -jni -d $(jhdrout) $(JAVAHFLAGS) $$list
 	@echo "JNI headers generated" > java-headers.stamp
 
 all-local: java-headers.stamp

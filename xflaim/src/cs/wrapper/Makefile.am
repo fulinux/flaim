@@ -53,8 +53,6 @@ clean-local:
 	rm -f xflaim_csharp.dll xflaim_csharp.xml cstest_script cstest.exe libxflaim.so
 	rm -f Output_Stream 
 	rm -rf abc backup test.*
-
-check-local: cstest.exe cstest_script
 	
 install-exec-local:
 	test -z "$(libdir)" || $(MKDIR_P) "$(DESTDIR)$(libdir)"
@@ -78,6 +76,8 @@ xflaim_csharp.dll: $(xfcs_sources)
 	  $(CSC) -target:library $(AM_CSCFLAGS) $(CSCFLAGS) -out:$@ -doc:$(@:.dll=.xml) $$list2; \
 	else :; fi
 
+check_SCRIPTS = cstest.exe cstest_script
+
 cstest.exe: xflaim_csharp.dll $(cstest_sources)
 	@list1='$(cstest_sources)'; list2=; if test -n "$$list1"; then \
 	  for p in $$list1; do \
@@ -88,11 +88,8 @@ cstest.exe: xflaim_csharp.dll $(cstest_sources)
 	  $(CSC) $(AM_CSCFLAGS) $(CSCFLAGS) -out:$@ $$list2 -reference:xflaim_csharp.dll; \
 	else :; fi
 
-libxflaim.so:
-	$(LN_S) ../../.libs/libxflaim.so libxflaim.so
-
-cstest_script: cstest.exe libxflaim.so
+cstest_script: cstest.exe
 	echo "#!/bin/sh" > cstest_script
-	echo "$(CSVM) cstest.exe" >> cstest_script
+	echo "$(top_builddir)/libtool --mode=execute -dlopen ../../libxflaim.la $(CSVM) cstest.exe" >> cstest_script
 	chmod 0755 cstest_script
 

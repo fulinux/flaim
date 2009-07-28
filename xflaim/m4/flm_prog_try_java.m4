@@ -1,6 +1,6 @@
-# AC_PROG_TRY_JAVA(["quiet"])
+# FLM_PROG_TRY_JAVA(["quiet"])
 # ---------------------------
-# AC_PROG_TRY_JAVA test for an existing JAVA virtual machine.
+# FLM_PROG_TRY_JAVA test for an existing JAVA virtual machine.
 # It uses or sets the environment variable JAVA.
 #
 # If no arguments are given to this macro, and no java virtual
@@ -18,7 +18,7 @@
 # Modified: 2009-04-27
 # License:  AllPermissive
 #
-AC_DEFUN([AC_PROG_TRY_JAVA],
+AC_DEFUN([FLM_PROG_TRY_JAVA],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([JAVA], [Java virtual machine])dnl
 AC_CHECK_PROGS([JAVA], [kaffe$EXEEXT java$EXEEXT])
@@ -26,4 +26,4 @@ ifelse([$1],,
 [if test -z "$JAVA"; then
   AC_MSG_WARN([Java VM not found - continuing without JVM])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
-])# AC_PROG_TRY_JAVA
+])# FLM_PROG_TRY_JAVA

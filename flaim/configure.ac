@@ -19,7 +19,7 @@ AC_PROG_LN_S
 AC_PROG_INSTALL
 
 # Checks for optional programs.
-AC_PROG_TRY_DOXYGEN
+FLM_PROG_TRY_DOXYGEN
 
 # Configure FTKLIB, FTKINC, FTK_LTLIB and FTK_INCLUDE
 FLM_FTK_SEARCH
@@ -87,30 +87,34 @@ gcc_opt_flags="-O -foptimize-sibling-calls
 case $host in
   sparc-*-solaris*)
     LDFLAGS="$LDFLAGS -R /usr/lib/lwp"
-    if "x$CXX" != "xg++"; then
-      if "x$debug" = xno; then
-        CXXFLAGS="$CXXFLAGS -xO3"
-      fi
-      SUN_STUDIO_COMPILER=`"$CXX" -V | grep "Sun C++"`
-      if "x$SUN_STUDIO_COMPILER" = "xSun C++"; then
-        CXXFLAGS="$CXXFLAGS -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder"
-      fi
-    fi ;;
+    case $CXX in
+      *g++*) ;;
+      *)
+        if "x$debug" = xno; then
+          CXXFLAGS="$CXXFLAGS -xO3"
+        fi
+        SUN_STUDIO_COMPILER=`$CXX -V | grep "Sun C++"`
+        if "x$SUN_STUDIO_COMPILER" = "xSun C++"; then
+          CXXFLAGS="$CXXFLAGS -errwarn=%all -errtags -erroff=hidef,inllargeuse,doubunder"
+        fi ;;
+    esac ;;
 
   *-apple-darwin*)
     AC_DEFINE([OSX], [1], [Define if building on Apple OSX.]) ;;
 
   *-*-aix*)
-    if "x$CXX" != "xg++"; then
-      CXXFLAGS="$CXXFLAGS -qstrict -q$build_bits"
-      LDFLAGS="$LDFLAGS -q$build_bits -X$build_bits"
-    fi ;;
+    case $CXX in
+      *g++*) ;;
+      *) CXXFLAGS="$CXXFLAGS -qstrict" ;;
+    esac ;;
 
   *-*-hpux*)
-    if "x$CXX" != "xg++"; then
-      # Disable "Placement operator delete invocation is not yet implemented" warning
-      CXXFLAGS="$CXXFLAGS +W930"
-    fi ;;
+    case $CXX in
+      *g++*) ;;
+      *)
+        # Disable "Placement operator delete invocation is not yet implemented" warning
+        CXXFLAGS="$CXXFLAGS +W930" ;;
+    esac ;;
 esac
 
 AC_CONFIG_FILES([Makefile
@@ -121,7 +125,7 @@ AC_CONFIG_FILES([Makefile
                  sample/Makefile
                  src/Makefile
                  util/Makefile
-                 libflaim.pc])
+                 src/libflaim.pc])
 AC_OUTPUT
 
 echo "

@@ -1,6 +1,9 @@
 lib_LTLIBRARIES = libflaim.la
 include_HEADERS = flaim.h
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libflaim.pc
+
 libflaim_la_SOURCES = \
  checksum.cpp \
  fblob.cpp \

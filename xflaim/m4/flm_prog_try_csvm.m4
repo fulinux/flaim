@@ -1,6 +1,6 @@
-# AC_PROG_TRY_CSVM(["quiet"])
+# FLM_PROG_TRY_CSVM(["quiet"])
 # ---------------------------
-# AC_PROG_TRY_CSVM tests for an existing CSharp virtual machine. 
+# FLM_PROG_TRY_CSVM tests for an existing CSharp virtual machine. 
 # It sets or uses the environment variable CSVM.
 #
 # If no arguments are given to this macro, and no CSharp virtual
@@ -18,7 +18,7 @@
 # Modified: 2009-04-27
 # License:  AllPermissive
 #
-AC_DEFUN([AC_PROG_TRY_CSVM],
+AC_DEFUN([FLM_PROG_TRY_CSVM],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([CSVM], [CSharp virtual machine])dnl
 AC_CHECK_PROGS([CSVM], [mono$EXEEXT cs$EXEEXT])
@@ -26,4 +26,4 @@ ifelse([$1],,
 [if test -z "$CSVM"; then
   AC_MSG_WARN([CSharp VM not found - continuing without CSharp VM])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
-])# AC_PROG_TRY_CSVM
+])# FLM_PROG_TRY_CSVM

@@ -1,6 +1,9 @@
 lib_LTLIBRARIES = libflaimsql.la
 include_HEADERS = flaimsql.h
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libflaimsql.pc
+
 libflaimsql_la_SOURCES = \
  btreeinfo.cpp \
  checksum.cpp \

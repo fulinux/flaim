@@ -6,18 +6,16 @@ SUBDIRS = src obs
 
 doc_DATA = AUTHORS ChangeLog COPYING INSTALL NEWS README
 
-pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libflaimsql.pc
-
 RPM = rpm
 
 rpms srcrpm: dist
 	(cd obs && $(MAKE) $(AM_MAKEFLAGS) $@) || exit 1
 	rpmarch=`$(RPM) --showrc | grep "^build arch" | sed 's/\(.*: \)\(.*\)/\2/'`; \
-	test -z "$$rpmarch" || ( mv $$rpmarch/* . && rm -rf $$rpmarch )
-	rm -rf $(distdir)
+	test -z "obs/$$rpmarch" || ( mv obs/$$rpmarch/* . && rm -rf obs/$$rpmarch )
+	rm -rf obs/$(distdir)
 
 dist-hook:
 	rm -rf `find $(distdir) -name .svn`
 
 .PHONY: srcrpm rpms
+

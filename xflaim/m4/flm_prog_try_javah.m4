@@ -1,6 +1,6 @@
-# AC_PROG_TRY_JAVAH(["quiet"])
+# FLM_PROG_TRY_JAVAH(["quiet"])
 # ----------------------------
-# AC_PROG_TRY_JAVAH tests for an existing Java native header (JNI)
+# FLM_PROG_TRY_JAVAH tests for an existing Java native header (JNI)
 # generator. It uses or sets the environment variable JAVAH.
 #
 # If no arguments are given to this macro, and no javah
@@ -18,7 +18,7 @@
 # Modified: 2009-04-27
 # License:  AllPermissive
 #
-AC_DEFUN([AC_PROG_TRY_JAVAH],
+AC_DEFUN([FLM_PROG_TRY_JAVAH],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([JAVAH], [Java header utility])dnl
 AC_CHECK_PROGS([JAVAH], [gcjh$EXEEXT javah$EXEEXT])
@@ -26,4 +26,4 @@ ifelse([$1],,
 [if test -z "$JAVAH"; then
   AC_MSG_WARN([Java header program not found - continuing without javah])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
-])# AC_PROG_TRY_JAVAH
+])# FLM_PROG_TRY_JAVAH

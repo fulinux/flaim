@@ -1,6 +1,6 @@
-# AC_PROG_TRY_DOXYGEN(["quiet"])
+# FLM_PROG_TRY_DOXYGEN(["quiet"])
 # ------------------------------
-# AC_PROG_TRY_DOXYGEN tests for an existing doxygen source
+# FLM_PROG_TRY_DOXYGEN tests for an existing doxygen source
 # documentation program. It sets or uses the environment 
 # variable DOXYGEN. 
 #
@@ -19,7 +19,7 @@
 # Modified: 2009-04-27
 # License:  AllPermissive
 #
-AC_DEFUN([AC_PROG_TRY_DOXYGEN],
+AC_DEFUN([FLM_PROG_TRY_DOXYGEN],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([DOXYGEN], [Doxygen source doc generation program])dnl
 AC_CHECK_PROGS([DOXYGEN], [doxygen$EXEEXT])
@@ -27,4 +27,4 @@ ifelse([$1],,
 [if test -z "$DOXYGEN"; then
   AC_MSG_WARN([Doxygen program not found - continuing without Doxygen])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
-])# AC_PROG_TRY_DOXYGEN
+])# FLM_PROG_TRY_DOXYGEN

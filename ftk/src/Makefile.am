@@ -3,6 +3,9 @@ EXTRA_DIST = ftknlm.h
 lib_LTLIBRARIES = libflaimtk.la
 include_HEADERS = flaimtk.h
 
+pkgconfigdir = $(libdir)/pkgconfig
+pkgconfig_DATA = libflaimtk.pc
+
 libflaimtk_la_SOURCES = \
  ftkarg.cpp \
  ftkbtree.cpp \

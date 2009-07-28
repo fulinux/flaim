@@ -1,6 +1,6 @@
-# AC_PROG_TRY_CSC(["quiet"])
+# FLM_PROG_TRY_CSC(["quiet"])
 # --------------------------
-# AC_PROG_TRY_CSC tests for an existing CSharp compiler. It sets
+# FLM_PROG_TRY_CSC tests for an existing CSharp compiler. It sets
 # or uses the environment variable CSC.
 #
 # It checks for a Mono CSharp compiler (msc) and then for a 
@@ -21,7 +21,7 @@
 # Modified: 2009-04-27
 # License:  AllPermissive
 #
-AC_DEFUN([AC_PROG_TRY_CSC],
+AC_DEFUN([FLM_PROG_TRY_CSC],
 [AC_REQUIRE([AC_EXEEXT])dnl
 AC_ARG_VAR([CSC], [CSharp compiler])dnl
 AC_CHECK_PROGS([CSC], [mcs$EXEEXT csc$EXEEXT])
@@ -29,4 +29,4 @@ ifelse([$1],,
 [if test -z "$CSC"; then
   AC_MSG_WARN([CSharp compiler not found - continuing without CSharp])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
-])# AC_PROG_TRY_CSC
+])# FLM_PROG_TRY_CSC
