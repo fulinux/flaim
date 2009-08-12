@@ -36,7 +36,7 @@ AC_ARG_ENABLE([debug],
   [debug="$withval"], [debug=no])
 
 # Automake conditionals
-AM_CONDITIONAL([HAVE_JAVA], [test "x$ac_prog_have_jni" = xyes])
+AM_CONDITIONAL([HAVE_JAVA], [test "x$flm_prog_have_jni" = xyes])
 AM_CONDITIONAL([HAVE_CSHARP], [test -n "$CSC"])
 AM_CONDITIONAL([HAVE_DOXYGEN], [test -n "$DOXYGEN"])
 #AM_COND_IF([HAVE_DOXYGEN], [AC_CONFIG_FILES([docs/doxygen/doxyfile])])

@@ -31,11 +31,11 @@ FLM_PROG_TRY_JAVAC([quiet])dnl
 FLM_PROG_TRY_JAVAH([quiet])dnl
 FLM_PROG_TRY_JAR([quiet])dnl
 ifelse([$1],,
-[ac_prog_have_jni=yes
-if test -z "$JAVAC"; then ac_prog_have_jni=no; fi
-if test -z "$JAVAH"; then ac_prog_have_jni=no; fi
-if test -z "$JAR"; then ac_prog_have_jni=no; fi
-if test "x$ac_prog_have_jni" = xno; then
+[flm_prog_have_jni=yes
+if test -z "$JAVAC"; then flm_prog_have_jni=no; fi
+if test -z "$JAVAH"; then flm_prog_have_jni=no; fi
+if test -z "$JAR"; then flm_prog_have_jni=no; fi
+if test "x$flm_prog_have_jni" = xno; then
   AC_MSG_WARN([Some required JNI tools are missing - continuing without JNI support])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
 ])# FLM_PROG_TRY_JNI
