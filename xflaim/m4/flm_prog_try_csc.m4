@@ -18,13 +18,12 @@
 # @CSC@.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-27
+# Modified: 2009-08-30
 # License:  AllPermissive
 #
 AC_DEFUN([FLM_PROG_TRY_CSC],
-[AC_REQUIRE([AC_EXEEXT])dnl
-AC_ARG_VAR([CSC], [CSharp compiler])dnl
-AC_CHECK_PROGS([CSC], [mcs$EXEEXT csc$EXEEXT])
+[AC_ARG_VAR([CSC], [CSharp compiler])dnl
+AC_CHECK_PROGS([CSC], [mcs csc])
 ifelse([$1],,
 [if test -z "$CSC"; then
   AC_MSG_WARN([CSharp compiler not found - continuing without CSharp])

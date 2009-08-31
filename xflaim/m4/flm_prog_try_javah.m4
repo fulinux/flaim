@@ -15,13 +15,12 @@
 # @JAVAH@.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-27
+# Modified: 2009-08-30
 # License:  AllPermissive
 #
 AC_DEFUN([FLM_PROG_TRY_JAVAH],
-[AC_REQUIRE([AC_EXEEXT])dnl
-AC_ARG_VAR([JAVAH], [Java header utility])dnl
-AC_CHECK_PROGS([JAVAH], [gcjh$EXEEXT javah$EXEEXT])
+[AC_ARG_VAR([JAVAH], [Java header utility])dnl
+AC_CHECK_PROGS([JAVAH], [gcjh javah])
 ifelse([$1],,
 [if test -z "$JAVAH"; then
   AC_MSG_WARN([Java header program not found - continuing without javah])

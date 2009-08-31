@@ -16,15 +16,14 @@
 # @DOXYGEN@.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-27
+# Modified: 2009-08-30
 # License:  AllPermissive
 #
 AC_DEFUN([FLM_PROG_TRY_DOXYGEN],
-[AC_REQUIRE([AC_EXEEXT])dnl
-AC_ARG_VAR([DOXYGEN], [Doxygen source doc generation program])dnl
-AC_CHECK_PROGS([DOXYGEN], [doxygen$EXEEXT])
-ifelse([$1],,
+[AC_ARG_VAR([DOXYGEN], [Doxygen source doc generation program])dnl
+AC_CHECK_PROGS([DOXYGEN], [doxygen])
+m4_if([$1],,
 [if test -z "$DOXYGEN"; then
-  AC_MSG_WARN([Doxygen program not found - continuing without Doxygen])
+  AC_MSG_WARN([doxygen not found - continuing without Doxygen support])
 fi], [$1], [quiet],, [m4_fatal([Invalid option '$1' in $0])])
 ])# FLM_PROG_TRY_DOXYGEN

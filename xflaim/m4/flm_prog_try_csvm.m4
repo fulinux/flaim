@@ -15,13 +15,12 @@
 # @CSVM@.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-27
+# Modified: 2009-08-30
 # License:  AllPermissive
 #
 AC_DEFUN([FLM_PROG_TRY_CSVM],
-[AC_REQUIRE([AC_EXEEXT])dnl
-AC_ARG_VAR([CSVM], [CSharp virtual machine])dnl
-AC_CHECK_PROGS([CSVM], [mono$EXEEXT cs$EXEEXT])
+[AC_ARG_VAR([CSVM], [CSharp virtual machine])dnl
+AC_CHECK_PROGS([CSVM], [mono cs])
 ifelse([$1],,
 [if test -z "$CSVM"; then
   AC_MSG_WARN([CSharp VM not found - continuing without CSharp VM])

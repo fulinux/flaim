@@ -22,12 +22,11 @@
 # files with @JAVAC@, @JAVAH@, and @JAR@, respectively.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-27
+# Modified: 2009-08-30
 # License:  AllPermissive
 #
 AC_DEFUN([FLM_PROG_TRY_JNI],
-[AC_REQUIRE([AC_EXEEXT])dnl
-FLM_PROG_TRY_JAVAC([quiet])dnl
+[FLM_PROG_TRY_JAVAC([quiet])dnl
 FLM_PROG_TRY_JAVAH([quiet])dnl
 FLM_PROG_TRY_JAR([quiet])dnl
 ifelse([$1],,

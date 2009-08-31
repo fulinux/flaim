@@ -14,7 +14,7 @@
 # FTK_INCLUDE are linker and preprocessor command-line options.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-22
+# Modified: 2009-08-30
 # License:  AllPermissive
 #
 AC_DEFUN([FLM_FTK_SEARCH],
@@ -22,8 +22,8 @@ AC_DEFUN([FLM_FTK_SEARCH],
 AC_ARG_VAR([FTKINC], [The PATH wherein flaimtk.h can be found])
 dnl
 # Ensure that both or neither FTK paths were specified.
-if (test -n "$FTKLIB" && test -z "$FTKINC") || \
-   (test -n "$FTKINC" && test -z "$FTKLIB"); then
+if { test -n "$FTKLIB" && test -z "$FTKINC"; } || \
+   { test -n "$FTKINC" && test -z "$FTKLIB"; } then
   AC_MSG_ERROR([Specify both FTKINC and FTKLIB, or neither.])
 fi 
 

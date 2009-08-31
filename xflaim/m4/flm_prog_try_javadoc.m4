@@ -15,13 +15,12 @@
 # @JAVADOC@.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-27
+# Modified: 2009-08-30
 # License:  AllPermissive
 #
 AC_DEFUN([FLM_PROG_TRY_JAVADOC],
-[AC_REQUIRE([AC_EXEEXT])dnl
-AC_ARG_VAR([JAVADOC], [Java source documentation utility])dnl
-AC_CHECK_PROGS([JAVADOC], [gjdoc$EXEEXT javadoc$EXEEXT])
+[AC_ARG_VAR([JAVADOC], [Java source documentation utility])dnl
+AC_CHECK_PROGS([JAVADOC], [gjdoc javadoc])
 ifelse([$1],,
 [if test -z "$JAVADOC"; then
   AC_MSG_WARN([Javadoc program not found - continuing without javadoc])

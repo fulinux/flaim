@@ -15,13 +15,12 @@
 # @JAVAC@.
 #
 # Author:   John Calcote <john.calcote@gmail.com>
-# Modified: 2009-04-27
+# Modified: 2009-08-30
 # License:  AllPermissive
 #
 AC_DEFUN([FLM_PROG_TRY_JAVAC],
-[AC_REQUIRE([AC_EXEEXT])dnl
-AC_ARG_VAR([JAVAC], [Java compiler])dnl
-AC_CHECK_PROGS([JAVAC], ["gcj$EXEEXT -C" guavac$EXEEXT jikes$EXEEXT javac$EXEEXT])
+[AC_ARG_VAR([JAVAC], [Java compiler])dnl
+AC_CHECK_PROGS([JAVAC], ["gcj -C" guavac jikes javac])
 ifelse([$1],,
 [if test -z "$JAVAC"; then
   AC_MSG_WARN([Java compiler not found - continuing without javac])
