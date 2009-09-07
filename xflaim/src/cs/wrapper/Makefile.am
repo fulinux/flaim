@@ -67,7 +67,7 @@ uninstall-local:
 	rm -f "$(DESTDIR)$(docdir)/xflaim_csharp.xml"
 
 xflaim_csharp.dll: $(xfcs_sources)
-	@list1='$?'; list2=; if test -n "$$list1"; then \
+	@list1='$(xfcs_sources)'; list2=; if test -n "$$list1"; then \
 	  for p in $$list1; do \
 	    if test -f $$p; then d=; else d="$(srcdir)/"; fi; \
 	    list2="$$list2 $$d$$p"; \
