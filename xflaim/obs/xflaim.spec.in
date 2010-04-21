@@ -2,7 +2,7 @@ Name: @PACKAGE_TARNAME@
 BuildRequires: gcc-c++ libstdc++-devel flaimtk-devel gcc-java gjdoc gcc-gij fastjar mono-core doxygen
 Requires: libstdc++ flaimtk mono-core java >= 1.4.2
 Summary: XFLAIM is an XML database library.
-URL: http://forge.novell.com/modules/xfmod/project/?flaim
+URL: http://sourceforge.net/projects/flaim/
 Version: @PACKAGE_VERSION@
 Release: 1
 License: GPL

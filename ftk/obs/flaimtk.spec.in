@@ -1,7 +1,7 @@
 Name: @PACKAGE_TARNAME@
 BuildRequires: gcc-c++ libstdc++ libstdc++-devel doxygen
 Summary: FLAIMTK is the FLAIM cross-platform toolkit.
-URL: http://forge.novell.com/modules/xfmod/project/?flaim
+URL: http://sourceforge.net/projects/flaim/
 Version: @PACKAGE_VERSION@
 Release: 1
 License: GPL
